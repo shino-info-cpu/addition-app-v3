@@ -1,0 +1,36 @@
+{
+  "source_workbook": "J:\\マイドライブ\\加算アプリV2\\加算入力アプリ２０２６NEW のコピー.xlsx",
+  "generated_at": "2026-03-15T10:39:21+09:00",
+  "sheet_row_counts": {
+    "organization": 19,
+    "staff": 5,
+    "client": 398,
+    "service": 31
+  },
+  "import_row_counts": {
+    "organization": 19,
+    "staff": 5,
+    "client": 398,
+    "service": 22
+  },
+  "skipped_blank_rows": {},
+  "distinct_values": {
+    "client_target_type": {
+      "児": 173,
+      "者": 225
+    },
+    "service_target_scope": {
+      "者": 18,
+      "児": 13
+    },
+    "service_group": {
+      "福祉サービスG": 25,
+      "病院等G": 6
+    },
+    "service_category": {
+      "障害福祉": 17,
+      "障害福祉以外": 14
+    }
+  },
+  "warnings": []
+}

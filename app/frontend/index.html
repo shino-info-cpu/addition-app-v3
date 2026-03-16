@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>加算アプリ v3 試作</title>
+  <link rel="stylesheet" href="./styles.css?v=20260315g">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">K3</div>
+        <div>
+          <p class="eyebrow">相談員向け試作画面</p>
+          <h1>加算アプリ v3</h1>
+        </div>
+      </div>
+      <div class="topbar-tools">
+        <div class="context-pill">対象月の既定: 2026-03</div>
+        <div class="context-pill" id="api-data-status">データ: 試作用</div>
+        <label class="quick-search">
+          <span>クイック検索</span>
+          <input id="quick-search-input" type="search" placeholder="利用者名 / 機関名 / 加算名">
+        </label>
+        <div class="quick-search-status" id="quick-search-status">現在の画面だけに反映</div>
+        <div class="user-badge">ログイン: 相談 花子</div>
+      </div>
+    </header>
+
+    <div class="workspace">
+      <aside class="sidebar">
+        <p class="sidebar-title">日常操作</p>
+        <nav class="nav-list" aria-label="主ナビゲーション">
+          <button type="button" class="nav-button is-active" data-section="judgement">加算判定</button>
+          <button type="button" class="nav-button" data-section="report">集計</button>
+          <button type="button" class="nav-button" data-section="clients">利用者</button>
+          <button type="button" class="nav-button" data-section="organizations">機関</button>
+          <button type="button" class="nav-button" data-section="services">サービス</button>
+        </nav>
+        <div class="sidebar-note">
+          <p>この段階では、左ペインはまず5画面だけに固定しています。</p>
+          <p>制度設定や管理機能はまだ混ぜず、相談員の導線を優先して見ます。</p>
+        </div>
+      </aside>
+
+      <main class="content">
+        <section class="content-panel is-visible" data-section-panel="judgement">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">加算判定フォーム</p>
+              <h2>1件の対応事実から候補加算を絞り込む</h2>
+            </div>
+            <div class="status-pill status-progress" id="judgement-status">候補 0件</div>
+          </div>
+
+          <div class="card context-card">
+            <div class="field-chip">
+              <label class="context-field">
+                <span class="chip-label">利用者</span>
+                <select id="judgement-client"></select>
+                <small id="judgement-client-target">対象区分</small>
+              </label>
+            </div>
+            <div class="field-chip">
+              <label class="context-field">
+                <span class="chip-label">対象月</span>
+                <input id="judgement-target-month" type="month" value="2026-03">
+                <small>月次判定の基準月</small>
+              </label>
+            </div>
+            <div class="field-chip">
+              <label class="context-field">
+                <span class="chip-label">対応日時</span>
+                <input id="judgement-performed-at" type="datetime-local">
+                <small>任意入力。判定条件には使いません</small>
+              </label>
+            </div>
+            <div class="field-chip">
+              <label class="context-field">
+                <span class="chip-label">相談員</span>
+                <select id="judgement-staff"></select>
+                <small id="judgement-staff-home">ログイン連携の初期値から選択</small>
+              </label>
+            </div>
+            <div class="field-chip">
+              <label class="context-field">
+                <span class="chip-label">機関</span>
+                <select id="judgement-organization"></select>
+                <small id="judgement-organization-group">機関グループ</small>
+              </label>
+            </div>
+            <div class="field-chip">
+              <label class="context-field">
+                <span class="chip-label">サービス</span>
+                <select id="judgement-service"></select>
+                <small id="judgement-service-category">サービス区分</small>
+              </label>
+            </div>
+          </div>
+
+          <div class="content-grid">
+            <section class="card question-card">
+              <div class="card-head">
+                <div>
+                  <p class="eyebrow">現在の設問</p>
+                  <h3 id="judgement-question-label">読み込み中</h3>
+                </div>
+                <span class="meta-text" id="judgement-question-meta">説明表示: 管理者設定</span>
+              </div>
+
+              <p class="question-helper" id="judgement-question-helper"></p>
+              <div class="option-list" id="judgement-options"></div>
+
+              <div class="card-foot">
+                <button type="button" class="secondary-button" id="judgement-prev-button">前の設問へ</button>
+                <button type="button" class="secondary-button" id="judgement-reset-button">最初から</button>
+              </div>
+            </section>
+
+            <aside class="stack">
+              <section class="card">
+                <div class="card-head">
+                  <div>
+                    <p class="eyebrow">残候補</p>
+                    <h3>候補加算</h3>
+                  </div>
+                </div>
+                <ul class="candidate-list" id="judgement-candidates"></ul>
+              </section>
+
+              <section class="card">
+                <div class="card-head">
+                  <div>
+                    <p class="eyebrow">回答済み</p>
+                    <h3>いまの絞り込み軸</h3>
+                  </div>
+                </div>
+                <div class="answer-tags" id="judgement-answers"></div>
+              </section>
+            </aside>
+          </div>
+
+          <section class="card result-card">
+            <div class="card-head">
+              <div>
+                <p class="eyebrow">判定結果</p>
+                <h3>現時点の見立て</h3>
+              </div>
+            </div>
+            <div class="result-layout">
+              <div>
+                <span class="result-label">候補状況</span>
+                <strong id="judgement-result-main">読み込み中</strong>
+              </div>
+              <div>
+                <span class="result-label">後段チェック</span>
+                <strong id="judgement-result-check">読み込み中</strong>
+              </div>
+              <div>
+                <span class="result-label">次に見るべきこと</span>
+                <strong id="judgement-result-next">読み込み中</strong>
+              </div>
+            </div>
+          </section>
+
+          <section class="card judgement-save-card">
+            <div class="card-head">
+              <div>
+                <p class="eyebrow">保存</p>
+                <h3>判定結果を記録して集計へ送る</h3>
+              </div>
+              <span class="meta-text" id="judgement-save-summary">保存待ち</span>
+            </div>
+            <p class="save-note" id="judgement-save-note">保存文を組み立て中です。</p>
+            <div class="card-foot">
+              <span class="inline-status" id="judgement-save-status">未保存</span>
+              <button type="button" class="primary-button" id="judgement-save-button">判定結果を保存</button>
+            </div>
+          </section>
+        </section>
+
+        <section class="content-panel" data-section-panel="report">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">集計フォーム</p>
+              <h2>請求前確認と監査対応を同じ入口で扱う</h2>
+            </div>
+            <div class="status-pill status-neutral" id="report-active-view-label">表示設定: 月次請求用</div>
+          </div>
+
+          <section class="card toolbar-card">
+            <div class="toolbar-row">
+              <div class="toolbar-group" id="report-view-buttons"></div>
+              <div class="toolbar-group">
+                <button type="button" class="secondary-button compact-button" id="report-column-left">選択列を左へ</button>
+                <button type="button" class="secondary-button compact-button" id="report-column-right">選択列を右へ</button>
+                <span class="selected-column" id="report-selected-column">選択列: なし</span>
+              </div>
+            </div>
+          </section>
+
+          <section class="card filter-card">
+            <div class="card-head">
+              <div>
+                <p class="eyebrow">絞込条件</p>
+                <h3>初期表示は少なく、必要なら足す</h3>
+              </div>
+            </div>
+            <div class="filter-grid">
+              <label>
+                <span>対象月</span>
+                <input id="report-filter-month" type="month">
+              </label>
+              <label>
+                <span>利用者</span>
+                <input id="report-filter-client" type="text" placeholder="利用者名で絞込">
+              </label>
+              <label>
+                <span>加算</span>
+                <input id="report-filter-addition" type="text" placeholder="加算名で絞込">
+              </label>
+              <label>
+                <span>判定状態</span>
+                <select id="report-filter-status">
+                  <option value="">すべて</option>
+                  <option value="自動確定">自動確定</option>
+                  <option value="要確認">要確認</option>
+                </select>
+              </label>
+              <label>
+                <span>機関</span>
+                <input id="report-filter-organization" type="text" placeholder="機関名で絞込">
+              </label>
+              <label>
+                <span>相談員</span>
+                <input id="report-filter-staff" type="text" placeholder="相談員名で絞込">
+              </label>
+            </div>
+            <div class="card-foot">
+              <button type="button" class="secondary-button" id="report-save-filters">条件を保存</button>
+              <button type="button" class="secondary-button" id="report-reset-filters">保存条件へ戻す</button>
+              <button type="button" class="primary-button" id="report-apply-filters">再検索</button>
+            </div>
+          </section>
+
+          <div class="content-grid report-grid">
+            <section class="card table-card">
+              <div class="card-head">
+                <div>
+                  <p class="eyebrow">一覧結果</p>
+                  <h3 id="report-result-count">0件</h3>
+                </div>
+                <span class="meta-text">列名を押すと列選択、左右ボタンで順番変更</span>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr id="report-table-head"></tr>
+                  </thead>
+                  <tbody id="report-table-body"></tbody>
+                </table>
+              </div>
+            </section>
+
+            <aside class="stack">
+              <section class="card">
+                <div class="card-head">
+                  <div>
+                    <p class="eyebrow">選択行の詳細</p>
+                    <h3>監査対応の即参照</h3>
+                  </div>
+                </div>
+                <dl class="detail-list">
+                  <div>
+                    <dt>利用者</dt>
+                    <dd id="report-detail-client">-</dd>
+                  </div>
+                  <div>
+                    <dt>対応日時</dt>
+                    <dd id="report-detail-performed-at">-</dd>
+                  </div>
+                  <div>
+                    <dt>加算</dt>
+                    <dd id="report-detail-addition">-</dd>
+                  </div>
+                  <div>
+                    <dt>保存日時</dt>
+                    <dd id="report-detail-evaluated-at">-</dd>
+                  </div>
+                  <div>
+                    <dt>判定根拠</dt>
+                    <dd id="report-detail-rationale">-</dd>
+                  </div>
+                  <div>
+                    <dt>保存文</dt>
+                    <dd id="report-detail-note">-</dd>
+                  </div>
+                </dl>
+              </section>
+
+              <section class="card">
+                <div class="card-head">
+                  <div>
+                    <p class="eyebrow">表示設定</p>
+                    <h3>請求用と監査用を分ける</h3>
+                  </div>
+                </div>
+                <div class="answer-tags" id="report-view-summary"></div>
+              </section>
+            </aside>
+          </div>
+        </section>
+
+        <section class="content-panel" data-section-panel="clients">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">利用者マスタ</p>
+              <h2>名称を主表示にした一覧</h2>
+            </div>
+            <div class="status-pill" id="clients-count">0件</div>
+          </div>
+          <div class="master-layout">
+            <section class="card simple-master-card master-table-card">
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>利用者名</th>
+                      <th>ふりがな</th>
+                      <th>児者</th>
+                    </tr>
+                  </thead>
+                  <tbody id="clients-table-body"></tbody>
+                </table>
+              </div>
+            </section>
+
+            <aside class="stack master-side-stack">
+              <section class="card">
+                <div class="card-head">
+                  <div>
+                    <p class="eyebrow">利用状況登録</p>
+                    <h3 id="client-enrollment-selected-client">利用者を選択してください</h3>
+                  </div>
+                  <span class="meta-text" id="client-enrollment-selected-target">-</span>
+                </div>
+                <div class="form-grid">
+                  <label>
+                    <span>機関</span>
+                    <select id="client-enrollment-organization"></select>
+                  </label>
+                  <label>
+                    <span>機関サービス</span>
+                    <select id="client-enrollment-organization-service"></select>
+                  </label>
+                  <label>
+                    <span>グループ名</span>
+                    <input id="client-enrollment-group-name" type="text" placeholder="必要な場合のみ入力">
+                  </label>
+                </div>
+                <p class="inline-help" id="client-enrollment-organization-service-help">まず機関を選ぶと、その機関に登録済みのサービスが出ます。</p>
+                <div class="card-foot">
+                  <span class="inline-status" id="client-enrollment-status">未保存</span>
+                  <button type="button" class="primary-button" id="client-enrollment-save">利用状況を登録</button>
+                </div>
+              </section>
+
+              <section class="card">
+                <div class="card-head">
+                  <div>
+                    <p class="eyebrow">現在の利用状況</p>
+                    <h3>登録済み一覧</h3>
+                  </div>
+                </div>
+                <div class="relation-list" id="client-enrollment-list"></div>
+              </section>
+            </aside>
+          </div>
+        </section>
+
+        <section class="content-panel" data-section-panel="organizations">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">機関マスタ</p>
+              <h2>機関名を主表示にして探しやすくする</h2>
+            </div>
+            <div class="status-pill" id="organizations-count">0件</div>
+          </div>
+          <div class="master-layout">
+            <section class="card simple-master-card master-table-card">
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>機関名</th>
+                      <th>機関種別</th>
+                      <th>グループ</th>
+                      <th>主なサービス</th>
+                    </tr>
+                  </thead>
+                  <tbody id="organizations-table-body"></tbody>
+                </table>
+              </div>
+            </section>
+
+            <aside class="stack master-side-stack">
+              <section class="card">
+                <div class="card-head">
+                  <div>
+                    <p class="eyebrow">提供サービス登録</p>
+                    <h3 id="organization-service-selected-organization">機関を選択してください</h3>
+                  </div>
+                  <span class="meta-text" id="organization-service-selected-group">-</span>
+                </div>
+                <div class="form-grid">
+                  <label>
+                    <span>サービス</span>
+                    <select id="organization-service-service-definition"></select>
+                  </label>
+                </div>
+                <div class="card-foot">
+                  <span class="inline-status" id="organization-service-status">未保存</span>
+                  <button type="button" class="primary-button" id="organization-service-save">提供サービスを登録</button>
+                </div>
+              </section>
+
+              <section class="card">
+                <div class="card-head">
+                  <div>
+                    <p class="eyebrow">現在の提供サービス</p>
+                    <h3>登録済み一覧</h3>
+                  </div>
+                </div>
+                <div class="relation-list" id="organization-service-list"></div>
+              </section>
+            </aside>
+          </div>
+        </section>
+
+        <section class="content-panel" data-section-panel="services">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">サービスマスタ</p>
+              <h2>サービス名と対象を横並びで確認する</h2>
+            </div>
+            <div class="status-pill" id="services-count">0件</div>
+          </div>
+          <div class="card simple-master-card">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>サービス名</th>
+                    <th>区分</th>
+                    <th>対象範囲</th>
+                    <th>グループ</th>
+                  </tr>
+                </thead>
+                <tbody id="services-table-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script src="./app.js?v=20260316a"></script>
+</body>
+</html>
