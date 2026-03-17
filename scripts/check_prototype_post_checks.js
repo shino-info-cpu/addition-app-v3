@@ -66,6 +66,21 @@ function evaluateRule(rule, context) {
       : { level: "ok", message: `${rule.label}。今回を含めて${projectedCount}機関です。` };
   }
 
+  if (rule.code === "exclusive_with_addition_codes") {
+    const exclusiveCodes = Array.isArray(rule.additionCodes)
+      ? rule.additionCodes.map((item) => String(item ?? "").trim()).filter(Boolean)
+      : [];
+    const conflictingRecords = reportRecords.filter((record) => (
+      record.clientId === context.clientId
+      && record.targetMonth === context.targetMonth
+      && exclusiveCodes.includes(String(record.additionCode ?? "").trim())
+    ));
+
+    return conflictingRecords.length > 0
+      ? { level: "review", message: `${rule.label}。今月すでに併算定不可記録があります。` }
+      : { level: "ok", message: `${rule.label}。今月の併算定不可記録は見つかっていません。` };
+  }
+
   return { level: "ok", message: "" };
 }
 
@@ -119,6 +134,21 @@ const cases = [
       actionType: "サービス提供場面確認",
     }).filter((item) => item.message.includes("同月2回以上の訪問が必要")).length,
     expected: 0,
+  },
+  {
+    name: "exclusive rule engine can detect conflicting addition history",
+    actual: evaluateRule(
+      {
+        code: "exclusive_with_addition_codes",
+        additionCodes: ["mededu"],
+        label: "併算定不可",
+      },
+      {
+        clientId: "1001",
+        targetMonth: "2026-03",
+      },
+    ).level,
+    expected: "review",
   },
 ];
 

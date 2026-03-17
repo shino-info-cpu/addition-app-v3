@@ -1438,6 +1438,36 @@ function evaluatePostCheckRule(rule, context) {
     };
   }
 
+  if (rule.code === "exclusive_with_addition_codes") {
+    const exclusiveCodes = Array.isArray(rule.additionCodes)
+      ? rule.additionCodes.map((item) => String(item ?? "").trim()).filter(Boolean)
+      : [];
+
+    if (exclusiveCodes.length === 0) {
+      return { level: "skip", message: "" };
+    }
+
+    const conflictingRecords = state.judgement.historyRecords.filter((record) => (
+      exclusiveCodes.includes(String(record.additionCode ?? "").trim())
+    ));
+
+    if (conflictingRecords.length > 0) {
+      const names = Array.from(new Set(
+        conflictingRecords.map((record) => String(record.additionName ?? "").trim()).filter(Boolean),
+      ));
+      const label = names.length > 0 ? names.join(" / ") : exclusiveCodes.join(" / ");
+      return {
+        level: "review",
+        message: `${rule.label}。今月すでに ${label} の記録があります。`,
+      };
+    }
+
+    return {
+      level: "ok",
+      message: `${rule.label}。今月の併算定不可記録は見つかっていません。`,
+    };
+  }
+
   return {
     level: "info",
     message: rule.label || rule.code,

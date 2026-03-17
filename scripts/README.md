@@ -24,7 +24,7 @@ Scripts should target the v3 schema only.
 - `check_prototype_post_checks.js`
   - Reads the current prototype addition definitions and sample report records from `app/frontend/app.js`
   - Verifies the minimum expected post-check behavior for the current trial branches
-  - Useful for catching broken monthly limits or visit-count conditions before FTP deployment
+  - Useful for catching broken monthly limits, visit-count conditions, or併算定不可エンジン regressions before FTP deployment
 - `check_prototype_question_flow.js`
   - Loads `app/frontend/app.js` with a light DOM stub
   - Verifies that the UI does not jump to post-check before visible questions are answered
