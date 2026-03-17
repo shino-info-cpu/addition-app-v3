@@ -21,6 +21,8 @@ final class ReportRepository
         $additionNameExpression = "COALESCE(a.addition_name, JSON_UNQUOTE(JSON_EXTRACT(er.result_json, '$.addition_name')))";
         $additionCodeExpression = "COALESCE(a.addition_code, JSON_UNQUOTE(JSON_EXTRACT(er.result_json, '$.addition_code')))";
         $actionTypeExpression = "JSON_UNQUOTE(JSON_EXTRACT(ec.request_json, '$.answers.actionType'))";
+        $postCheckExpression = "JSON_UNQUOTE(JSON_EXTRACT(er.result_json, '$.post_check'))";
+        $postCheckStatusExpression = "JSON_UNQUOTE(JSON_EXTRACT(er.result_json, '$.post_check_status'))";
 
         $sql = <<<SQL
             SELECT
@@ -43,6 +45,8 @@ final class ReportRepository
               er.addition_id,
               {$additionCodeExpression} AS addition_code,
               {$additionNameExpression} AS addition_name,
+              {$postCheckExpression} AS post_check,
+              {$postCheckStatusExpression} AS post_check_status,
               sn.final_note_text
             FROM evaluation_case AS ec
             INNER JOIN evaluation_result AS er
@@ -92,6 +96,11 @@ final class ReportRepository
         if (($filters['status'] ?? null) !== null) {
             $sql .= ' AND er.final_status = :status';
             $params['status'] = $filters['status'];
+        }
+
+        if (($filters['post_check_status'] ?? null) !== null) {
+            $sql .= " AND {$postCheckStatusExpression} = :post_check_status";
+            $params['post_check_status'] = $filters['post_check_status'];
         }
 
         if (($filters['staff'] ?? null) !== null) {

@@ -89,6 +89,31 @@ const data = {
       postCheck: "同一機関を除き月3回まで。訪問枝は同月2回以上の訪問を後段で確認する。",
     },
     {
+      additionCode: "monitoring",
+      additionName: "モニタリング加算",
+      ruleStatus: "一部確定",
+      confirmedRules: [
+        "提供現場の訪問確認で候補に残す",
+        "モニタリング月に限定しない",
+        "同月1回まで",
+      ],
+      provisionalRules: [
+        "現行UIでは「提供現場訪問」を「サービス提供場面確認」に寄せている",
+        "対象機関と対象サービスの制度境界はまだ仮置き",
+      ],
+      priority: 25,
+      targetTypes: ["共通", "児", "者"],
+      monthTypes: ["モニタリング月", "計画作成月", "それ以外"],
+      organizationGroups: ["福祉サービス等提供機関"],
+      serviceDecisionInclude: ["障害福祉サービス", "障害福祉以外の福祉サービス"],
+      placeTypes: ["外出先"],
+      actionTypes: ["サービス提供場面確認"],
+      postCheckRules: [
+        { code: "monthly_limit_per_client", limit: 1, label: "同月1回まで" },
+      ],
+      postCheck: "提供現場の訪問確認内容と確認結果を記録する。月1回まで。",
+    },
+    {
       additionCode: "conference",
       additionName: "担当者会議加算",
       ruleStatus: "確定条件あり",
@@ -130,13 +155,68 @@ const data = {
       postCheckRules: [],
       postCheck: "退院前後の場面確認が必要。面談先の記録を残す。",
     },
+    {
+      additionCode: "hospital_info_i",
+      additionName: "入院時情報連携加算 I",
+      ruleStatus: "一部確定",
+      confirmedRules: [
+        "病院へ訪問して必要情報を提供した場合に候補に残す",
+        "同月1回まで",
+        "IIとの併算定不可",
+      ],
+      provisionalRules: [
+        "現行UIでは「訪問情報提供」を「外出先 + 情報共有」に寄せている",
+        "病院以外の医療機関をどこまで含めるかはまだ仮置き",
+      ],
+      priority: 35,
+      targetTypes: ["共通", "児", "者"],
+      monthTypes: ["モニタリング月", "計画作成月", "それ以外"],
+      organizationGroups: ["病院・訪看・薬局グループ"],
+      organizationTypes: ["病院"],
+      serviceDecisionInclude: ["医療関連"],
+      placeTypes: ["外出先"],
+      actionTypes: ["情報共有"],
+      postCheckRules: [
+        { code: "monthly_limit_per_client", limit: 1, label: "同月1回まで" },
+        { code: "exclusive_with_addition_codes", additionCodes: ["hospital_info_ii"], label: "IIとの併算定不可" },
+      ],
+      postCheck: "病院訪問による情報提供内容を記録する。",
+    },
+    {
+      additionCode: "hospital_info_ii",
+      additionName: "入院時情報連携加算 II",
+      ruleStatus: "一部確定",
+      confirmedRules: [
+        "病院へ訪問以外の方法で必要情報を提供した場合に候補に残す",
+        "同月1回まで",
+        "Iとの併算定不可",
+      ],
+      provisionalRules: [
+        "現行UIでは「訪問以外情報提供」を「自事業所内 + 情報共有」に寄せている",
+        "病院以外の医療機関をどこまで含めるかはまだ仮置き",
+      ],
+      priority: 36,
+      targetTypes: ["共通", "児", "者"],
+      monthTypes: ["モニタリング月", "計画作成月", "それ以外"],
+      organizationGroups: ["病院・訪看・薬局グループ"],
+      organizationTypes: ["病院"],
+      serviceDecisionInclude: ["医療関連"],
+      placeTypes: ["自事業所内"],
+      actionTypes: ["情報共有"],
+      postCheckRules: [
+        { code: "monthly_limit_per_client", limit: 1, label: "同月1回まで" },
+        { code: "exclusive_with_addition_codes", additionCodes: ["hospital_info_i"], label: "Iとの併算定不可" },
+      ],
+      postCheck: "訪問以外で提供した情報内容と提供方法を記録する。",
+    },
   ],
   reportRecords: [
-    { recordId: "r1", targetMonth: "2026-03", performedAt: "2026-03-14 09:05", clientId: "1001", organizationId: "21", serviceId: "301", staffId: "501", additionCode: "mededu", actionType: "情報共有", finalStatus: "自動確定", evaluatedAt: "2026-03-14 09:20", rationale: "病院グループ / 計画作成月 / 自事業所内 / 情報共有", savedNote: "病院と支援方針を共有し、今後の通院支援計画を確認した。" },
-    { recordId: "r2", targetMonth: "2026-03", performedAt: "2026-03-14 09:50", clientId: "1002", organizationId: "11", serviceId: "203", staffId: "502", additionCode: "intensive", actionType: "訪問", finalStatus: "要確認", evaluatedAt: "2026-03-14 10:05", rationale: "福祉サービス等提供機関 / それ以外 / 外出先 / 訪問", savedNote: "生活介護の現場を訪問し、利用状況と支援上の課題を確認した。" },
-    { recordId: "r3", targetMonth: "2026-03", performedAt: "2026-03-14 11:10", clientId: "1003", organizationId: "10", serviceId: "201", staffId: "501", additionCode: "conference", actionType: "担当者会議開催", finalStatus: "自動確定", evaluatedAt: "2026-03-14 11:42", rationale: "福祉サービス等提供機関 / モニタリング月 / 自事業所内 / 担当者会議開催", savedNote: "モニタリングに当たり担当者会議を開催し、関係機関で支援方針を共有した。" },
-    { recordId: "r4", targetMonth: "2026-02", performedAt: "2026-02-28 15:30", clientId: "1001", organizationId: "21", serviceId: "301", staffId: "501", additionCode: "discharge", actionType: "退院前面談", finalStatus: "自動確定", evaluatedAt: "2026-02-28 16:18", rationale: "病院グループ / それ以外 / 外出先 / 退院前面談", savedNote: "退院前面談に参加し、退院後支援体制を調整した。" },
-    { recordId: "r5", targetMonth: "2026-03", performedAt: "2026-03-13 13:25", clientId: "1002", organizationId: "22", serviceId: "302", staffId: "503", additionCode: "mededu", actionType: "面談", finalStatus: "自動確定", evaluatedAt: "2026-03-13 14:00", rationale: "病院・訪看・薬局グループ / モニタリング月 / 外出先 / 面談", savedNote: "訪看と面談し、モニタリング結果を共有した。" },
+    { recordId: "r1", targetMonth: "2026-03", performedAt: "2026-03-14 09:05", clientId: "1001", organizationId: "21", serviceId: "301", staffId: "501", additionCode: "mededu", actionType: "情報共有", finalStatus: "自動確定", postCheckStatus: "ok", postCheckSummary: "同月1回まで。今月既存0件で範囲内です。", evaluatedAt: "2026-03-14 09:20", rationale: "病院グループ / 計画作成月 / 自事業所内 / 情報共有", savedNote: "病院と支援方針を共有し、今後の通院支援計画を確認した。" },
+    { recordId: "r2", targetMonth: "2026-03", performedAt: "2026-03-14 09:50", clientId: "1002", organizationId: "11", serviceId: "203", staffId: "502", additionCode: "intensive", actionType: "訪問", finalStatus: "要確認", postCheckStatus: "review", postCheckSummary: "同月2回以上の訪問が必要。今回を含めて1回です。 / 同一機関を除き月3回まで。今回を含めて1機関です。", evaluatedAt: "2026-03-14 10:05", rationale: "福祉サービス等提供機関 / それ以外 / 外出先 / 訪問", savedNote: "生活介護の現場を訪問し、利用状況と支援上の課題を確認した。" },
+    { recordId: "r3", targetMonth: "2026-03", performedAt: "2026-03-14 11:10", clientId: "1003", organizationId: "10", serviceId: "201", staffId: "501", additionCode: "conference", actionType: "担当者会議開催", finalStatus: "自動確定", postCheckStatus: "ok", postCheckSummary: "モニタリングに当たって開催した担当者会議の参加者と開催内容を記録する。", evaluatedAt: "2026-03-14 11:42", rationale: "福祉サービス等提供機関 / モニタリング月 / 自事業所内 / 担当者会議開催", savedNote: "モニタリングに当たり担当者会議を開催し、関係機関で支援方針を共有した。" },
+    { recordId: "r4", targetMonth: "2026-02", performedAt: "2026-02-28 15:30", clientId: "1001", organizationId: "21", serviceId: "301", staffId: "501", additionCode: "discharge", actionType: "退院前面談", finalStatus: "自動確定", postCheckStatus: "ok", postCheckSummary: "退院前後の場面確認が必要。面談先の記録を残す。", evaluatedAt: "2026-02-28 16:18", rationale: "病院グループ / それ以外 / 外出先 / 退院前面談", savedNote: "退院前面談に参加し、退院後支援体制を調整した。" },
+    { recordId: "r5", targetMonth: "2026-03", performedAt: "2026-03-13 13:25", clientId: "1002", organizationId: "22", serviceId: "302", staffId: "503", additionCode: "mededu", actionType: "面談", finalStatus: "自動確定", postCheckStatus: "ok", postCheckSummary: "同月1回まで。今月既存0件で範囲内です。", evaluatedAt: "2026-03-13 14:00", rationale: "病院・訪看・薬局グループ / モニタリング月 / 外出先 / 面談", savedNote: "訪看と面談し、モニタリング結果を共有した。" },
+    { recordId: "r6", targetMonth: "2026-01", performedAt: "2026-01-21 10:15", clientId: "1003", organizationId: "21", serviceId: "301", staffId: "501", additionCode: "hospital_info_i", actionType: "情報共有", finalStatus: "自動確定", postCheckStatus: "ok", postCheckSummary: "同月1回まで。今月既存0件で範囲内です。 / IIとの併算定不可。今月の併算定不可記録は見つかっていません。", evaluatedAt: "2026-01-21 10:40", rationale: "病院グループ / 外出先 / 情報共有", savedNote: "入院に当たり病院を訪問し、生活状況と支援上の留意点を情報提供した。" },
   ],
 };
 
@@ -144,17 +224,17 @@ const baseReportViews = {
   monthly_claim: {
     name: "月次請求用",
     columns: ["targetMonth", "clientName", "additionName", "organizationName", "finalStatus", "evaluatedAt"],
-    savedFilters: { targetMonth: "2026-03", client: "", addition: "", status: "", organization: "", staff: "" },
+    savedFilters: { targetMonth: "2026-03", client: "", addition: "", status: "", postCheckStatus: "", organization: "", staff: "" },
   },
   audit_lookup: {
     name: "監査確認用",
-    columns: ["performedAt", "evaluatedAt", "clientName", "organizationName", "staffName", "additionName", "rationale", "savedNote"],
-    savedFilters: { targetMonth: "", client: "", addition: "", status: "", organization: "", staff: "" },
+    columns: ["performedAt", "evaluatedAt", "clientName", "organizationName", "staffName", "additionName", "postCheckSummary", "rationale", "savedNote"],
+    savedFilters: { targetMonth: "", client: "", addition: "", status: "", postCheckStatus: "", organization: "", staff: "" },
   },
   review_queue: {
     name: "要確認中心",
-    columns: ["targetMonth", "clientName", "organizationName", "additionName", "finalStatus", "savedNote"],
-    savedFilters: { targetMonth: "2026-03", client: "", addition: "", status: "要確認", organization: "", staff: "" },
+    columns: ["targetMonth", "clientName", "organizationName", "additionName", "finalStatus", "postCheckSummary", "savedNote"],
+    savedFilters: { targetMonth: "2026-03", client: "", addition: "", status: "要確認", postCheckStatus: "review", organization: "", staff: "" },
   },
 };
 
@@ -176,6 +256,8 @@ const columnCatalog = {
   staffName: { label: "相談員", getValue: (record) => record.staffName },
   additionName: { label: "加算名", getValue: (record) => record.additionName },
   finalStatus: { label: "判定状態", getValue: (record) => record.finalStatus },
+  postCheckStatus: { label: "後段状態", getValue: (record) => formatPostCheckStatusLabel(record.postCheckStatus) },
+  postCheckSummary: { label: "後段チェック", getValue: (record) => record.postCheckSummary || "-" },
   evaluatedAt: { label: "保存日時", getValue: (record) => record.evaluatedAt },
   rationale: { label: "判定根拠", getValue: (record) => record.rationale },
   savedNote: { label: "保存文", getValue: (record) => record.savedNote },
@@ -217,6 +299,7 @@ const questionDefinitions = [
 
       return [
         { value: "訪問", note: "現地へ行って支援状況や本人の様子を確認した" },
+        { value: "情報共有", note: "外部機関を訪ねるなどして必要な情報を伝えた" },
         { value: "会議", note: "担当者会議以外の外部会議や打合せに参加した" },
         { value: "担当者会議開催", note: "外部会場などでサービス担当者会議を開催した" },
         { value: "面談", note: "外部で関係者や本人と面談した" },
@@ -348,6 +431,7 @@ const dom = {
     filterClient: document.querySelector("#report-filter-client"),
     filterAddition: document.querySelector("#report-filter-addition"),
     filterStatus: document.querySelector("#report-filter-status"),
+    filterPostCheckStatus: document.querySelector("#report-filter-post-check-status"),
     filterOrganization: document.querySelector("#report-filter-organization"),
     filterStaff: document.querySelector("#report-filter-staff"),
     applyFilters: document.querySelector("#report-apply-filters"),
@@ -360,6 +444,7 @@ const dom = {
     detailPerformedAt: document.querySelector("#report-detail-performed-at"),
     detailAddition: document.querySelector("#report-detail-addition"),
     detailEvaluatedAt: document.querySelector("#report-detail-evaluated-at"),
+    detailPostCheck: document.querySelector("#report-detail-post-check"),
     detailRationale: document.querySelector("#report-detail-rationale"),
     detailNote: document.querySelector("#report-detail-note"),
     viewSummary: document.querySelector("#report-view-summary"),
@@ -858,6 +943,7 @@ function bindReportControls() {
     dom.report.filterClient,
     dom.report.filterAddition,
     dom.report.filterStatus,
+    dom.report.filterPostCheckStatus,
     dom.report.filterOrganization,
     dom.report.filterStaff,
   ];
@@ -1557,6 +1643,8 @@ function saveJudgementEvaluationToSample(snapshot) {
     additionCode: snapshot.topCandidate?.additionCode ?? "",
     additionName: snapshot.displayAdditionName,
     finalStatus: snapshot.finalStatus,
+    postCheckStatus: snapshot.postCheckStatus,
+    postCheckSummary: snapshot.postCheckSummary,
     evaluatedAt: formatCurrentDateTime(),
     rationale: snapshot.rationale,
     savedNote: snapshot.noteText,
@@ -2081,6 +2169,7 @@ function renderReportDetails(records) {
   dom.report.detailPerformedAt.textContent = selectedRecord.performedAt || "-";
   dom.report.detailAddition.textContent = `${selectedRecord.additionName} (${selectedRecord.finalStatus})`;
   dom.report.detailEvaluatedAt.textContent = selectedRecord.evaluatedAt || "-";
+  dom.report.detailPostCheck.textContent = selectedRecord.postCheckSummary || "-";
   dom.report.detailRationale.textContent = selectedRecord.rationale;
   dom.report.detailNote.textContent = selectedRecord.savedNote;
 }
@@ -2687,6 +2776,7 @@ function getJudgementFacts(includeAnswers) {
   return {
     targetType: client?.targetType ?? "",
     organizationGroup: getOrganizationGroupLabel(organization, service),
+    organizationType: organization?.organizationType ?? "",
     serviceDecisionCategories,
     monthType: includeAnswers ? state.judgement.answers.monthType : "",
     placeType: includeAnswers ? state.judgement.answers.placeType : "",
@@ -2697,6 +2787,7 @@ function getJudgementFacts(includeAnswers) {
 function candidateMatches(candidate, facts) {
   return matchesTargetType(candidate.targetTypes, facts.targetType)
     && matchesCondition(candidate.organizationGroups, facts.organizationGroup)
+    && matchesOptionalCondition(candidate.organizationTypes, facts.organizationType)
     && matchesDecisionCategoryRules(
       facts.serviceDecisionCategories,
       candidate.serviceDecisionInclude,
@@ -2719,6 +2810,13 @@ function matchesCondition(allowed, actual) {
     return true;
   }
   return allowed.includes(actual);
+}
+
+function matchesOptionalCondition(allowed, actual) {
+  if (!Array.isArray(allowed) || allowed.length === 0) {
+    return true;
+  }
+  return matchesCondition(allowed, actual);
 }
 
 function matchesConditionList(allowed, actualValues) {
@@ -2756,6 +2854,9 @@ function buildCandidateReason(candidate, facts) {
   }
   if (facts.organizationGroup && matchesCondition(candidate.organizationGroups, facts.organizationGroup)) {
     reasons.push(facts.organizationGroup);
+  }
+  if (facts.organizationType && matchesOptionalCondition(candidate.organizationTypes, facts.organizationType)) {
+    reasons.push(facts.organizationType);
   }
   if (facts.serviceDecisionCategories.length > 0 && matchesDecisionCategoryRules(
     facts.serviceDecisionCategories,
@@ -2825,6 +2926,9 @@ function getFilteredReportRecords() {
     if (filters.status && record.finalStatus !== filters.status) {
       return false;
     }
+    if (filters.postCheckStatus && (record.postCheckStatus || "") !== filters.postCheckStatus) {
+      return false;
+    }
     if (filters.organization && !normalizeText(record.organizationName).includes(normalizeText(filters.organization))) {
       return false;
     }
@@ -2835,6 +2939,7 @@ function getFilteredReportRecords() {
       record.clientName,
       record.organizationName,
       record.additionName,
+      record.postCheckSummary,
       record.savedNote,
       record.rationale,
     ], state.activeSection === "report")) {
@@ -2888,6 +2993,7 @@ function syncReportFiltersFromInputs() {
     client: dom.report.filterClient.value.trim(),
     addition: dom.report.filterAddition.value.trim(),
     status: dom.report.filterStatus.value,
+    postCheckStatus: dom.report.filterPostCheckStatus.value,
     organization: dom.report.filterOrganization.value.trim(),
     staff: dom.report.filterStaff.value.trim(),
   };
@@ -2898,6 +3004,7 @@ function writeReportFiltersToInputs() {
   dom.report.filterClient.value = state.report.filters.client;
   dom.report.filterAddition.value = state.report.filters.addition;
   dom.report.filterStatus.value = state.report.filters.status;
+  dom.report.filterPostCheckStatus.value = state.report.filters.postCheckStatus;
   dom.report.filterOrganization.value = state.report.filters.organization;
   dom.report.filterStaff.value = state.report.filters.staff;
 }
@@ -2947,6 +3054,7 @@ function getFilterLabel(key) {
     client: "利用者",
     addition: "加算",
     status: "判定状態",
+    postCheckStatus: "後段状態",
     organization: "機関",
     staff: "相談員",
   };
@@ -3069,6 +3177,9 @@ function buildReportApiParams() {
   }
   if (state.report.filters.status) {
     params.status = state.report.filters.status;
+  }
+  if (state.report.filters.postCheckStatus) {
+    params.post_check_status = state.report.filters.postCheckStatus;
   }
   if (state.report.filters.organization) {
     params.organization = state.report.filters.organization;
@@ -3226,10 +3337,23 @@ function normalizeApiReportRecord(item) {
     additionCode: item.addition_code ?? "",
     additionName: item.addition_name ?? "-",
     finalStatus: item.final_status ?? "-",
+    postCheckStatus: item.post_check_status ?? "",
+    postCheckSummary: item.post_check ?? "-",
     evaluatedAt: item.evaluated_at ?? "",
     rationale: item.message ?? "-",
     savedNote: item.final_note_text ?? "-",
   };
+}
+
+function formatPostCheckStatusLabel(value) {
+  const normalized = String(value ?? "").trim();
+  const labels = {
+    ok: "問題なし",
+    review: "要確認",
+    pending: "確認待ち",
+    none: "対象なし",
+  };
+  return labels[normalized] ?? (normalized || "-");
 }
 
 function updateApiDataStatusPill() {

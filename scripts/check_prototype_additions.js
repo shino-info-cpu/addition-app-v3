@@ -27,6 +27,13 @@ function matchesCondition(allowed, actual) {
   return allowed.includes(actual);
 }
 
+function matchesOptionalCondition(allowed, actual) {
+  if (!Array.isArray(allowed) || allowed.length === 0) {
+    return true;
+  }
+  return matchesCondition(allowed, actual);
+}
+
 function matchesConditionList(allowed, actualValues) {
   if (!Array.isArray(actualValues) || actualValues.length === 0) {
     return true;
@@ -43,6 +50,7 @@ function matchesDecisionCategoryRules(actualValues, includeValues = [], excludeV
 function candidateMatches(candidate, facts) {
   return matchesTargetType(candidate.targetTypes, facts.targetType)
     && matchesCondition(candidate.organizationGroups, facts.organizationGroup)
+    && matchesOptionalCondition(candidate.organizationTypes, facts.organizationType)
     && matchesDecisionCategoryRules(
       facts.serviceDecisionCategories,
       candidate.serviceDecisionInclude,
@@ -63,6 +71,9 @@ function getAddition(code) {
 
 const mededu = getAddition("mededu");
 const intensive = getAddition("intensive");
+const monitoring = getAddition("monitoring");
+const hospitalInfoI = getAddition("hospital_info_i");
+const hospitalInfoII = getAddition("hospital_info_ii");
 const conference = getAddition("conference");
 const discharge = getAddition("discharge");
 
@@ -116,10 +127,89 @@ const cases = [
     expected: true,
   },
   {
+    name: "monitoring remains for welfare service scene check outside office",
+    actual: candidateMatches(monitoring, {
+      targetType: "児",
+      organizationGroup: "福祉サービス等提供機関",
+      organizationType: "障害福祉事業所",
+      serviceDecisionCategories: ["障害福祉サービス"],
+      monthType: "モニタリング月",
+      placeType: "外出先",
+      actionType: "サービス提供場面確認",
+    }),
+    expected: true,
+  },
+  {
+    name: "monitoring does not remain for inside-office work",
+    actual: candidateMatches(monitoring, {
+      targetType: "児",
+      organizationGroup: "福祉サービス等提供機関",
+      organizationType: "障害福祉事業所",
+      serviceDecisionCategories: ["障害福祉サービス"],
+      monthType: "モニタリング月",
+      placeType: "自事業所内",
+      actionType: "サービス提供場面確認",
+    }),
+    expected: false,
+  },
+  {
+    name: "monitoring does not remain for consultation service",
+    actual: candidateMatches(monitoring, {
+      targetType: "者",
+      organizationGroup: "福祉サービス等提供機関",
+      organizationType: "相談支援事業所",
+      serviceDecisionCategories: ["相談支援"],
+      monthType: "それ以外",
+      placeType: "外出先",
+      actionType: "サービス提供場面確認",
+    }),
+    expected: false,
+  },
+  {
+    name: "hospital info I remains for hospital visit and info sharing",
+    actual: candidateMatches(hospitalInfoI, {
+      targetType: "共通",
+      organizationGroup: "病院・訪看・薬局グループ",
+      organizationType: "病院",
+      serviceDecisionCategories: ["医療関連"],
+      monthType: "それ以外",
+      placeType: "外出先",
+      actionType: "情報共有",
+    }),
+    expected: true,
+  },
+  {
+    name: "hospital info II remains for non-visit info sharing",
+    actual: candidateMatches(hospitalInfoII, {
+      targetType: "共通",
+      organizationGroup: "病院・訪看・薬局グループ",
+      organizationType: "病院",
+      serviceDecisionCategories: ["医療関連"],
+      monthType: "モニタリング月",
+      placeType: "自事業所内",
+      actionType: "情報共有",
+    }),
+    expected: true,
+  },
+  {
+    name: "hospital info does not remain for visiting nurse",
+    actual: candidateMatches(hospitalInfoI, {
+      targetType: "共通",
+      organizationGroup: "病院・訪看・薬局グループ",
+      organizationType: "訪問看護",
+      serviceDecisionCategories: ["医療関連"],
+      monthType: "それ以外",
+      placeType: "外出先",
+      actionType: "情報共有",
+    }),
+    expected: false,
+  },
+  {
     name: "conference does not remain in 計画作成月",
     actual: candidateMatches(conference, {
       targetType: "児",
       organizationGroup: "福祉サービス等提供機関",
+      organizationType: "障害福祉事業所",
       serviceDecisionCategories: ["障害福祉サービス"],
       monthType: "計画作成月",
       placeType: "自事業所内",
@@ -132,6 +222,7 @@ const cases = [
     actual: candidateMatches(conference, {
       targetType: "児",
       organizationGroup: "福祉サービス等提供機関",
+      organizationType: "障害福祉事業所",
       serviceDecisionCategories: ["障害福祉サービス"],
       monthType: "モニタリング月",
       placeType: "自事業所内",
@@ -144,6 +235,7 @@ const cases = [
     actual: candidateMatches(conference, {
       targetType: "児",
       organizationGroup: "福祉サービス等提供機関",
+      organizationType: "障害福祉事業所",
       serviceDecisionCategories: ["障害福祉サービス"],
       monthType: "モニタリング月",
       placeType: "自事業所内",
@@ -156,6 +248,7 @@ const cases = [
     actual: candidateMatches(discharge, {
       targetType: "共通",
       organizationGroup: "病院・訪看・薬局グループ",
+      organizationType: "病院",
       serviceDecisionCategories: ["医療関連"],
       monthType: "それ以外",
       placeType: "外出先",
@@ -168,6 +261,7 @@ const cases = [
     actual: candidateMatches(discharge, {
       targetType: "共通",
       organizationGroup: "福祉サービス等提供機関",
+      organizationType: "障害福祉事業所",
       serviceDecisionCategories: ["医療関連"],
       monthType: "それ以外",
       placeType: "外出先",

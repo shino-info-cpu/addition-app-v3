@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>加算アプリ v3 試作</title>
-  <link rel="stylesheet" href="./styles.css?v=20260315g">
+  <link rel="stylesheet" href="./styles.css?v=20260317f">
 </head>
 <body>
   <div class="app-shell">
@@ -229,6 +229,16 @@
                 </select>
               </label>
               <label>
+                <span>後段状態</span>
+                <select id="report-filter-post-check-status">
+                  <option value="">すべて</option>
+                  <option value="ok">問題なし</option>
+                  <option value="review">要確認</option>
+                  <option value="pending">確認待ち</option>
+                  <option value="none">対象なし</option>
+                </select>
+              </label>
+              <label>
                 <span>機関</span>
                 <input id="report-filter-organization" type="text" placeholder="機関名で絞込">
               </label>
@@ -287,6 +297,10 @@
                   <div>
                     <dt>保存日時</dt>
                     <dd id="report-detail-evaluated-at">-</dd>
+                  </div>
+                  <div>
+                    <dt>後段チェック</dt>
+                    <dd id="report-detail-post-check">-</dd>
                   </div>
                   <div>
                     <dt>判定根拠</dt>
@@ -466,6 +480,6 @@
     </div>
   </div>
 
-  <script src="./app.js?v=20260317a"></script>
+  <script src="./app.js?v=20260317f"></script>
 </body>
 </html>

@@ -63,6 +63,10 @@ const cases = vm.runInContext(`
   }
 
   setBase();
+  state.judgement.answers = { monthType: "", placeType: "", actionType: "" };
+  const beforeAnswers = buildJudgementSnapshot();
+
+  setBase();
   state.judgement.answers = { monthType: "それ以外", placeType: "", actionType: "" };
   const monthOnly = buildJudgementSnapshot();
 
@@ -74,7 +78,24 @@ const cases = vm.runInContext(`
   state.judgement.answers = { monthType: "それ以外", placeType: "外出先", actionType: "訪問" };
   const fullyAnswered = buildJudgementSnapshot();
 
+  state.judgement.clientId = "1001";
+  state.judgement.organizationId = "21";
+  state.judgement.serviceId = "301";
+  state.judgement.staffId = "501";
+  state.judgement.targetMonth = "2026-03";
+  state.judgement.historyRecords = getSampleJudgementHistoryRecords("1001", "2026-03");
+  state.judgement.answers = { monthType: "モニタリング月", placeType: "外出先", actionType: "" };
+  const hospitalActionQuestion = getVisibleQuestions().find((question) => question.key === "actionType");
+  const hospitalActionOptions = hospitalActionQuestion.getOptions(state.judgement.answers).map((item) => item.value);
+  state.judgement.answers.actionType = "情報共有";
+  const hospitalAnswered = buildJudgementSnapshot();
+
   return [
+    {
+      name: "monitoring remains before month answer in welfare-service context",
+      actual: beforeAnswers.candidates.some((item) => item.additionCode === "monitoring"),
+      expected: true,
+    },
     {
       name: "single candidate still asks placeType when unanswered",
       actual: monthOnly.currentQuestion ? monthOnly.currentQuestion.key : "",
@@ -94,6 +115,16 @@ const cases = vm.runInContext(`
       name: "post-check starts only after all visible questions answered",
       actual: fullyAnswered.saveSummary,
       expected: "自動確定で保存",
+    },
+    {
+      name: "outside action options include 情報共有 for hospital info path",
+      actual: hospitalActionOptions.includes("情報共有"),
+      expected: true,
+    },
+    {
+      name: "hospital info I remains reachable after choosing 情報共有",
+      actual: hospitalAnswered.candidates.some((item) => item.additionCode === "hospital_info_i"),
+      expected: true,
     },
   ];
 })()

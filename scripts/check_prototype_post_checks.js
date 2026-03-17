@@ -89,6 +89,8 @@ function evaluatePostChecks(additionCode, input) {
   const history = getCandidateHistory(additionCode, input.clientId, input.targetMonth);
   return addition.postCheckRules.map((rule) => evaluateRule(rule, {
     history,
+    clientId: input.clientId,
+    targetMonth: input.targetMonth,
     currentActionType: input.actionType,
     currentOrganizationId: input.organizationId,
   }));
@@ -134,6 +136,36 @@ const cases = [
       actionType: "サービス提供場面確認",
     }).filter((item) => item.message.includes("同月2回以上の訪問が必要")).length,
     expected: 0,
+  },
+  {
+    name: "monitoring monthly once is ok when no history exists",
+    actual: evaluatePostChecks("monitoring", {
+      clientId: "1001",
+      targetMonth: "2026-03",
+      organizationId: "11",
+      actionType: "サービス提供場面確認",
+    }).some((item) => item.level === "review"),
+    expected: false,
+  },
+  {
+    name: "hospital info I monthly once becomes review when one history already exists",
+    actual: evaluatePostChecks("hospital_info_i", {
+      clientId: "1003",
+      targetMonth: "2026-01",
+      organizationId: "21",
+      actionType: "情報共有",
+    }).some((item) => item.message.includes("同月1回まで") && item.level === "review"),
+    expected: true,
+  },
+  {
+    name: "hospital info II detects incompatible I history in same month",
+    actual: evaluatePostChecks("hospital_info_ii", {
+      clientId: "1003",
+      targetMonth: "2026-01",
+      organizationId: "21",
+      actionType: "情報共有",
+    }).some((item) => item.message.includes("Iとの併算定不可") && item.level === "review"),
+    expected: true,
   },
   {
     name: "exclusive rule engine can detect conflicting addition history",

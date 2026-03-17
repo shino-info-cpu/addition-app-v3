@@ -24,6 +24,7 @@ $items = $repository->fetchRecords([
     'organization' => Request::queryString('organization'),
     'addition' => Request::queryString('addition'),
     'status' => Request::queryString('status'),
+    'post_check_status' => Request::queryString('post_check_status'),
     'staff' => Request::queryString('staff'),
     'limit' => Request::queryInt('limit', 200),
 ]);

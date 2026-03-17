@@ -19,7 +19,7 @@ Scripts should target the v3 schema only.
   - Generates `relation_seed_reviewed.sql`
 - `check_prototype_additions.js`
   - Reads the current prototype addition definitions from `app/frontend/app.js`
-  - Verifies the minimum expected candidate behavior for the current 4 trial branches
+  - Verifies the minimum expected candidate behavior for the current 7 trial branches
   - Useful for catching broad/incorrect month or action conditions before FTP deployment
 - `check_prototype_post_checks.js`
   - Reads the current prototype addition definitions and sample report records from `app/frontend/app.js`
