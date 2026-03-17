@@ -19,7 +19,7 @@ Scripts should target the v3 schema only.
   - Generates `relation_seed_reviewed.sql`
 - `check_prototype_additions.js`
   - Reads the current prototype addition definitions from `app/frontend/app.js`
-  - Verifies the minimum expected candidate behavior for the current 7 trial branches
+  - Verifies the minimum expected candidate behavior for the current 10 trial branches
   - Useful for catching broad/incorrect month or action conditions before FTP deployment
 - `check_prototype_post_checks.js`
   - Reads the current prototype addition definitions and sample report records from `app/frontend/app.js`
@@ -29,3 +29,7 @@ Scripts should target the v3 schema only.
   - Loads `app/frontend/app.js` with a light DOM stub
   - Verifies that the UI does not jump to post-check before visible questions are answered
   - Useful for catching premature "必要な設問はここまでです" regressions
+- `check_resolved_organization_types.js`
+  - Loads `app/frontend/app.js` with a light DOM stub
+  - Verifies that organization type inference works for hospital / visiting nurse / school / nursery / care-manager / company / employment-support-center examples
+  - Useful before adding organization-type-dependent additions such as school, nursery, or care-manager related branches

@@ -209,6 +209,79 @@ const data = {
       ],
       postCheck: "訪問以外で提供した情報内容と提供方法を記録する。",
     },
+    {
+      additionCode: "edu_support",
+      additionName: "保・教支援",
+      ruleStatus: "一部確定",
+      confirmedRules: [
+        "児対象のみ",
+        "学校・保育・企業・就業生活支援センター等への情報共有で候補に残す",
+      ],
+      provisionalRules: [
+        "訪問面接枝と会議参加枝はまだ未実装",
+        "集団生活施設など、学校・保育以外の対象境界はまだ仮置き",
+      ],
+      priority: 50,
+      targetTypes: ["児"],
+      monthTypes: ["モニタリング月", "計画作成月", "それ以外"],
+      organizationGroups: ["福祉サービス等提供機関"],
+      organizationTypes: ["学校", "保育", "企業", "障害者就業・生活支援センター"],
+      serviceDecisionInclude: ["障害福祉以外の福祉サービス"],
+      placeTypes: ["自事業所内", "外出先"],
+      actionTypes: ["情報共有"],
+      postCheckRules: [],
+      postCheck: "情報共有先と支援内容の検討協力内容を記録する。",
+    },
+    {
+      additionCode: "home_collab",
+      additionName: "居宅連携",
+      ruleStatus: "一部確定",
+      confirmedRules: [
+        "者対象のみ",
+        "ケアマネ事業所への情報共有で候補に残す",
+        "同月2回まで",
+      ],
+      provisionalRules: [
+        "訪問面接枝と会議参加枝はまだ未実装",
+        "ケアマネ利用開始の事実確認はまだ別設問化していない",
+      ],
+      priority: 60,
+      targetTypes: ["者"],
+      monthTypes: ["モニタリング月", "計画作成月", "それ以外"],
+      organizationGroups: ["福祉サービス等提供機関"],
+      organizationTypes: ["ケアマネ事業所"],
+      placeTypes: ["自事業所内", "外出先"],
+      actionTypes: ["情報共有"],
+      postCheckRules: [
+        { code: "monthly_limit_per_client", limit: 2, label: "同月2回まで" },
+      ],
+      postCheck: "ケアマネへ提供した情報と協力内容を記録する。月2回まで。",
+    },
+    {
+      additionCode: "home_work_collab",
+      additionName: "居宅連携（就労）",
+      ruleStatus: "一部確定",
+      confirmedRules: [
+        "者対象のみ",
+        "企業または障害者就業・生活支援センター等への情報共有で候補に残す",
+        "同月2回まで",
+      ],
+      provisionalRules: [
+        "訪問面接枝と会議参加枝はまだ未実装",
+        "新規雇用開始の事実確認はまだ別設問化していない",
+      ],
+      priority: 70,
+      targetTypes: ["者"],
+      monthTypes: ["モニタリング月", "計画作成月", "それ以外"],
+      organizationGroups: ["福祉サービス等提供機関"],
+      organizationTypes: ["企業", "障害者就業・生活支援センター"],
+      placeTypes: ["自事業所内", "外出先"],
+      actionTypes: ["情報共有"],
+      postCheckRules: [
+        { code: "monthly_limit_per_client", limit: 2, label: "同月2回まで" },
+      ],
+      postCheck: "就労先や就業生活支援センター等へ提供した情報を記録する。月2回まで。",
+    },
   ],
   reportRecords: [
     { recordId: "r1", targetMonth: "2026-03", performedAt: "2026-03-14 09:05", clientId: "1001", organizationId: "21", serviceId: "301", staffId: "501", additionCode: "mededu", actionType: "情報共有", finalStatus: "自動確定", postCheckStatus: "ok", postCheckSummary: "同月1回まで。今月既存0件で範囲内です。", evaluatedAt: "2026-03-14 09:20", rationale: "病院グループ / 計画作成月 / 自事業所内 / 情報共有", savedNote: "病院と支援方針を共有し、今後の通院支援計画を確認した。" },
@@ -1179,6 +1252,7 @@ function buildJudgementSavePayload(snapshot) {
       client_name: snapshot.client.clientName,
       organization_id: snapshot.organization.organizationId,
       organization_name: snapshot.organization.organizationName,
+      organization_type: deriveResolvedOrganizationType(snapshot.organization, snapshot.service),
       organization_group: snapshot.organizationGroup,
       service_definition_id: snapshot.service.serviceId,
       service_name: snapshot.service.serviceName,
@@ -2222,7 +2296,7 @@ function renderClientTable() {
 function renderOrganizationTable() {
   const rows = getMasterOrganizations().filter((organization) => matchesQuickSearch([
     organization.organizationName,
-    organization.organizationType,
+    getDisplayOrganizationType(organization),
     getOrganizationGroupLabel(organization),
     getOrganizationServiceSummary(organization),
   ]));
@@ -2244,7 +2318,7 @@ function renderOrganizationTable() {
     : rows.map((organization) => `
       <tr class="${organization.organizationId === state.relations.selectedOrganizationId ? "is-current-row" : ""}" data-organization-id="${escapeHtml(organization.organizationId)}">
         <td>${escapeHtml(organization.organizationName)}</td>
-        <td>${escapeHtml(organization.organizationType)}</td>
+        <td>${escapeHtml(getDisplayOrganizationType(organization))}</td>
         <td>${escapeHtml(getOrganizationGroupLabel(organization))}</td>
         <td>${escapeHtml(getOrganizationServiceSummary(organization))}</td>
       </tr>
@@ -2332,7 +2406,7 @@ function renderOrganizationServicePanel() {
     ? organization.organizationName
     : "機関を選択してください";
   dom.masters.organizationSelectedGroup.textContent = organization
-    ? `${organization.organizationType || "-"} / ${getOrganizationGroupLabel(organization)}`
+    ? `${getDisplayOrganizationType(organization)} / ${getOrganizationGroupLabel(organization)}`
     : "-";
 
   renderSelectOptions(
@@ -2776,7 +2850,7 @@ function getJudgementFacts(includeAnswers) {
   return {
     targetType: client?.targetType ?? "",
     organizationGroup: getOrganizationGroupLabel(organization, service),
-    organizationType: organization?.organizationType ?? "",
+    organizationType: deriveResolvedOrganizationType(organization, service),
     serviceDecisionCategories,
     monthType: includeAnswers ? state.judgement.answers.monthType : "",
     placeType: includeAnswers ? state.judgement.answers.placeType : "",
@@ -3237,12 +3311,17 @@ function normalizeApiClient(item) {
 }
 
 function normalizeApiOrganization(item) {
+  const resolvedOrganizationType = deriveResolvedOrganizationType({
+    organizationType: item.organization_type ?? "",
+    organizationName: item.organization_name ?? "",
+    serviceNames: item.service_names || "",
+  });
   return {
     organizationId: String(item.organization_id ?? ""),
     organizationCode: item.organization_code ?? "",
     organizationName: item.organization_name ?? "",
-    organizationType: item.organization_type ?? "",
-    organizationGroup: deriveOrganizationGroupFromType(item.organization_type),
+    organizationType: resolvedOrganizationType,
+    organizationGroup: deriveOrganizationGroupFromType(resolvedOrganizationType),
     groupNames: item.group_names || "-",
     serviceNames: item.service_names || "-",
   };
@@ -3304,13 +3383,18 @@ function normalizeApiClientEnrollment(item) {
 }
 
 function normalizeApiJudgementEnrollment(item) {
+  const resolvedOrganizationType = deriveResolvedOrganizationType({
+    organizationType: item.organization_type ?? "",
+    organizationName: item.organization_name ?? "",
+    serviceNames: item.service_name ?? "",
+  });
   return {
     enrollmentId: String(item.client_enrollment_id ?? ""),
     clientId: String(item.client_id ?? ""),
     organizationId: String(item.organization_id ?? ""),
     organizationName: item.organization_name ?? "",
-    organizationType: item.organization_type ?? "",
-    organizationGroup: item.organization_group || deriveOrganizationGroupFromType(item.organization_type),
+    organizationType: resolvedOrganizationType,
+    organizationGroup: item.organization_group || deriveOrganizationGroupFromType(resolvedOrganizationType),
     serviceId: String(item.service_definition_id ?? ""),
     serviceName: item.service_name ?? "",
     serviceCategory: item.service_category ?? "",
@@ -3407,7 +3491,31 @@ function deriveResolvedOrganizationType(organization, service = null) {
     return "病院";
   }
 
+  if (sourceTexts.includes("就業・生活支援センター") || sourceTexts.includes("就労支援センター")) {
+    return "障害者就業・生活支援センター";
+  }
+
+  if (sourceTexts.includes("ケアマネ")) {
+    return "ケアマネ事業所";
+  }
+
+  if (sourceTexts.includes("保育") || sourceTexts.includes("保育所") || sourceTexts.includes("保育園") || sourceTexts.includes("幼稚園")) {
+    return "保育";
+  }
+
+  if (sourceTexts.includes("学校")) {
+    return "学校";
+  }
+
+  if (sourceTexts.includes("会社") || sourceTexts.includes("企業")) {
+    return "企業";
+  }
+
   return "";
+}
+
+function getDisplayOrganizationType(organization, service = null) {
+  return deriveResolvedOrganizationType(organization, service) || "-";
 }
 
 function deriveOrganizationGroupFromType(organizationType) {

@@ -74,6 +74,9 @@ const intensive = getAddition("intensive");
 const monitoring = getAddition("monitoring");
 const hospitalInfoI = getAddition("hospital_info_i");
 const hospitalInfoII = getAddition("hospital_info_ii");
+const eduSupport = getAddition("edu_support");
+const homeCollab = getAddition("home_collab");
+const homeWorkCollab = getAddition("home_work_collab");
 const conference = getAddition("conference");
 const discharge = getAddition("discharge");
 
@@ -200,6 +203,123 @@ const cases = [
       serviceDecisionCategories: ["医療関連"],
       monthType: "それ以外",
       placeType: "外出先",
+      actionType: "情報共有",
+    }),
+    expected: false,
+  },
+  {
+    name: "edu support remains for child school info sharing",
+    actual: candidateMatches(eduSupport, {
+      targetType: "児",
+      organizationGroup: "福祉サービス等提供機関",
+      organizationType: "学校",
+      serviceDecisionCategories: ["障害福祉以外の福祉サービス"],
+      monthType: "計画作成月",
+      placeType: "自事業所内",
+      actionType: "情報共有",
+    }),
+    expected: true,
+  },
+  {
+    name: "edu support remains for child nursery info sharing outside office",
+    actual: candidateMatches(eduSupport, {
+      targetType: "児",
+      organizationGroup: "福祉サービス等提供機関",
+      organizationType: "保育",
+      serviceDecisionCategories: ["障害福祉以外の福祉サービス"],
+      monthType: "それ以外",
+      placeType: "外出先",
+      actionType: "情報共有",
+    }),
+    expected: true,
+  },
+  {
+    name: "edu support does not remain for adult target",
+    actual: candidateMatches(eduSupport, {
+      targetType: "者",
+      organizationGroup: "福祉サービス等提供機関",
+      organizationType: "学校",
+      serviceDecisionCategories: ["障害福祉以外の福祉サービス"],
+      monthType: "モニタリング月",
+      placeType: "自事業所内",
+      actionType: "情報共有",
+    }),
+    expected: false,
+  },
+  {
+    name: "edu support does not remain for hospital group",
+    actual: candidateMatches(eduSupport, {
+      targetType: "児",
+      organizationGroup: "病院・訪看・薬局グループ",
+      organizationType: "病院",
+      serviceDecisionCategories: ["医療関連"],
+      monthType: "モニタリング月",
+      placeType: "自事業所内",
+      actionType: "情報共有",
+    }),
+    expected: false,
+  },
+  {
+    name: "home collab remains for adult care-manager info sharing",
+    actual: candidateMatches(homeCollab, {
+      targetType: "者",
+      organizationGroup: "福祉サービス等提供機関",
+      organizationType: "ケアマネ事業所",
+      serviceDecisionCategories: ["障害福祉以外の福祉サービス"],
+      monthType: "それ以外",
+      placeType: "自事業所内",
+      actionType: "情報共有",
+    }),
+    expected: true,
+  },
+  {
+    name: "home collab does not remain for child target",
+    actual: candidateMatches(homeCollab, {
+      targetType: "児",
+      organizationGroup: "福祉サービス等提供機関",
+      organizationType: "ケアマネ事業所",
+      serviceDecisionCategories: ["障害福祉以外の福祉サービス"],
+      monthType: "それ以外",
+      placeType: "自事業所内",
+      actionType: "情報共有",
+    }),
+    expected: false,
+  },
+  {
+    name: "home work collab remains for adult company info sharing",
+    actual: candidateMatches(homeWorkCollab, {
+      targetType: "者",
+      organizationGroup: "福祉サービス等提供機関",
+      organizationType: "企業",
+      serviceDecisionCategories: ["障害福祉以外の福祉サービス"],
+      monthType: "計画作成月",
+      placeType: "外出先",
+      actionType: "情報共有",
+    }),
+    expected: true,
+  },
+  {
+    name: "home work collab remains for employment support center info sharing",
+    actual: candidateMatches(homeWorkCollab, {
+      targetType: "者",
+      organizationGroup: "福祉サービス等提供機関",
+      organizationType: "障害者就業・生活支援センター",
+      serviceDecisionCategories: ["障害福祉以外の福祉サービス"],
+      monthType: "モニタリング月",
+      placeType: "自事業所内",
+      actionType: "情報共有",
+    }),
+    expected: true,
+  },
+  {
+    name: "home work collab does not remain for school",
+    actual: candidateMatches(homeWorkCollab, {
+      targetType: "者",
+      organizationGroup: "福祉サービス等提供機関",
+      organizationType: "学校",
+      serviceDecisionCategories: ["障害福祉以外の福祉サービス"],
+      monthType: "モニタリング月",
+      placeType: "自事業所内",
       actionType: "情報共有",
     }),
     expected: false,

@@ -148,6 +148,26 @@ const cases = [
     expected: false,
   },
   {
+    name: "home collab monthly limit of two is ok with one existing history",
+    actual: evaluateRule(
+      getAddition("home_collab").postCheckRules[0],
+      {
+        history: [{ recordId: "x1" }],
+      },
+    ).level,
+    expected: "ok",
+  },
+  {
+    name: "home work collab monthly limit of two becomes review with two existing histories",
+    actual: evaluateRule(
+      getAddition("home_work_collab").postCheckRules[0],
+      {
+        history: [{ recordId: "x1" }, { recordId: "x2" }],
+      },
+    ).level,
+    expected: "review",
+  },
+  {
     name: "hospital info I monthly once becomes review when one history already exists",
     actual: evaluatePostChecks("hospital_info_i", {
       clientId: "1003",
