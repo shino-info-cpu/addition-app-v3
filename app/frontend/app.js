@@ -35,16 +35,20 @@ const data = {
   // temporary trial settings for finalized制度定義.
   additions: [
     {
-      additionCode: "mededu",
-      additionName: "医療・保育・教育機関等連携加算",
+      additionCode: "mededu_info",
+      additionFamilyCode: "mededu",
+      additionFamilyName: "医療・保育・教育機関等連携加算",
+      additionName: "医療・保育・教育機関等連携加算（情報共有）",
+      historyAdditionCodes: ["mededu", "mededu_info", "mededu_interview", "mededu_meeting"],
       ruleStatus: "一部確定",
       confirmedRules: [
-        "モニタリング月または計画作成月で候補に残す",
+        "情報共有で候補に残す",
         "障害福祉サービスは除外する",
+        "後段では同グループ月1回までを確認する",
       ],
       provisionalRules: [
-        "機関グループの範囲は仮置き",
-        "行為を情報共有・会議・面談の3区分で足りるかは未確定",
+        "元資料上は月区分の限定が薄いが、現段階では従来どおりモニタリング月または計画作成月に寄せている",
+        "機関グループの最終境界はまだ仮置き",
       ],
       priority: 10,
       targetTypes: ["共通", "児", "者"],
@@ -53,11 +57,69 @@ const data = {
       serviceDecisionInclude: ["医療関連", "障害福祉以外の福祉サービス", "相談支援"],
       serviceDecisionExclude: ["障害福祉サービス"],
       placeTypes: ["自事業所内", "外出先"],
-      actionTypes: ["情報共有", "会議", "面談"],
+      actionTypes: ["情報共有"],
       postCheckRules: [
-        { code: "monthly_limit_per_client", limit: 1, label: "同月1回まで" },
+        { code: "monthly_limit_per_client_by_organization_group", limit: 1, label: "同グループ月1回まで" },
       ],
-      postCheck: "月1回まで。記録文に情報共有先を残す。",
+      postCheck: "相手先グループごとに月1回まで。情報共有先を記録する。",
+    },
+    {
+      additionCode: "mededu_interview",
+      additionFamilyCode: "mededu",
+      additionFamilyName: "医療・保育・教育機関等連携加算",
+      additionName: "医療・保育・教育機関等連携加算（面談）",
+      historyAdditionCodes: ["mededu", "mededu_info", "mededu_interview", "mededu_meeting"],
+      ruleStatus: "一部確定",
+      confirmedRules: [
+        "モニタリング月または計画作成月で候補に残す",
+        "面談のみ",
+        "障害福祉サービスは除外する",
+      ],
+      provisionalRules: [
+        "初回加算との関係や退院・退所加算との関係はまだ後段へ未反映",
+        "対象機関を福祉サービス等提供機関だけに絞っているが、制度境界の細部は未確定",
+      ],
+      priority: 11,
+      targetTypes: ["共通", "児", "者"],
+      monthTypes: ["モニタリング月", "計画作成月"],
+      organizationGroups: ["福祉サービス等提供機関"],
+      serviceDecisionInclude: ["障害福祉以外の福祉サービス", "相談支援"],
+      serviceDecisionExclude: ["障害福祉サービス"],
+      placeTypes: ["自事業所内", "外出先"],
+      actionTypes: ["面談"],
+      postCheckRules: [
+        { code: "monthly_limit_per_client_by_organization_group", limit: 1, label: "同グループ月1回まで" },
+      ],
+      postCheck: "面談相手と受けた情報を記録する。",
+    },
+    {
+      additionCode: "mededu_meeting",
+      additionFamilyCode: "mededu",
+      additionFamilyName: "医療・保育・教育機関等連携加算",
+      additionName: "医療・保育・教育機関等連携加算（会議）",
+      historyAdditionCodes: ["mededu", "mededu_info", "mededu_interview", "mededu_meeting"],
+      ruleStatus: "一部確定",
+      confirmedRules: [
+        "モニタリング月または計画作成月で候補に残す",
+        "会議のみ",
+        "障害福祉サービスは除外する",
+      ],
+      provisionalRules: [
+        "初回加算との関係や担当者会議加算との関係はまだ後段へ未反映",
+        "対象機関を福祉サービス等提供機関だけに絞っているが、制度境界の細部は未確定",
+      ],
+      priority: 12,
+      targetTypes: ["共通", "児", "者"],
+      monthTypes: ["モニタリング月", "計画作成月"],
+      organizationGroups: ["福祉サービス等提供機関"],
+      serviceDecisionInclude: ["障害福祉以外の福祉サービス", "相談支援"],
+      serviceDecisionExclude: ["障害福祉サービス"],
+      placeTypes: ["自事業所内", "外出先"],
+      actionTypes: ["会議"],
+      postCheckRules: [
+        { code: "monthly_limit_per_client_by_organization_group", limit: 1, label: "同グループ月1回まで" },
+      ],
+      postCheck: "会議参加先と得た情報を記録する。",
     },
     {
       additionCode: "intensive",
@@ -1268,7 +1330,7 @@ function buildJudgementSavePayload(snapshot) {
     result: {
       addition_code: snapshot.topCandidate?.additionCode ?? "",
       addition_name: snapshot.displayAdditionName,
-      primary_addition_name: snapshot.topCandidate?.additionName ?? "",
+      primary_addition_name: snapshot.topCandidate?.additionFamilyName ?? snapshot.topCandidate?.additionName ?? "",
       candidate_count: snapshot.candidates.length,
       candidate_names: snapshot.candidates.map((candidate) => candidate.additionName),
       post_check: snapshot.postCheckSummary,
@@ -1500,6 +1562,7 @@ function evaluateJudgementPostChecks({ candidates, currentQuestion, topCandidate
   const evaluations = rules.map((rule) => evaluatePostCheckRule(rule, {
     candidate: topCandidate,
     currentOrganizationId: organization?.organizationId ?? "",
+    currentOrganizationGroup: getOrganizationGroupLabel(organization),
   }));
   const visibleEvaluations = evaluations.filter((item) => item.message);
   const warnings = evaluations.filter((item) => item.level === "review");
@@ -1544,6 +1607,33 @@ function evaluatePostCheckRule(rule, context) {
     return {
       level: "ok",
       message: `${rule.label}。今月既存${existingCount}件で範囲内です。`,
+    };
+  }
+
+  if (rule.code === "monthly_limit_per_client_by_organization_group") {
+    const currentGroup = String(context.currentOrganizationGroup ?? "").trim();
+    if (!currentGroup) {
+      return {
+        level: "review",
+        message: `${rule.label}。相手先グループを特定できないため要確認です。`,
+      };
+    }
+
+    const sameGroupHistory = candidateHistory.filter((record) => (
+      getResolvedReportRecordOrganizationGroup(record) === currentGroup
+    ));
+    const existingCount = sameGroupHistory.length;
+
+    if (existingCount >= Number(rule.limit ?? 0)) {
+      return {
+        level: "review",
+        message: `${rule.label}（${currentGroup}）。今月すでに${existingCount}件あります。`,
+      };
+    }
+
+    return {
+      level: "ok",
+      message: `${rule.label}（${currentGroup}）。今月既存${existingCount}件で範囲内です。`,
     };
   }
 
@@ -1636,16 +1726,47 @@ function evaluatePostCheckRule(rule, context) {
 
 function getJudgementHistoryRecordsForCandidate(candidate) {
   const candidateCode = String(candidate?.additionCode ?? "").trim();
+  const historyCodes = Array.isArray(candidate?.historyAdditionCodes)
+    ? candidate.historyAdditionCodes.map((item) => String(item ?? "").trim()).filter(Boolean)
+    : [];
   const candidateName = normalizeText(candidate?.additionName ?? "");
+  const familyName = normalizeText(candidate?.additionFamilyName ?? "");
 
   return state.judgement.historyRecords.filter((record) => {
     const recordCode = String(record.additionCode ?? "").trim();
-    if (candidateCode && recordCode) {
-      return recordCode === candidateCode;
+    if (recordCode) {
+      if (historyCodes.length > 0) {
+        return historyCodes.includes(recordCode);
+      }
+      if (candidateCode) {
+        return recordCode === candidateCode;
+      }
     }
 
-    return normalizeText(record.additionName ?? "") === candidateName;
+    const normalizedRecordName = normalizeText(record.additionName ?? "");
+    return normalizedRecordName === candidateName
+      || (familyName && normalizedRecordName === familyName);
   });
+}
+
+function getResolvedReportRecordOrganizationGroup(record) {
+  const explicitGroup = String(record?.organizationGroup ?? "").trim();
+  if (explicitGroup) {
+    return explicitGroup;
+  }
+
+  const organization = getOrganizationById(record?.organizationId);
+  const service = getServiceById(record?.serviceId);
+  if (organization) {
+    return getOrganizationGroupLabel(organization, service);
+  }
+
+  const resolvedType = deriveResolvedOrganizationType({
+    organizationType: record?.organizationType ?? "",
+    organizationName: record?.organizationName ?? "",
+    serviceNames: record?.serviceName ?? "",
+  });
+  return deriveOrganizationGroupFromType(resolvedType);
 }
 
 function renderJudgementSave(snapshot) {
@@ -3043,6 +3164,9 @@ function enrichSampleReportRecord(record) {
   const service = getServiceById(record.serviceId);
   const staff = getStaffById(record.staffId);
   const addition = data.additions.find((item) => item.additionCode === record.additionCode);
+  const legacyAdditionNames = {
+    mededu: "医療・保育・教育機関等連携加算",
+  };
   return {
     ...record,
     clientName: client?.clientName ?? "-",
@@ -3050,7 +3174,7 @@ function enrichSampleReportRecord(record) {
     organizationName: organization?.organizationName ?? "-",
     serviceName: service?.serviceName ?? "-",
     staffName: staff?.staffName ?? "-",
-    additionName: addition?.additionName ?? "-",
+    additionName: record.additionName || addition?.additionName || legacyAdditionNames[record.additionCode] || "-",
   };
 }
 
@@ -3404,6 +3528,11 @@ function normalizeApiJudgementEnrollment(item) {
 }
 
 function normalizeApiReportRecord(item) {
+  const resolvedOrganizationType = deriveResolvedOrganizationType({
+    organizationType: item.organization_type ?? "",
+    organizationName: item.organization_name ?? "",
+    serviceNames: item.service_name ?? "",
+  });
   return {
     recordId: String(item.evaluation_case_id ?? ""),
     targetMonth: item.target_month ?? "",
@@ -3413,6 +3542,8 @@ function normalizeApiReportRecord(item) {
     targetType: item.target_type ?? "-",
     organizationId: String(item.organization_id ?? ""),
     organizationName: item.organization_name ?? "-",
+    organizationType: resolvedOrganizationType,
+    organizationGroup: item.organization_group || deriveOrganizationGroupFromType(resolvedOrganizationType),
     serviceId: String(item.service_definition_id ?? ""),
     serviceName: item.service_name ?? "-",
     staffId: String(item.staff_id ?? ""),

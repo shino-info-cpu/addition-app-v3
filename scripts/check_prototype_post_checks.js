@@ -6,14 +6,16 @@ const appJsPath = path.resolve(__dirname, "../app/frontend/app.js");
 const source = fs.readFileSync(appJsPath, "utf8");
 
 const additionsMatch = source.match(/additions:\s*(\[[\s\S]*?\])\s*,\s*reportRecords:/);
+const organizationsMatch = source.match(/organizations:\s*(\[[\s\S]*?\])\s*,\s*services:/);
 const reportRecordsMatch = source.match(/reportRecords:\s*(\[[\s\S]*?\])\s*,\s*};/);
 
-if (!additionsMatch || !reportRecordsMatch) {
-  console.error("Could not extract prototype additions or sample report records from app.js");
+if (!additionsMatch || !organizationsMatch || !reportRecordsMatch) {
+  console.error("Could not extract prototype additions, organizations, or sample report records from app.js");
   process.exit(1);
 }
 
 const additions = vm.runInNewContext(`(${additionsMatch[1]})`);
+const organizations = vm.runInNewContext(`(${organizationsMatch[1]})`);
 const reportRecords = vm.runInNewContext(`(${reportRecordsMatch[1]})`);
 
 function getAddition(code) {
@@ -24,9 +26,12 @@ function getAddition(code) {
   return addition;
 }
 
-function getCandidateHistory(additionCode, clientId, targetMonth) {
+function getCandidateHistory(addition, clientId, targetMonth) {
+  const historyCodes = Array.isArray(addition.historyAdditionCodes)
+    ? addition.historyAdditionCodes.map((item) => String(item ?? "").trim()).filter(Boolean)
+    : [String(addition.additionCode ?? "").trim()].filter(Boolean);
   return reportRecords.filter((record) => (
-    record.additionCode === additionCode
+    historyCodes.includes(String(record.additionCode ?? "").trim())
     && record.clientId === clientId
     && record.targetMonth === targetMonth
   ));
@@ -38,6 +43,21 @@ function evaluateRule(rule, context) {
     return existingCount >= Number(rule.limit ?? 0)
       ? { level: "review", message: `${rule.label}。今月すでに${existingCount}件あります。` }
       : { level: "ok", message: `${rule.label}。今月既存${existingCount}件で範囲内です。` };
+  }
+
+  if (rule.code === "monthly_limit_per_client_by_organization_group") {
+    const currentGroup = String(context.currentOrganizationGroup ?? "").trim();
+    if (!currentGroup) {
+      return { level: "review", message: `${rule.label}。相手先グループを特定できないため要確認です。` };
+    }
+
+    const history = Array.isArray(context.history) ? context.history : [];
+    const sameGroupHistory = history.filter((record) => resolveRecordOrganizationGroup(record) === currentGroup);
+    const existingCount = sameGroupHistory.length;
+
+    return existingCount >= Number(rule.limit ?? 0)
+      ? { level: "review", message: `${rule.label}（${currentGroup}）。今月すでに${existingCount}件あります。` }
+      : { level: "ok", message: `${rule.label}（${currentGroup}）。今月既存${existingCount}件で範囲内です。` };
   }
 
   if (rule.code === "monthly_action_count_min") {
@@ -84,28 +104,51 @@ function evaluateRule(rule, context) {
   return { level: "ok", message: "" };
 }
 
+function resolveRecordOrganizationGroup(record) {
+  const explicitGroup = String(record.organizationGroup ?? "").trim();
+  if (explicitGroup) {
+    return explicitGroup;
+  }
+
+  const organization = organizations.find((item) => String(item.organizationId ?? "") === String(record.organizationId ?? ""));
+  return String(organization?.organizationGroup ?? "").trim();
+}
+
 function evaluatePostChecks(additionCode, input) {
   const addition = getAddition(additionCode);
-  const history = getCandidateHistory(additionCode, input.clientId, input.targetMonth);
+  const history = getCandidateHistory(addition, input.clientId, input.targetMonth);
   return addition.postCheckRules.map((rule) => evaluateRule(rule, {
     history,
     clientId: input.clientId,
     targetMonth: input.targetMonth,
     currentActionType: input.actionType,
     currentOrganizationId: input.organizationId,
+    currentOrganizationGroup: input.organizationGroup,
   }));
 }
 
 const cases = [
   {
-    name: "mededu monthly once becomes review when one history already exists",
-    actual: evaluatePostChecks("mededu", {
+    name: "mededu same-group monthly limit becomes review when one history already exists",
+    actual: evaluatePostChecks("mededu_info", {
       clientId: "1001",
       targetMonth: "2026-03",
       organizationId: "21",
+      organizationGroup: "病院・訪看・薬局グループ",
       actionType: "情報共有",
     }).some((item) => item.level === "review"),
     expected: true,
+  },
+  {
+    name: "mededu group limit still allows a different organization group",
+    actual: evaluateRule(
+      getAddition("mededu_info").postCheckRules[0],
+      {
+        currentOrganizationGroup: "福祉サービス等提供機関",
+        history: [{ recordId: "x1", organizationGroup: "病院・訪看・薬局グループ" }],
+      },
+    ).level,
+    expected: "ok",
   },
   {
     name: "intensive visit requires at least two visits",

@@ -69,7 +69,9 @@ function getAddition(code) {
   return addition;
 }
 
-const mededu = getAddition("mededu");
+const mededuInfo = getAddition("mededu_info");
+const mededuInterview = getAddition("mededu_interview");
+const mededuMeeting = getAddition("mededu_meeting");
 const intensive = getAddition("intensive");
 const monitoring = getAddition("monitoring");
 const hospitalInfoI = getAddition("hospital_info_i");
@@ -82,8 +84,8 @@ const discharge = getAddition("discharge");
 
 const cases = [
   {
-    name: "mededu excludes 障害福祉サービス",
-    actual: candidateMatches(mededu, {
+    name: "mededu info excludes 障害福祉サービス",
+    actual: candidateMatches(mededuInfo, {
       targetType: "児",
       organizationGroup: "福祉サービス等提供機関",
       serviceDecisionCategories: ["障害福祉サービス"],
@@ -94,8 +96,8 @@ const cases = [
     expected: false,
   },
   {
-    name: "mededu remains for 障害福祉以外の福祉サービス",
-    actual: candidateMatches(mededu, {
+    name: "mededu info remains for 障害福祉以外の福祉サービス",
+    actual: candidateMatches(mededuInfo, {
       targetType: "児",
       organizationGroup: "福祉サービス等提供機関",
       serviceDecisionCategories: ["障害福祉以外の福祉サービス"],
@@ -104,6 +106,56 @@ const cases = [
       actionType: "情報共有",
     }),
     expected: true,
+  },
+  {
+    name: "mededu interview remains for welfare-service interview",
+    actual: candidateMatches(mededuInterview, {
+      targetType: "児",
+      organizationGroup: "福祉サービス等提供機関",
+      serviceDecisionCategories: ["障害福祉以外の福祉サービス"],
+      monthType: "モニタリング月",
+      placeType: "外出先",
+      actionType: "面談",
+    }),
+    expected: true,
+  },
+  {
+    name: "mededu interview does not remain for hospital group",
+    actual: candidateMatches(mededuInterview, {
+      targetType: "児",
+      organizationGroup: "病院・訪看・薬局グループ",
+      organizationType: "病院",
+      serviceDecisionCategories: ["医療関連"],
+      monthType: "モニタリング月",
+      placeType: "外出先",
+      actionType: "面談",
+    }),
+    expected: false,
+  },
+  {
+    name: "mededu meeting remains for welfare-service meeting",
+    actual: candidateMatches(mededuMeeting, {
+      targetType: "者",
+      organizationGroup: "福祉サービス等提供機関",
+      serviceDecisionCategories: ["相談支援"],
+      monthType: "計画作成月",
+      placeType: "自事業所内",
+      actionType: "会議",
+    }),
+    expected: true,
+  },
+  {
+    name: "mededu meeting does not remain for hospital group",
+    actual: candidateMatches(mededuMeeting, {
+      targetType: "者",
+      organizationGroup: "病院・訪看・薬局グループ",
+      organizationType: "訪問看護",
+      serviceDecisionCategories: ["医療関連"],
+      monthType: "計画作成月",
+      placeType: "外出先",
+      actionType: "会議",
+    }),
+    expected: false,
   },
   {
     name: "intensive only remains in それ以外",
