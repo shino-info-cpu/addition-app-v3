@@ -82,9 +82,49 @@ const cases = vm.runInContext(`
       expected: "病院",
     },
     {
+      name: "clinic is inferred as hospital from organization name",
+      actual: deriveResolvedOrganizationType({ organizationType: "", organizationName: "しののめ診療所", serviceNames: "" }),
+      expected: "病院",
+    },
+    {
+      name: "medical university is inferred as hospital from organization name",
+      actual: deriveResolvedOrganizationType({ organizationType: "", organizationName: "防衛医大", serviceNames: "" }),
+      expected: "病院",
+    },
+    {
+      name: "medical center is inferred as hospital from organization name",
+      actual: deriveResolvedOrganizationType({ organizationType: "", organizationName: "しののめ医療センター", serviceNames: "" }),
+      expected: "病院",
+    },
+    {
+      name: "clinic wording is inferred as hospital from organization name",
+      actual: deriveResolvedOrganizationType({ organizationType: "", organizationName: "みらいクリニック", serviceNames: "" }),
+      expected: "病院",
+    },
+    {
       name: "visiting nurse is inferred from organization name",
       actual: deriveResolvedOrganizationType({ organizationType: "", organizationName: "訪問看護ステーションみらい", serviceNames: "" }),
       expected: "訪問看護",
+    },
+    {
+      name: "residential support facility is inferred as discharge-target residential facility",
+      actual: deriveResolvedOrganizationType({ organizationType: "", organizationName: "しののめ障害者支援施設", serviceNames: "" }),
+      expected: "入所施設",
+    },
+    {
+      name: "rehabilitation facility is inferred as discharge-target rehabilitation facility",
+      actual: deriveResolvedOrganizationType({ organizationType: "", organizationName: "しののめ更生施設", serviceNames: "" }),
+      expected: "更生施設",
+    },
+    {
+      name: "child welfare facility is inferred as discharge-target child facility",
+      actual: deriveResolvedOrganizationType({ organizationType: "", organizationName: "しののめ児童養護施設", serviceNames: "" }),
+      expected: "児童施設",
+    },
+    {
+      name: "penal facility is inferred as discharge-target penal facility",
+      actual: deriveResolvedOrganizationType({ organizationType: "", organizationName: "しののめ少年院", serviceNames: "" }),
+      expected: "刑事施設",
     },
     {
       name: "school is inferred from service names",

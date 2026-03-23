@@ -35,11 +35,40 @@ const data = {
   // temporary trial settings for finalized制度定義.
   additions: [
     {
+      additionCode: "mededu_tsuuin",
+      additionFamilyCode: "mededu",
+      additionFamilyName: "医療・保育・教育機関等連携加算",
+      additionName: "医療・保育・教育機関等連携加算（通院同行）",
+      historyAdditionCodes: ["mededu", "mededu_tsuuin", "mededu_info", "mededu_interview", "mededu_meeting"],
+      ruleStatus: "一部確定",
+      confirmedRules: [
+        "モニタリング月または計画作成月の病院等への通院同行で候補に残す",
+        "後段では同月3回までと同一病院等は月1回までを確認する",
+      ],
+      provisionalRules: [
+        "診療所は病院と同じ扱いで判定する",
+        "初回加算との関係はまだ後段へ未反映",
+      ],
+      priority: 9,
+      targetTypes: ["共通", "児", "者"],
+      monthTypes: ["モニタリング月", "計画作成月"],
+      organizationGroups: ["病院・訪看・薬局グループ"],
+      organizationTypes: ["病院"],
+      serviceDecisionInclude: ["医療関連"],
+      placeTypes: ["外出先"],
+      actionTypes: ["通院同行"],
+      postCheckRules: [
+        { code: "monthly_limit_per_client", limit: 3, additionCodes: ["mededu", "mededu_tsuuin"], recordActionTypes: ["通院同行"], label: "同月3回まで" },
+        { code: "monthly_limit_per_client_by_organization", limit: 1, additionCodes: ["mededu", "mededu_tsuuin"], recordActionTypes: ["通院同行"], label: "同一病院等は月1回まで" },
+      ],
+      postCheck: "通院同行先と同行時の情報共有内容を記録する。同月3回まで、同一病院等は月1回まで。",
+    },
+    {
       additionCode: "mededu_info",
       additionFamilyCode: "mededu",
       additionFamilyName: "医療・保育・教育機関等連携加算",
       additionName: "医療・保育・教育機関等連携加算（情報共有）",
-      historyAdditionCodes: ["mededu", "mededu_info", "mededu_interview", "mededu_meeting"],
+      historyAdditionCodes: ["mededu", "mededu_tsuuin", "mededu_info", "mededu_interview", "mededu_meeting"],
       ruleStatus: "一部確定",
       confirmedRules: [
         "情報共有で候補に残す",
@@ -59,7 +88,7 @@ const data = {
       placeTypes: ["自事業所内", "外出先"],
       actionTypes: ["情報共有"],
       postCheckRules: [
-        { code: "monthly_limit_per_client_by_organization_group", limit: 1, label: "同グループ月1回まで" },
+        { code: "monthly_limit_per_client_by_organization_group", limit: 1, additionCodes: ["mededu", "mededu_info"], recordActionTypes: ["情報共有"], label: "同グループ月1回まで" },
       ],
       postCheck: "相手先グループごとに月1回まで。情報共有先を記録する。",
     },
@@ -68,15 +97,17 @@ const data = {
       additionFamilyCode: "mededu",
       additionFamilyName: "医療・保育・教育機関等連携加算",
       additionName: "医療・保育・教育機関等連携加算（面談）",
-      historyAdditionCodes: ["mededu", "mededu_info", "mededu_interview", "mededu_meeting"],
+      historyAdditionCodes: ["mededu", "mededu_tsuuin", "mededu_info", "mededu_interview", "mededu_meeting"],
       ruleStatus: "一部確定",
       confirmedRules: [
         "モニタリング月または計画作成月で候補に残す",
         "面談のみ",
         "障害福祉サービスは除外する",
+        "初回加算算定時は不可",
+        "担当者会議加算との併算定不可を後段で確認する",
       ],
       provisionalRules: [
-        "初回加算との関係や退院・退所加算との関係はまだ後段へ未反映",
+        "退院・退所加算との関係の細部はまだ未確定",
         "対象機関を福祉サービス等提供機関だけに絞っているが、制度境界の細部は未確定",
       ],
       priority: 11,
@@ -88,24 +119,29 @@ const data = {
       placeTypes: ["自事業所内", "外出先"],
       actionTypes: ["面談"],
       postCheckRules: [
-        { code: "monthly_limit_per_client_by_organization_group", limit: 1, label: "同グループ月1回まで" },
+        { code: "blocked_if_answer_true", answerKey: "dischargeFacilityStaffOnlyInfo", blockedValue: "施設職員のみ", label: "退院・退所する施設の職員のみからの情報なら不可" },
+        { code: "blocked_if_answer_true", answerKey: "initialAdditionPlanned", blockedValue: "初回加算あり", label: "初回加算算定時は不可" },
+        { code: "monthly_limit_per_client_by_organization_group", limit: 1, additionCodes: ["mededu", "mededu_interview", "mededu_meeting"], recordActionTypes: ["面談", "会議"], label: "同グループ月1回まで" },
+        { code: "exclusive_with_addition_codes", additionCodes: ["conference"], label: "担当者会議加算との併算定不可" },
       ],
-      postCheck: "面談相手と受けた情報を記録する。",
+      postCheck: "面談相手と受けた情報を記録する。担当者会議加算との重複は後段で確認する。",
     },
     {
       additionCode: "mededu_meeting",
       additionFamilyCode: "mededu",
       additionFamilyName: "医療・保育・教育機関等連携加算",
       additionName: "医療・保育・教育機関等連携加算（会議）",
-      historyAdditionCodes: ["mededu", "mededu_info", "mededu_interview", "mededu_meeting"],
+      historyAdditionCodes: ["mededu", "mededu_tsuuin", "mededu_info", "mededu_interview", "mededu_meeting"],
       ruleStatus: "一部確定",
       confirmedRules: [
         "モニタリング月または計画作成月で候補に残す",
         "会議のみ",
         "障害福祉サービスは除外する",
+        "初回加算算定時は不可",
+        "担当者会議加算との併算定不可を後段で確認する",
       ],
       provisionalRules: [
-        "初回加算との関係や担当者会議加算との関係はまだ後段へ未反映",
+        "退院・退所加算との関係の細部はまだ未確定",
         "対象機関を福祉サービス等提供機関だけに絞っているが、制度境界の細部は未確定",
       ],
       priority: 12,
@@ -117,20 +153,37 @@ const data = {
       placeTypes: ["自事業所内", "外出先"],
       actionTypes: ["会議"],
       postCheckRules: [
-        { code: "monthly_limit_per_client_by_organization_group", limit: 1, label: "同グループ月1回まで" },
+        { code: "blocked_if_answer_true", answerKey: "dischargeFacilityStaffOnlyInfo", blockedValue: "施設職員のみ", label: "退院・退所する施設の職員のみからの情報なら不可" },
+        { code: "blocked_if_answer_true", answerKey: "initialAdditionPlanned", blockedValue: "初回加算あり", label: "初回加算算定時は不可" },
+        { code: "monthly_limit_per_client_by_organization_group", limit: 1, additionCodes: ["mededu", "mededu_interview", "mededu_meeting"], recordActionTypes: ["面談", "会議"], label: "同グループ月1回まで" },
+        { code: "exclusive_with_addition_codes", additionCodes: ["conference"], label: "担当者会議加算との併算定不可" },
       ],
-      postCheck: "会議参加先と得た情報を記録する。",
+      postCheck: "会議参加先と得た情報を記録する。担当者会議加算との重複は後段で確認する。",
     },
     {
-      additionCode: "intensive",
-      additionName: "集中支援加算",
+      additionCode: "intensive_visit",
+      additionFamilyCode: "intensive",
+      additionFamilyName: "集中支援加算",
+      additionName: "集中支援加算（訪問）",
+      historyAdditionCodes: [
+        "intensive",
+        "intensive_visit",
+        "intensive_scene_check",
+        "intensive_meeting_host",
+        "intensive_meeting_join",
+        "intensive_tsuuin",
+        "intensive_info",
+        "intensive_info_medical",
+        "intensive_info_pharmacy",
+      ],
       ruleStatus: "一部確定",
       confirmedRules: [
         "それ以外月で候補に残す",
+        "訪問のみ",
+        "同月2回以上の訪問を後段で確認する",
       ],
       provisionalRules: [
         "機関グループの範囲は仮置き",
-        "訪問とサービス提供場面確認のみで十分かは未確定",
       ],
       priority: 20,
       targetTypes: ["共通", "児", "者"],
@@ -138,7 +191,7 @@ const data = {
       organizationGroups: ["福祉サービス等提供機関"],
       serviceDecisionInclude: ["障害福祉サービス", "障害福祉以外の福祉サービス", "相談支援"],
       placeTypes: ["外出先"],
-      actionTypes: ["訪問", "サービス提供場面確認"],
+      actionTypes: ["訪問"],
       postCheckRules: [
         {
           code: "monthly_action_count_min",
@@ -146,9 +199,263 @@ const data = {
           actionTypes: ["訪問"],
           label: "同月2回以上の訪問が必要",
         },
-        { code: "monthly_distinct_organization_limit_per_client", limit: 3, label: "同一機関を除き月3回まで" },
       ],
-      postCheck: "同一機関を除き月3回まで。訪問枝は同月2回以上の訪問を後段で確認する。",
+      postCheck: "訪問回数要件を後段で確認する。",
+    },
+    {
+      additionCode: "intensive_scene_check",
+      additionFamilyCode: "intensive",
+      additionFamilyName: "集中支援加算",
+      additionName: "集中支援加算（サービス提供場面確認）",
+      historyAdditionCodes: [
+        "intensive",
+        "intensive_visit",
+        "intensive_scene_check",
+        "intensive_meeting_host",
+        "intensive_meeting_join",
+        "intensive_tsuuin",
+        "intensive_info",
+        "intensive_info_medical",
+        "intensive_info_pharmacy",
+      ],
+      ruleStatus: "一部確定",
+      confirmedRules: [
+        "それ以外月で候補に残す",
+        "サービス提供場面確認のみ",
+      ],
+      provisionalRules: [
+        "機関グループの範囲は仮置き",
+      ],
+      priority: 21,
+      targetTypes: ["共通", "児", "者"],
+      monthTypes: ["それ以外"],
+      organizationGroups: ["福祉サービス等提供機関"],
+      serviceDecisionInclude: ["障害福祉サービス", "障害福祉以外の福祉サービス", "相談支援"],
+      placeTypes: ["外出先"],
+      actionTypes: ["サービス提供場面確認"],
+      postCheckRules: [],
+      postCheck: "確認した提供場面の内容を記録する。",
+    },
+    {
+      additionCode: "intensive_meeting_host",
+      additionFamilyCode: "intensive",
+      additionFamilyName: "集中支援加算",
+      additionName: "集中支援加算（会議開催）",
+      historyAdditionCodes: [
+        "intensive",
+        "intensive_visit",
+        "intensive_scene_check",
+        "intensive_meeting_host",
+        "intensive_meeting_join",
+        "intensive_tsuuin",
+        "intensive_info",
+        "intensive_info_medical",
+        "intensive_info_pharmacy",
+      ],
+      ruleStatus: "一部確定",
+      confirmedRules: [
+        "それ以外月で候補に残す",
+        "サービス担当者会議の開催のみ",
+        "旧資料上、追加の回数上限は見当たらない",
+      ],
+      provisionalRules: [
+        "現行UIでは「サービス担当者会議の開催」を「担当者会議開催」に寄せている",
+      ],
+      priority: 21.5,
+      targetTypes: ["共通", "児", "者"],
+      monthTypes: ["それ以外"],
+      organizationGroups: ["福祉サービス等提供機関"],
+      serviceDecisionInclude: ["障害福祉サービス", "障害福祉以外の福祉サービス", "相談支援"],
+      placeTypes: ["自事業所内", "外出先"],
+      actionTypes: ["担当者会議開催"],
+      postCheckRules: [],
+      postCheck: "開催した会議の参加者と検討内容を記録する。",
+    },
+    {
+      additionCode: "intensive_meeting_join",
+      additionFamilyCode: "intensive",
+      additionFamilyName: "集中支援加算",
+      additionName: "集中支援加算（会議参加）",
+      historyAdditionCodes: [
+        "intensive",
+        "intensive_visit",
+        "intensive_scene_check",
+        "intensive_meeting_host",
+        "intensive_meeting_join",
+        "intensive_tsuuin",
+        "intensive_info",
+        "intensive_info_medical",
+        "intensive_info_pharmacy",
+      ],
+      ruleStatus: "一部確定",
+      confirmedRules: [
+        "それ以外月で候補に残す",
+        "会議参加のみ",
+        "旧資料上、追加の回数上限は見当たらない",
+      ],
+      provisionalRules: [
+        "現行UIでは「会議参加」を「会議」に寄せている",
+      ],
+      priority: 22,
+      targetTypes: ["共通", "児", "者"],
+      monthTypes: ["それ以外"],
+      organizationGroups: ["福祉サービス等提供機関"],
+      serviceDecisionInclude: ["障害福祉サービス", "障害福祉以外の福祉サービス", "相談支援"],
+      placeTypes: ["自事業所内", "外出先"],
+      actionTypes: ["会議"],
+      postCheckRules: [],
+      postCheck: "参加した会議の相手先と確認内容を記録する。",
+    },
+    {
+      additionCode: "intensive_tsuuin",
+      additionFamilyCode: "intensive",
+      additionFamilyName: "集中支援加算",
+      additionName: "集中支援加算（通院同行）",
+      historyAdditionCodes: [
+        "intensive",
+        "intensive_visit",
+        "intensive_scene_check",
+        "intensive_meeting_host",
+        "intensive_meeting_join",
+        "intensive_tsuuin",
+        "intensive_info",
+        "intensive_info_medical",
+        "intensive_info_pharmacy",
+      ],
+      ruleStatus: "一部確定",
+      confirmedRules: [
+        "それ以外月の病院等への通院同行のみ候補に残す",
+        "後段では同月3回までと同一病院等は月1回までを確認する",
+      ],
+      provisionalRules: [],
+      priority: 23,
+      targetTypes: ["共通", "児", "者"],
+      monthTypes: ["それ以外"],
+      organizationGroups: ["病院・訪看・薬局グループ"],
+      organizationTypes: ["病院"],
+      serviceDecisionInclude: ["医療関連"],
+      placeTypes: ["外出先"],
+      actionTypes: ["通院同行"],
+      postCheckRules: [
+        { code: "monthly_limit_per_client", limit: 3, additionCodes: ["intensive", "intensive_tsuuin"], recordActionTypes: ["通院同行"], label: "同月3回まで" },
+        { code: "monthly_limit_per_client_by_organization", limit: 1, additionCodes: ["intensive", "intensive_tsuuin"], recordActionTypes: ["通院同行"], label: "同一病院等は月1回まで" },
+      ],
+      postCheck: "通院同行先と同行時の確認内容を記録する。同月3回まで、同一病院等は月1回まで。",
+    },
+    {
+      additionCode: "intensive_info",
+      additionFamilyCode: "intensive",
+      additionFamilyName: "集中支援加算",
+      additionName: "集中支援加算（情報共有）",
+      historyAdditionCodes: [
+        "intensive",
+        "intensive_visit",
+        "intensive_scene_check",
+        "intensive_meeting_host",
+        "intensive_meeting_join",
+        "intensive_tsuuin",
+        "intensive_info",
+        "intensive_info_medical",
+        "intensive_info_pharmacy",
+      ],
+      ruleStatus: "一部確定",
+      confirmedRules: [
+        "それ以外月で候補に残す",
+        "福祉サービス等提供機関への情報共有のみ",
+        "後段では同グループ月1回までを確認する",
+      ],
+      provisionalRules: [
+        "病院・訪看・薬局は内部的に別枝へ分けている",
+      ],
+      priority: 24,
+      targetTypes: ["共通", "児", "者"],
+      monthTypes: ["それ以外"],
+      organizationGroups: ["福祉サービス等提供機関"],
+      serviceDecisionInclude: ["障害福祉サービス", "障害福祉以外の福祉サービス", "相談支援"],
+      placeTypes: ["自事業所内", "外出先"],
+      actionTypes: ["情報共有"],
+      postCheckRules: [
+        { code: "monthly_limit_per_client_by_organization_group", limit: 1, additionCodes: ["intensive", "intensive_info", "intensive_info_medical", "intensive_info_pharmacy"], recordActionTypes: ["情報共有"], label: "同グループ月1回まで" },
+      ],
+      postCheck: "共有した情報と相手先を記録する。同グループ月1回まで。",
+    },
+    {
+      additionCode: "intensive_info_medical",
+      additionFamilyCode: "intensive",
+      additionFamilyName: "集中支援加算",
+      additionName: "集中支援加算（情報共有）",
+      historyAdditionCodes: [
+        "intensive",
+        "intensive_visit",
+        "intensive_scene_check",
+        "intensive_meeting_host",
+        "intensive_meeting_join",
+        "intensive_tsuuin",
+        "intensive_info",
+        "intensive_info_medical",
+        "intensive_info_pharmacy",
+      ],
+      ruleStatus: "一部確定",
+      confirmedRules: [
+        "それ以外月で候補に残す",
+        "病院または訪問看護への情報共有のみ",
+        "入院に当たっての情報共有は除外する",
+        "後段では同グループ月1回までを確認する",
+      ],
+      provisionalRules: [
+        "薬局は別枝へ分けて、入院確認の質問対象から外している",
+      ],
+      priority: 24.1,
+      targetTypes: ["共通", "児", "者"],
+      monthTypes: ["それ以外"],
+      organizationGroups: ["病院・訪看・薬局グループ"],
+      organizationTypes: ["病院", "訪問看護"],
+      requiredAnswers: { hospitalAdmissionContext: "入院に当たっていない" },
+      serviceDecisionInclude: ["医療関連"],
+      placeTypes: ["自事業所内", "外出先"],
+      actionTypes: ["情報共有"],
+      postCheckRules: [
+        { code: "monthly_limit_per_client_by_organization_group", limit: 1, additionCodes: ["intensive", "intensive_info", "intensive_info_medical", "intensive_info_pharmacy"], recordActionTypes: ["情報共有"], label: "同グループ月1回まで" },
+      ],
+      postCheck: "共有した情報と相手先を記録する。同グループ月1回まで。",
+    },
+    {
+      additionCode: "intensive_info_pharmacy",
+      additionFamilyCode: "intensive",
+      additionFamilyName: "集中支援加算",
+      additionName: "集中支援加算（情報共有）",
+      historyAdditionCodes: [
+        "intensive",
+        "intensive_visit",
+        "intensive_scene_check",
+        "intensive_meeting_host",
+        "intensive_meeting_join",
+        "intensive_tsuuin",
+        "intensive_info",
+        "intensive_info_medical",
+        "intensive_info_pharmacy",
+      ],
+      ruleStatus: "一部確定",
+      confirmedRules: [
+        "それ以外月で候補に残す",
+        "薬局への情報共有のみ",
+        "後段では同グループ月1回までを確認する",
+      ],
+      provisionalRules: [
+        "薬局は病院/訪看枝と分けて、入院確認の質問を出さない",
+      ],
+      priority: 24.2,
+      targetTypes: ["共通", "児", "者"],
+      monthTypes: ["それ以外"],
+      organizationGroups: ["病院・訪看・薬局グループ"],
+      organizationTypes: ["薬局"],
+      serviceDecisionInclude: ["医療関連"],
+      placeTypes: ["自事業所内", "外出先"],
+      actionTypes: ["情報共有"],
+      postCheckRules: [
+        { code: "monthly_limit_per_client_by_organization_group", limit: 1, additionCodes: ["intensive", "intensive_info", "intensive_info_medical", "intensive_info_pharmacy"], recordActionTypes: ["情報共有"], label: "同グループ月1回まで" },
+      ],
+      postCheck: "共有した情報と相手先を記録する。同グループ月1回まで。",
     },
     {
       additionCode: "monitoring",
@@ -171,7 +478,7 @@ const data = {
       placeTypes: ["外出先"],
       actionTypes: ["サービス提供場面確認"],
       postCheckRules: [
-        { code: "monthly_limit_per_client", limit: 1, label: "同月1回まで" },
+        { code: "monthly_limit_per_client", limit: 1, additionCodes: ["monitoring"], label: "同月1回まで" },
       ],
       postCheck: "提供現場の訪問確認内容と確認結果を記録する。月1回まで。",
     },
@@ -181,40 +488,60 @@ const data = {
       ruleStatus: "確定条件あり",
       confirmedRules: [
         "モニタリング月のみ",
+        "福祉サービス等提供機関のみ",
         "担当者会議開催のみ",
+        "同月1回まで",
+        "医保教（面談・会議）との併算定不可を後段で確認する",
       ],
-      provisionalRules: [
-        "対象機関グループの細かい制度境界は未確定",
-      ],
+      provisionalRules: [],
       priority: 30,
       targetTypes: ["共通", "児", "者"],
       monthTypes: ["モニタリング月"],
-      organizationGroups: ["病院・訪看・薬局グループ", "福祉サービス等提供機関"],
+      organizationGroups: ["福祉サービス等提供機関"],
       serviceDecisionInclude: ["医療関連", "障害福祉サービス", "障害福祉以外の福祉サービス", "相談支援"],
       placeTypes: ["自事業所内", "外出先"],
       actionTypes: ["担当者会議開催"],
-      postCheckRules: [],
-      postCheck: "モニタリングに当たって開催した担当者会議の参加者と開催内容を記録する。",
+      postCheckRules: [
+        {
+          code: "monthly_limit_per_client",
+          limit: 1,
+          additionCodes: ["conference"],
+          label: "同月1回まで",
+        },
+        {
+          code: "exclusive_with_addition_codes",
+          additionCodes: ["mededu", "mededu_interview", "mededu_meeting"],
+          recordActionTypes: ["面談", "会議"],
+          label: "医保教（面談・会議）との併算定不可",
+        },
+      ],
+      postCheck: "モニタリングに当たって開催した担当者会議の参加者と開催内容を記録する。同月1回まで。医保教（面談・会議）との重複は後段で確認する。",
     },
     {
       additionCode: "discharge",
       additionName: "退院・退所加算",
       ruleStatus: "仮置き多め",
       confirmedRules: [
-        "病院系の外出先対応で、退院前面談を要件にする",
+        "病院や退院・退所対象施設での外出先対応に限り、退院前面談を要件にする",
+        "サービス等の利用開始月の調整のみ",
+        "初回加算算定時は不可",
       ],
       provisionalRules: [
         "対象月の扱いは仮置き",
-        "病院・訪看・薬局を同一枝で扱うかは未確定",
+        "入所施設、更生施設、児童施設、刑事施設等は名称推定に強い語だけを使っている",
       ],
       priority: 40,
       targetTypes: ["共通", "児", "者"],
       monthTypes: ["計画作成月", "それ以外"],
-      organizationGroups: ["病院・訪看・薬局グループ"],
-      serviceDecisionInclude: ["医療関連"],
+      organizationGroups: ["病院・訪看・薬局グループ", "福祉サービス等提供機関"],
+      organizationTypes: ["病院", "入所施設", "更生施設", "児童施設", "刑事施設"],
+      serviceDecisionInclude: ["医療関連", "障害福祉サービス", "障害福祉以外の福祉サービス"],
       placeTypes: ["外出先"],
       actionTypes: ["退院前面談"],
-      postCheckRules: [],
+      requiredAnswers: { serviceUseStartMonth: "開始月である" },
+      postCheckRules: [
+        { code: "blocked_if_answer_true", answerKey: "initialAdditionPlanned", blockedValue: "初回加算あり", label: "初回加算算定時は不可" },
+      ],
       postCheck: "退院前後の場面確認が必要。面談先の記録を残す。",
     },
     {
@@ -222,13 +549,13 @@ const data = {
       additionName: "入院時情報連携加算 I",
       ruleStatus: "一部確定",
       confirmedRules: [
-        "病院へ訪問して必要情報を提供した場合に候補に残す",
+        "入院に当たって病院へ訪問して必要情報を提供した場合に候補に残す",
         "同月1回まで",
         "IIとの併算定不可",
       ],
       provisionalRules: [
         "現行UIでは「訪問情報提供」を「外出先 + 情報共有」に寄せている",
-        "病院以外の医療機関をどこまで含めるかはまだ仮置き",
+        "診療所は病院と同じ扱いで判定する",
       ],
       priority: 35,
       targetTypes: ["共通", "児", "者"],
@@ -238,8 +565,9 @@ const data = {
       serviceDecisionInclude: ["医療関連"],
       placeTypes: ["外出先"],
       actionTypes: ["情報共有"],
+      requiredAnswers: { hospitalAdmissionContext: "入院に当たっている" },
       postCheckRules: [
-        { code: "monthly_limit_per_client", limit: 1, label: "同月1回まで" },
+        { code: "monthly_limit_per_client", limit: 1, additionCodes: ["hospital_info_i"], label: "同月1回まで" },
         { code: "exclusive_with_addition_codes", additionCodes: ["hospital_info_ii"], label: "IIとの併算定不可" },
       ],
       postCheck: "病院訪問による情報提供内容を記録する。",
@@ -249,13 +577,13 @@ const data = {
       additionName: "入院時情報連携加算 II",
       ruleStatus: "一部確定",
       confirmedRules: [
-        "病院へ訪問以外の方法で必要情報を提供した場合に候補に残す",
+        "入院に当たって病院へ訪問以外の方法で必要情報を提供した場合に候補に残す",
         "同月1回まで",
         "Iとの併算定不可",
       ],
       provisionalRules: [
         "現行UIでは「訪問以外情報提供」を「自事業所内 + 情報共有」に寄せている",
-        "病院以外の医療機関をどこまで含めるかはまだ仮置き",
+        "診療所は病院と同じ扱いで判定する",
       ],
       priority: 36,
       targetTypes: ["共通", "児", "者"],
@@ -265,48 +593,117 @@ const data = {
       serviceDecisionInclude: ["医療関連"],
       placeTypes: ["自事業所内"],
       actionTypes: ["情報共有"],
+      requiredAnswers: { hospitalAdmissionContext: "入院に当たっている" },
       postCheckRules: [
-        { code: "monthly_limit_per_client", limit: 1, label: "同月1回まで" },
+        { code: "monthly_limit_per_client", limit: 1, additionCodes: ["hospital_info_ii"], label: "同月1回まで" },
         { code: "exclusive_with_addition_codes", additionCodes: ["hospital_info_i"], label: "Iとの併算定不可" },
       ],
       postCheck: "訪問以外で提供した情報内容と提供方法を記録する。",
     },
     {
-      additionCode: "edu_support",
-      additionName: "保・教支援",
+      additionCode: "edu_info",
+      additionFamilyCode: "edu_support",
+      additionFamilyName: "保・教支援",
+      additionName: "保・教支援（情報共有）",
+      historyAdditionCodes: ["edu_support", "edu_info", "edu_visit", "edu_meeting"],
       ruleStatus: "一部確定",
       confirmedRules: [
         "児対象のみ",
+        "障害福祉サービス・相談支援・障害福祉以外の福祉サービスの利用文脈で候補に残す",
         "学校・保育・企業・就業生活支援センター等への情報共有で候補に残す",
       ],
       provisionalRules: [
-        "訪問面接枝と会議参加枝はまだ未実装",
         "集団生活施設など、学校・保育以外の対象境界はまだ仮置き",
       ],
       priority: 50,
       targetTypes: ["児"],
       monthTypes: ["モニタリング月", "計画作成月", "それ以外"],
       organizationGroups: ["福祉サービス等提供機関"],
-      organizationTypes: ["学校", "保育", "企業", "障害者就業・生活支援センター"],
-      serviceDecisionInclude: ["障害福祉以外の福祉サービス"],
+      organizationTypes: ["学校", "保育", "児童施設", "企業", "障害者就業・生活支援センター"],
+      serviceDecisionInclude: ["障害福祉サービス", "相談支援", "障害福祉以外の福祉サービス"],
       placeTypes: ["自事業所内", "外出先"],
       actionTypes: ["情報共有"],
       postCheckRules: [],
       postCheck: "情報共有先と支援内容の検討協力内容を記録する。",
     },
     {
-      additionCode: "home_collab",
-      additionName: "居宅連携",
+      additionCode: "edu_visit",
+      additionFamilyCode: "edu_support",
+      additionFamilyName: "保・教支援",
+      additionName: "保・教支援（訪問面接）",
+      historyAdditionCodes: ["edu_support", "edu_info", "edu_visit", "edu_meeting"],
+      ruleStatus: "一部確定",
+      confirmedRules: [
+        "児対象のみ",
+        "それ以外月のみ",
+        "障害福祉サービス・相談支援・障害福祉以外の福祉サービスの利用文脈で候補に残す",
+        "学校・保育・企業・就業生活支援センター等への訪問面接で候補に残す",
+      ],
+      provisionalRules: [
+        "現行UIでは「訪問面接」を「外出先 + 面談」に寄せている",
+        "集団生活施設など、学校・保育以外の対象境界はまだ仮置き",
+        "旧の総称記録は訪問面接の回数へ自動換算していない",
+      ],
+      priority: 51,
+      targetTypes: ["児"],
+      monthTypes: ["それ以外"],
+      organizationGroups: ["福祉サービス等提供機関"],
+      organizationTypes: ["学校", "保育", "児童施設", "企業", "障害者就業・生活支援センター"],
+      serviceDecisionInclude: ["障害福祉サービス", "相談支援", "障害福祉以外の福祉サービス"],
+      placeTypes: ["外出先"],
+      actionTypes: ["面談"],
+      postCheckRules: [
+        {
+          code: "monthly_addition_count_min",
+          minimum: 2,
+          additionCodes: ["edu_visit"],
+          label: "同月2回以上の訪問面接が必要",
+        },
+      ],
+      postCheck: "訪問面接した相手先と確認した内容を記録する。月内の訪問面接回数は後段で確認する。",
+    },
+    {
+      additionCode: "edu_meeting",
+      additionFamilyCode: "edu_support",
+      additionFamilyName: "保・教支援",
+      additionName: "保・教支援（会議参加）",
+      historyAdditionCodes: ["edu_support", "edu_info", "edu_visit", "edu_meeting"],
+      ruleStatus: "一部確定",
+      confirmedRules: [
+        "児対象のみ",
+        "それ以外月のみ",
+        "障害福祉サービス・相談支援・障害福祉以外の福祉サービスの利用文脈で候補に残す",
+        "学校・保育・企業・就業生活支援センター等との会議参加で候補に残す",
+      ],
+      provisionalRules: [
+        "現行UIでは「会議参加」を「会議」に寄せている",
+        "集団生活施設など、学校・保育以外の対象境界はまだ仮置き",
+      ],
+      priority: 52,
+      targetTypes: ["児"],
+      monthTypes: ["それ以外"],
+      organizationGroups: ["福祉サービス等提供機関"],
+      organizationTypes: ["学校", "保育", "児童施設", "企業", "障害者就業・生活支援センター"],
+      serviceDecisionInclude: ["障害福祉サービス", "相談支援", "障害福祉以外の福祉サービス"],
+      placeTypes: ["自事業所内", "外出先"],
+      actionTypes: ["会議"],
+      postCheckRules: [],
+      postCheck: "参加した会議の相手先と共有した内容を記録する。",
+    },
+    {
+      additionCode: "home_info",
+      additionFamilyCode: "home_collab",
+      additionFamilyName: "居宅連携",
+      additionName: "居宅連携（情報共有）",
+      historyAdditionCodes: ["home_collab", "home_info", "home_visit", "home_meeting"],
       ruleStatus: "一部確定",
       confirmedRules: [
         "者対象のみ",
         "ケアマネ事業所への情報共有で候補に残す",
-        "同月2回まで",
+        "ケアマネ利用開始時のみ",
+        "後段では同月2回までを確認する",
       ],
-      provisionalRules: [
-        "訪問面接枝と会議参加枝はまだ未実装",
-        "ケアマネ利用開始の事実確認はまだ別設問化していない",
-      ],
+      provisionalRules: [],
       priority: 60,
       targetTypes: ["者"],
       monthTypes: ["モニタリング月", "計画作成月", "それ以外"],
@@ -314,24 +711,89 @@ const data = {
       organizationTypes: ["ケアマネ事業所"],
       placeTypes: ["自事業所内", "外出先"],
       actionTypes: ["情報共有"],
+      requiredAnswers: { careManagerStart: "利用開始あり" },
       postCheckRules: [
-        { code: "monthly_limit_per_client", limit: 2, label: "同月2回まで" },
+        { code: "monthly_limit_per_client", limit: 2, additionCodes: ["home_collab", "home_info"], recordActionTypes: ["情報共有"], label: "同月2回まで" },
       ],
       postCheck: "ケアマネへ提供した情報と協力内容を記録する。月2回まで。",
     },
     {
-      additionCode: "home_work_collab",
-      additionName: "居宅連携（就労）",
+      additionCode: "home_visit",
+      additionFamilyCode: "home_collab",
+      additionFamilyName: "居宅連携",
+      additionName: "居宅連携（訪問面接）",
+      historyAdditionCodes: ["home_collab", "home_info", "home_visit", "home_meeting"],
+      ruleStatus: "一部確定",
+      confirmedRules: [
+        "者対象のみ",
+        "それ以外月のみ",
+        "ケアマネ事業所への訪問面接で候補に残す",
+        "ケアマネ利用開始時のみ",
+        "後段では同月2回以上の訪問面接を確認する",
+      ],
+      provisionalRules: [
+        "現行UIでは「訪問面接」を「外出先 + 面談」に寄せている",
+        "旧の総称記録は訪問面接の回数へ自動換算していない",
+      ],
+      priority: 61,
+      targetTypes: ["者"],
+      monthTypes: ["それ以外"],
+      organizationGroups: ["福祉サービス等提供機関"],
+      organizationTypes: ["ケアマネ事業所"],
+      placeTypes: ["外出先"],
+      actionTypes: ["面談"],
+      requiredAnswers: { careManagerStart: "利用開始あり" },
+      postCheckRules: [
+        {
+          code: "monthly_addition_count_min",
+          minimum: 2,
+          additionCodes: ["home_visit"],
+          label: "同月2回以上の訪問面接が必要",
+        },
+      ],
+      postCheck: "訪問面接したケアマネと確認した内容を記録する。月内の訪問面接回数は後段で確認する。",
+    },
+    {
+      additionCode: "home_meeting",
+      additionFamilyCode: "home_collab",
+      additionFamilyName: "居宅連携",
+      additionName: "居宅連携（会議参加）",
+      historyAdditionCodes: ["home_collab", "home_info", "home_visit", "home_meeting"],
+      ruleStatus: "一部確定",
+      confirmedRules: [
+        "者対象のみ",
+        "それ以外月のみ",
+        "ケアマネ事業所との会議参加で候補に残す",
+        "ケアマネ利用開始時のみ",
+      ],
+      provisionalRules: [
+        "現行UIでは「会議参加」を「会議」に寄せている",
+      ],
+      priority: 62,
+      targetTypes: ["者"],
+      monthTypes: ["それ以外"],
+      organizationGroups: ["福祉サービス等提供機関"],
+      organizationTypes: ["ケアマネ事業所"],
+      placeTypes: ["自事業所内", "外出先"],
+      actionTypes: ["会議"],
+      requiredAnswers: { careManagerStart: "利用開始あり" },
+      postCheckRules: [],
+      postCheck: "参加した会議の相手先と共有した内容を記録する。",
+    },
+    {
+      additionCode: "home_work_info",
+      additionFamilyCode: "home_work_collab",
+      additionFamilyName: "居宅連携（就労）",
+      additionName: "居宅連携（就労）（情報共有）",
+      historyAdditionCodes: ["home_work_collab", "home_work_info", "home_work_visit", "home_work_meeting"],
       ruleStatus: "一部確定",
       confirmedRules: [
         "者対象のみ",
         "企業または障害者就業・生活支援センター等への情報共有で候補に残す",
-        "同月2回まで",
+        "新規雇用開始時のみ",
+        "後段では同月2回までを確認する",
       ],
-      provisionalRules: [
-        "訪問面接枝と会議参加枝はまだ未実装",
-        "新規雇用開始の事実確認はまだ別設問化していない",
-      ],
+      provisionalRules: [],
       priority: 70,
       targetTypes: ["者"],
       monthTypes: ["モニタリング月", "計画作成月", "それ以外"],
@@ -339,10 +801,74 @@ const data = {
       organizationTypes: ["企業", "障害者就業・生活支援センター"],
       placeTypes: ["自事業所内", "外出先"],
       actionTypes: ["情報共有"],
+      requiredAnswers: { employmentStart: "新規雇用あり" },
       postCheckRules: [
-        { code: "monthly_limit_per_client", limit: 2, label: "同月2回まで" },
+        { code: "monthly_limit_per_client", limit: 2, additionCodes: ["home_work_collab", "home_work_info"], recordActionTypes: ["情報共有"], label: "同月2回まで" },
       ],
       postCheck: "就労先や就業生活支援センター等へ提供した情報を記録する。月2回まで。",
+    },
+    {
+      additionCode: "home_work_visit",
+      additionFamilyCode: "home_work_collab",
+      additionFamilyName: "居宅連携（就労）",
+      additionName: "居宅連携（就労）（訪問面接）",
+      historyAdditionCodes: ["home_work_collab", "home_work_info", "home_work_visit", "home_work_meeting"],
+      ruleStatus: "一部確定",
+      confirmedRules: [
+        "者対象のみ",
+        "それ以外月のみ",
+        "企業または障害者就業・生活支援センター等への訪問面接で候補に残す",
+        "新規雇用開始時のみ",
+        "後段では同月2回以上の訪問面接を確認する",
+      ],
+      provisionalRules: [
+        "現行UIでは「訪問面接」を「外出先 + 面談」に寄せている",
+        "旧の総称記録は訪問面接の回数へ自動換算していない",
+      ],
+      priority: 71,
+      targetTypes: ["者"],
+      monthTypes: ["それ以外"],
+      organizationGroups: ["福祉サービス等提供機関"],
+      organizationTypes: ["企業", "障害者就業・生活支援センター"],
+      placeTypes: ["外出先"],
+      actionTypes: ["面談"],
+      requiredAnswers: { employmentStart: "新規雇用あり" },
+      postCheckRules: [
+        {
+          code: "monthly_addition_count_min",
+          minimum: 2,
+          additionCodes: ["home_work_visit"],
+          label: "同月2回以上の訪問面接が必要",
+        },
+      ],
+      postCheck: "訪問面接した就労先等と確認した内容を記録する。月内の訪問面接回数は後段で確認する。",
+    },
+    {
+      additionCode: "home_work_meeting",
+      additionFamilyCode: "home_work_collab",
+      additionFamilyName: "居宅連携（就労）",
+      additionName: "居宅連携（就労）（会議参加）",
+      historyAdditionCodes: ["home_work_collab", "home_work_info", "home_work_visit", "home_work_meeting"],
+      ruleStatus: "一部確定",
+      confirmedRules: [
+        "者対象のみ",
+        "それ以外月のみ",
+        "企業または障害者就業・生活支援センター等との会議参加で候補に残す",
+        "新規雇用開始時のみ",
+      ],
+      provisionalRules: [
+        "現行UIでは「会議参加」を「会議」に寄せている",
+      ],
+      priority: 72,
+      targetTypes: ["者"],
+      monthTypes: ["それ以外"],
+      organizationGroups: ["福祉サービス等提供機関"],
+      organizationTypes: ["企業", "障害者就業・生活支援センター"],
+      placeTypes: ["自事業所内", "外出先"],
+      actionTypes: ["会議"],
+      requiredAnswers: { employmentStart: "新規雇用あり" },
+      postCheckRules: [],
+      postCheck: "参加した会議の相手先と共有した内容を記録する。",
     },
   ],
   reportRecords: [
@@ -401,6 +927,7 @@ const columnCatalog = {
 const questionDefinitions = [
   {
     key: "monthType",
+    order: 10,
     label: "対応した時期はどれですか",
     helper: "利用者の対象区分と機関・サービス条件は、選択済みの文脈から自動で候補に反映します。",
     options: [
@@ -411,6 +938,7 @@ const questionDefinitions = [
   },
   {
     key: "placeType",
+    order: 20,
     label: "対応した場所はどこですか",
     helper: "ここでは制度用語より先に、実際にどこで対応したかだけを聞きます。",
     options: [
@@ -420,8 +948,12 @@ const questionDefinitions = [
   },
   {
     key: "actionType",
+    order: 30,
     label: "その場で何をしましたか",
     helper: "相談員が迷いやすい用語は、あとで管理者説明を載せられる前提です。",
+    visibleWhen({ answers }) {
+      return Boolean(answers.placeType);
+    },
     getOptions(answers) {
       if (answers.placeType === "自事業所内") {
         return [
@@ -434,6 +966,7 @@ const questionDefinitions = [
 
       return [
         { value: "訪問", note: "現地へ行って支援状況や本人の様子を確認した" },
+        { value: "通院同行", note: "病院受診などに同行し、必要な情報を共有した" },
         { value: "情報共有", note: "外部機関を訪ねるなどして必要な情報を伝えた" },
         { value: "会議", note: "担当者会議以外の外部会議や打合せに参加した" },
         { value: "担当者会議開催", note: "外部会場などでサービス担当者会議を開催した" },
@@ -442,6 +975,84 @@ const questionDefinitions = [
         { value: "退院前面談", note: "退院・退所前の面談や調整を行った" },
       ];
     },
+  },
+  {
+    key: "hospitalAdmissionContext",
+    order: 40,
+    label: "今回の情報提供は入院に当たってのものですか",
+    helper: "入院時情報連携 I / II では、通常の病院連携と分けるために、入院に当たっての情報提供かどうかを先に確認します。",
+    visibleWhen() {
+      return shouldShowCandidateFactQuestion("hospitalAdmissionContext");
+    },
+    options: [
+      { value: "入院に当たっている", note: "今回の情報提供は入院に当たって病院へ行った、または病院へ連絡したもの" },
+      { value: "入院に当たっていない", note: "今回の情報提供は入院対応ではなく、通常の連携や別件の情報共有" },
+    ],
+  },
+  {
+    key: "dischargeFacilityStaffOnlyInfo",
+    order: 45,
+    label: "得た情報は退院・退所する施設の職員からだけですか",
+    helper: "医保教の面談・会議では、退院・退所する施設の職員からの情報だけで終わる場合は不可です。",
+    visibleWhen({ candidates }) {
+      return candidates.some((candidate) => candidateRequiresAnswer(candidate, "dischargeFacilityStaffOnlyInfo"));
+    },
+    options: [
+      { value: "施設職員以外も含む", note: "退院・退所する施設の職員以外からの情報や調整も含まれている" },
+      { value: "施設職員のみ", note: "退院・退所する施設の職員からの情報だけで対応した" },
+    ],
+  },
+  {
+    key: "initialAdditionPlanned",
+    order: 50,
+    label: "この月に初回加算も算定しますか",
+    helper: "面談・会議系や退院・退所系では、初回加算との重複可否を最後に確認します。",
+    visibleWhen({ candidates }) {
+      return candidates.some((candidate) => candidateRequiresAnswer(candidate, "initialAdditionPlanned"));
+    },
+    options: [
+      { value: "初回加算なし", note: "この月は初回加算を算定しない" },
+      { value: "初回加算あり", note: "この月に初回加算も算定する予定がある" },
+    ],
+  },
+  {
+    key: "careManagerStart",
+    order: 40,
+    label: "今回の支援はケアマネ利用開始に伴うものですか",
+    helper: "居宅連携系では、ケアマネ利用開始の文脈かどうかを候補の前提として確認します。",
+    visibleWhen() {
+      return shouldShowCandidateFactQuestion("careManagerStart");
+    },
+    options: [
+      { value: "利用開始あり", note: "今回の支援はケアマネ利用開始に伴う" },
+      { value: "利用開始なし", note: "ケアマネ利用開始とは別の文脈" },
+    ],
+  },
+  {
+    key: "employmentStart",
+    order: 40,
+    label: "今回の支援は通常の事業所への新規雇用に伴うものですか",
+    helper: "居宅連携（就労）系では、新規雇用開始の文脈かどうかを候補の前提として確認します。",
+    visibleWhen() {
+      return shouldShowCandidateFactQuestion("employmentStart");
+    },
+    options: [
+      { value: "新規雇用あり", note: "通常の事業所への新規雇用に伴う支援" },
+      { value: "新規雇用なし", note: "新規雇用開始とは別の文脈" },
+    ],
+  },
+  {
+    key: "serviceUseStartMonth",
+    order: 40,
+    label: "今回の調整はサービス等の利用開始月のものですか",
+    helper: "退院・退所加算では、サービス等の利用開始月に行った調整かどうかを候補の前提として確認します。",
+    visibleWhen() {
+      return shouldShowCandidateFactQuestion("serviceUseStartMonth");
+    },
+    options: [
+      { value: "開始月である", note: "今回の調整はサービス等の利用開始月に行った" },
+      { value: "開始月ではない", note: "利用開始月とは別の月の調整" },
+    ],
   },
 ];
 
@@ -481,7 +1092,17 @@ const state = {
     historyLoading: false,
     historyRequestToken: 0,
     historyError: "",
-    answers: { monthType: "", placeType: "", actionType: "" },
+    answers: {
+      monthType: "",
+      placeType: "",
+      actionType: "",
+      hospitalAdmissionContext: "",
+      dischargeFacilityStaffOnlyInfo: "",
+      initialAdditionPlanned: "",
+      careManagerStart: "",
+      employmentStart: "",
+      serviceUseStartMonth: "",
+    },
     history: [],
     saveStatus: "未保存",
     saveSummary: "保存待ち",
@@ -1342,6 +1963,7 @@ function buildJudgementSavePayload(snapshot) {
 }
 
 function buildJudgementSnapshot() {
+  pruneHiddenJudgementAnswers();
   const client = getClientById(state.judgement.clientId);
   const organization = getOrganizationById(state.judgement.organizationId);
   const service = getServiceById(state.judgement.serviceId);
@@ -1594,9 +2216,10 @@ function evaluatePostCheckRule(rule, context) {
   }
 
   const candidateHistory = getJudgementHistoryRecordsForCandidate(context.candidate);
+  const filteredHistory = filterHistoryRecordsForRule(candidateHistory, rule);
 
   if (rule.code === "monthly_limit_per_client") {
-    const existingCount = candidateHistory.length;
+    const existingCount = filteredHistory.length;
     if (existingCount >= Number(rule.limit ?? 0)) {
       return {
         level: "review",
@@ -1610,6 +2233,42 @@ function evaluatePostCheckRule(rule, context) {
     };
   }
 
+  if (rule.code === "manual_review") {
+    return {
+      level: "review",
+      message: rule.label || "制度要件が未整理のため要確認です。",
+    };
+  }
+
+  if (rule.code === "blocked_if_answer_true") {
+    const answerKey = String(rule.answerKey ?? "").trim();
+    const blockedValue = String(rule.blockedValue ?? "はい").trim();
+    const answerValue = String(state.judgement.answers[answerKey] ?? "").trim();
+
+    if (!answerKey) {
+      return { level: "skip", message: "" };
+    }
+
+    if (!answerValue) {
+      return {
+        level: "review",
+        message: `${rule.label}。確認項目が未回答のため要確認です。`,
+      };
+    }
+
+    if (answerValue === blockedValue) {
+      return {
+        level: "review",
+        message: `${rule.label}。今回は「${answerValue}」です。`,
+      };
+    }
+
+    return {
+      level: "ok",
+      message: `${rule.label}。今回は「${answerValue}」のため対象外です。`,
+    };
+  }
+
   if (rule.code === "monthly_limit_per_client_by_organization_group") {
     const currentGroup = String(context.currentOrganizationGroup ?? "").trim();
     if (!currentGroup) {
@@ -1619,7 +2278,7 @@ function evaluatePostCheckRule(rule, context) {
       };
     }
 
-    const sameGroupHistory = candidateHistory.filter((record) => (
+    const sameGroupHistory = filteredHistory.filter((record) => (
       getResolvedReportRecordOrganizationGroup(record) === currentGroup
     ));
     const existingCount = sameGroupHistory.length;
@@ -1637,6 +2296,33 @@ function evaluatePostCheckRule(rule, context) {
     };
   }
 
+  if (rule.code === "monthly_limit_per_client_by_organization") {
+    const currentOrganizationId = String(context.currentOrganizationId ?? "").trim();
+    if (!currentOrganizationId) {
+      return {
+        level: "review",
+        message: `${rule.label}。相手先機関を特定できないため要確認です。`,
+      };
+    }
+
+    const sameOrganizationHistory = filteredHistory.filter((record) => (
+      String(record.organizationId ?? "").trim() === currentOrganizationId
+    ));
+    const existingCount = sameOrganizationHistory.length;
+
+    if (existingCount >= Number(rule.limit ?? 0)) {
+      return {
+        level: "review",
+        message: `${rule.label}。今月すでに${existingCount}件あります。`,
+      };
+    }
+
+    return {
+      level: "ok",
+      message: `${rule.label}。今月既存${existingCount}件で範囲内です。`,
+    };
+  }
+
   if (rule.code === "monthly_action_count_min") {
     const requiredActions = Array.isArray(rule.actionTypes) ? rule.actionTypes.filter(Boolean) : [];
     const currentActionType = String(state.judgement.answers.actionType ?? "").trim();
@@ -1650,6 +2336,28 @@ function evaluatePostCheckRule(rule, context) {
       || requiredActions.includes(String(record.actionType ?? "").trim())
     ));
     const projectedCount = actionHistory.length + 1;
+
+    if (projectedCount < Number(rule.minimum ?? 0)) {
+      return {
+        level: "review",
+        message: `${rule.label}。今回を含めて${projectedCount}回です。`,
+      };
+    }
+
+    return {
+      level: "ok",
+      message: `${rule.label}。今回を含めて${projectedCount}回で条件内です。`,
+    };
+  }
+
+  if (rule.code === "monthly_addition_count_min") {
+    const targetCodes = Array.isArray(rule.additionCodes)
+      ? rule.additionCodes.map((item) => String(item ?? "").trim()).filter(Boolean)
+      : [];
+    const countedHistory = targetCodes.length > 0
+      ? candidateHistory.filter((record) => targetCodes.includes(String(record.additionCode ?? "").trim()))
+      : candidateHistory;
+    const projectedCount = countedHistory.length + 1;
 
     if (projectedCount < Number(rule.minimum ?? 0)) {
       return {
@@ -1692,6 +2400,9 @@ function evaluatePostCheckRule(rule, context) {
     const exclusiveCodes = Array.isArray(rule.additionCodes)
       ? rule.additionCodes.map((item) => String(item ?? "").trim()).filter(Boolean)
       : [];
+    const recordActionTypes = Array.isArray(rule.recordActionTypes)
+      ? rule.recordActionTypes.map((item) => String(item ?? "").trim()).filter(Boolean)
+      : [];
 
     if (exclusiveCodes.length === 0) {
       return { level: "skip", message: "" };
@@ -1699,6 +2410,10 @@ function evaluatePostCheckRule(rule, context) {
 
     const conflictingRecords = state.judgement.historyRecords.filter((record) => (
       exclusiveCodes.includes(String(record.additionCode ?? "").trim())
+      && (
+        recordActionTypes.length === 0
+        || recordActionTypes.includes(String(record.actionType ?? "").trim())
+      )
     ));
 
     if (conflictingRecords.length > 0) {
@@ -1747,6 +2462,26 @@ function getJudgementHistoryRecordsForCandidate(candidate) {
     return normalizedRecordName === candidateName
       || (familyName && normalizedRecordName === familyName);
   });
+}
+
+function filterHistoryRecordsForRule(records, rule) {
+  let filtered = Array.isArray(records) ? [...records] : [];
+  const targetAdditionCodes = Array.isArray(rule?.additionCodes)
+    ? rule.additionCodes.map((item) => String(item ?? "").trim()).filter(Boolean)
+    : [];
+  const targetActionTypes = Array.isArray(rule?.recordActionTypes)
+    ? rule.recordActionTypes.map((item) => String(item ?? "").trim()).filter(Boolean)
+    : [];
+
+  if (targetAdditionCodes.length > 0) {
+    filtered = filtered.filter((record) => targetAdditionCodes.includes(String(record.additionCode ?? "").trim()));
+  }
+
+  if (targetActionTypes.length > 0) {
+    filtered = filtered.filter((record) => targetActionTypes.includes(String(record.actionType ?? "").trim()));
+  }
+
+  return filtered;
 }
 
 function getResolvedReportRecordOrganizationGroup(record) {
@@ -2028,6 +2763,7 @@ function renderActiveSection() {
 }
 
 function renderJudgement() {
+  pruneHiddenJudgementAnswers();
   const visibleClients = getFilteredClientsForJudgement();
   renderSelectOptions(dom.judgement.client, visibleClients, state.judgement.clientId, (item) => ({
     value: item.clientId,
@@ -2955,27 +3691,50 @@ function getJudgementCandidates() {
   return evaluateCandidates({ includeAnswers: true });
 }
 
-function evaluateCandidates({ includeAnswers }) {
-  const facts = getJudgementFacts(includeAnswers);
+function getJudgementCandidatesExcludingAnswers(answerKeys) {
+  return evaluateCandidates({ includeAnswers: true, ignoredAnswerKeys: answerKeys });
+}
+
+function evaluateCandidates({ includeAnswers, ignoredAnswerKeys = [] }) {
+  const facts = getJudgementFacts(includeAnswers, ignoredAnswerKeys);
   return data.additions
     .filter((addition) => candidateMatches(addition, facts))
     .sort((left, right) => left.priority - right.priority)
     .map((addition) => ({ ...addition, reason: buildCandidateReason(addition, facts) }));
 }
 
-function getJudgementFacts(includeAnswers) {
+function getJudgementFacts(includeAnswers, ignoredAnswerKeys = []) {
   const client = getClientById(state.judgement.clientId);
   const organization = getOrganizationById(state.judgement.organizationId);
   const service = getServiceById(state.judgement.serviceId);
   const serviceDecisionCategories = getServiceDecisionCategories(service, organization);
+  const answers = includeAnswers
+    ? { ...state.judgement.answers }
+    : {
+        monthType: "",
+        placeType: "",
+        actionType: "",
+        hospitalAdmissionContext: "",
+        dischargeFacilityStaffOnlyInfo: "",
+        initialAdditionPlanned: "",
+        careManagerStart: "",
+        employmentStart: "",
+        serviceUseStartMonth: "",
+      };
+
+  for (const key of ignoredAnswerKeys) {
+    answers[key] = "";
+  }
+
   return {
     targetType: client?.targetType ?? "",
     organizationGroup: getOrganizationGroupLabel(organization, service),
     organizationType: deriveResolvedOrganizationType(organization, service),
     serviceDecisionCategories,
-    monthType: includeAnswers ? state.judgement.answers.monthType : "",
-    placeType: includeAnswers ? state.judgement.answers.placeType : "",
-    actionType: includeAnswers ? state.judgement.answers.actionType : "",
+    answers,
+    monthType: answers.monthType || "",
+    placeType: answers.placeType || "",
+    actionType: answers.actionType || "",
   };
 }
 
@@ -2983,6 +3742,7 @@ function candidateMatches(candidate, facts) {
   return matchesTargetType(candidate.targetTypes, facts.targetType)
     && matchesCondition(candidate.organizationGroups, facts.organizationGroup)
     && matchesOptionalCondition(candidate.organizationTypes, facts.organizationType)
+    && matchesRequiredAnswers(candidate.requiredAnswers, facts.answers)
     && matchesDecisionCategoryRules(
       facts.serviceDecisionCategories,
       candidate.serviceDecisionInclude,
@@ -3012,6 +3772,20 @@ function matchesOptionalCondition(allowed, actual) {
     return true;
   }
   return matchesCondition(allowed, actual);
+}
+
+function matchesRequiredAnswers(requiredAnswers, actualAnswers = {}) {
+  if (!requiredAnswers || typeof requiredAnswers !== "object") {
+    return true;
+  }
+
+  return Object.entries(requiredAnswers).every(([key, expectedValue]) => {
+    const actualValue = String(actualAnswers?.[key] ?? "").trim();
+    if (!actualValue) {
+      return true;
+    }
+    return actualValue === String(expectedValue ?? "").trim();
+  });
 }
 
 function matchesConditionList(allowed, actualValues) {
@@ -3073,12 +3847,53 @@ function buildCandidateReason(candidate, facts) {
 }
 
 function getVisibleQuestions() {
-  return questionDefinitions.filter((question) => {
-    if (question.key !== "actionType") {
-      return true;
+  const candidates = getJudgementCandidates();
+  return questionDefinitions
+    .map((question, index) => ({ question, index }))
+    .filter(({ question }) => {
+      if (typeof question.visibleWhen !== "function") {
+        return true;
+      }
+      return Boolean(question.visibleWhen({
+        answers: state.judgement.answers,
+        candidates,
+      }));
+    })
+    .sort((left, right) => {
+      const leftOrder = Number.isFinite(left.question.order) ? left.question.order : left.index;
+      const rightOrder = Number.isFinite(right.question.order) ? right.question.order : right.index;
+      return leftOrder - rightOrder;
+    })
+    .map(({ question }) => question);
+}
+
+function candidateRequiresAnswer(candidate, answerKey) {
+  const normalizedAnswerKey = String(answerKey ?? "").trim();
+  if (!normalizedAnswerKey) {
+    return false;
+  }
+
+  const rules = Array.isArray(candidate?.postCheckRules) ? candidate.postCheckRules : [];
+  return rules.some((rule) => String(rule?.answerKey ?? "").trim() === normalizedAnswerKey);
+}
+
+function shouldShowCandidateFactQuestion(answerKey) {
+  const candidates = getJudgementCandidatesExcludingAnswers([answerKey]);
+  return candidates.some((candidate) => (
+    String(candidate?.requiredAnswers?.[answerKey] ?? "").trim() !== ""
+  ));
+}
+
+function pruneHiddenJudgementAnswers() {
+  const visibleKeys = new Set(getVisibleQuestions().map((question) => question.key));
+  for (const key of Object.keys(state.judgement.answers)) {
+    if (!visibleKeys.has(key)) {
+      state.judgement.answers[key] = "";
     }
-    return Boolean(state.judgement.answers.placeType);
-  });
+  }
+  state.judgement.history = state.judgement.history.filter((key) => (
+    visibleKeys.has(key) && Boolean(state.judgement.answers[key])
+  ));
 }
 
 function syncEnrollmentSelection() {
@@ -3101,7 +3916,17 @@ function syncServiceSelection() {
 }
 
 function resetJudgementAnswers() {
-  state.judgement.answers = { monthType: "", placeType: "", actionType: "" };
+  state.judgement.answers = {
+    monthType: "",
+    placeType: "",
+    actionType: "",
+    hospitalAdmissionContext: "",
+    dischargeFacilityStaffOnlyInfo: "",
+    initialAdditionPlanned: "",
+    careManagerStart: "",
+    employmentStart: "",
+    serviceUseStartMonth: "",
+  };
   state.judgement.history = [];
 }
 
@@ -3166,6 +3991,10 @@ function enrichSampleReportRecord(record) {
   const addition = data.additions.find((item) => item.additionCode === record.additionCode);
   const legacyAdditionNames = {
     mededu: "医療・保育・教育機関等連携加算",
+    intensive: "集中支援加算",
+    edu_support: "保・教支援",
+    home_collab: "居宅連携",
+    home_work_collab: "居宅連携（就労）",
   };
   return {
     ...record,
@@ -3618,8 +4447,45 @@ function deriveResolvedOrganizationType(organization, service = null) {
     return "薬局";
   }
 
-  if (sourceTexts.includes("病院")) {
+  if (
+    sourceTexts.includes("病院")
+    || sourceTexts.includes("診療所")
+    || sourceTexts.includes("大学病院")
+    || sourceTexts.includes("医療センター")
+    || sourceTexts.includes("医大")
+    || sourceTexts.includes("クリニック")
+  ) {
     return "病院";
+  }
+
+  if (sourceTexts.includes("更生施設")) {
+    return "更生施設";
+  }
+
+  if (
+    sourceTexts.includes("児童自立支援施設")
+    || sourceTexts.includes("児童養護施設")
+    || sourceTexts.includes("乳児院")
+    || sourceTexts.includes("児童施設")
+  ) {
+    return "児童施設";
+  }
+
+  if (
+    sourceTexts.includes("刑事施設")
+    || sourceTexts.includes("刑務所")
+    || sourceTexts.includes("拘置所")
+    || sourceTexts.includes("少年院")
+  ) {
+    return "刑事施設";
+  }
+
+  if (
+    sourceTexts.includes("障害者支援施設")
+    || sourceTexts.includes("入所施設")
+    || sourceTexts.includes("入所支援")
+  ) {
+    return "入所施設";
   }
 
   if (sourceTexts.includes("就業・生活支援センター") || sourceTexts.includes("就労支援センター")) {
