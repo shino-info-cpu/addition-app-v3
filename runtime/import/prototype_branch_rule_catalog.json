@@ -1,0 +1,2464 @@
+{
+  "generatedAt": "2026-03-29T01:12:27.808Z",
+  "source": "app/frontend/app.js",
+  "branches": [
+    {
+      "branchCode": "mededu_tsuuin",
+      "branchName": "医療・保育・教育機関等連携加算（通院同行）",
+      "conditionGroups": [
+        {
+          "groupNo": 1,
+          "conditions": [
+            {
+              "fieldKey": "organizationGroup",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "病院・訪看・薬局グループ"
+              ],
+              "note": "機関グループ"
+            },
+            {
+              "fieldKey": "organizationType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "病院"
+              ],
+              "note": "機関種別"
+            },
+            {
+              "fieldKey": "serviceDecisionCategories",
+              "operatorCode": "includes_any",
+              "expectedValue": [
+                "医療関連"
+              ],
+              "note": "サービス判定区分の包含条件"
+            },
+            {
+              "fieldKey": "monthType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "モニタリング月",
+                "計画作成月"
+              ],
+              "note": "対応月区分"
+            },
+            {
+              "fieldKey": "placeType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "外出先"
+              ],
+              "note": "対応場所"
+            },
+            {
+              "fieldKey": "actionType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "通院同行"
+              ],
+              "note": "行為種別"
+            }
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "constraintCode": "monthly_limit_per_client_01",
+          "constraintKind": "monthly_limit_per_client",
+          "configJson": {
+            "code": "monthly_limit_per_client",
+            "limit": 3,
+            "additionCodes": [
+              "mededu",
+              "mededu_tsuuin"
+            ],
+            "recordActionTypes": [
+              "通院同行"
+            ],
+            "label": "同月3回まで"
+          },
+          "message": "同月3回まで",
+          "severity": "review",
+          "note": "Generated from prototype postCheckRules."
+        },
+        {
+          "constraintCode": "monthly_limit_per_client_by_organization_02",
+          "constraintKind": "monthly_limit_per_client_by_organization",
+          "configJson": {
+            "code": "monthly_limit_per_client_by_organization",
+            "limit": 1,
+            "additionCodes": [
+              "mededu",
+              "mededu_tsuuin"
+            ],
+            "recordActionTypes": [
+              "通院同行"
+            ],
+            "label": "同一病院等は月1回まで"
+          },
+          "message": "同一病院等は月1回まで",
+          "severity": "review",
+          "note": "Generated from prototype postCheckRules."
+        }
+      ]
+    },
+    {
+      "branchCode": "mededu_info",
+      "branchName": "医療・保育・教育機関等連携加算（情報共有）",
+      "conditionGroups": [
+        {
+          "groupNo": 1,
+          "conditions": [
+            {
+              "fieldKey": "organizationGroup",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "病院・訪看・薬局グループ",
+                "福祉サービス等提供機関"
+              ],
+              "note": "機関グループ"
+            },
+            {
+              "fieldKey": "serviceDecisionCategories",
+              "operatorCode": "includes_any",
+              "expectedValue": [
+                "医療関連",
+                "障害福祉以外の福祉サービス"
+              ],
+              "note": "サービス判定区分の包含条件"
+            },
+            {
+              "fieldKey": "serviceDecisionCategories",
+              "operatorCode": "excludes_all",
+              "expectedValue": [
+                "障害福祉サービス"
+              ],
+              "note": "サービス判定区分の除外条件"
+            },
+            {
+              "fieldKey": "monthType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "モニタリング月",
+                "計画作成月"
+              ],
+              "note": "対応月区分"
+            },
+            {
+              "fieldKey": "placeType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "自事業所内",
+                "外出先"
+              ],
+              "note": "対応場所"
+            },
+            {
+              "fieldKey": "actionType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "情報共有"
+              ],
+              "note": "行為種別"
+            }
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "constraintCode": "monthly_limit_per_client_by_organization_group_01",
+          "constraintKind": "monthly_limit_per_client_by_organization_group",
+          "configJson": {
+            "code": "monthly_limit_per_client_by_organization_group",
+            "limit": 1,
+            "additionCodes": [
+              "mededu",
+              "mededu_info"
+            ],
+            "recordActionTypes": [
+              "情報共有"
+            ],
+            "label": "同グループ月1回まで"
+          },
+          "message": "同グループ月1回まで",
+          "severity": "review",
+          "note": "Generated from prototype postCheckRules."
+        }
+      ]
+    },
+    {
+      "branchCode": "mededu_interview",
+      "branchName": "医療・保育・教育機関等連携加算（面談）",
+      "conditionGroups": [
+        {
+          "groupNo": 1,
+          "conditions": [
+            {
+              "fieldKey": "targetType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "児"
+              ],
+              "note": "利用者の対象区分"
+            },
+            {
+              "fieldKey": "organizationGroup",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "福祉サービス等提供機関"
+              ],
+              "note": "機関グループ"
+            },
+            {
+              "fieldKey": "serviceDecisionCategories",
+              "operatorCode": "includes_any",
+              "expectedValue": [
+                "障害福祉以外の福祉サービス"
+              ],
+              "note": "サービス判定区分の包含条件"
+            },
+            {
+              "fieldKey": "serviceDecisionCategories",
+              "operatorCode": "excludes_all",
+              "expectedValue": [
+                "障害福祉サービス"
+              ],
+              "note": "サービス判定区分の除外条件"
+            },
+            {
+              "fieldKey": "monthType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "モニタリング月",
+                "計画作成月"
+              ],
+              "note": "対応月区分"
+            },
+            {
+              "fieldKey": "placeType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "自事業所内",
+                "外出先"
+              ],
+              "note": "対応場所"
+            },
+            {
+              "fieldKey": "actionType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "面談"
+              ],
+              "note": "行為種別"
+            },
+            {
+              "fieldKey": "requiredInfoReceived",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "受けた"
+              ],
+              "note": "設問回答の必須条件"
+            }
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "constraintCode": "blocked_if_answer_true_01",
+          "constraintKind": "blocked_if_answer_true",
+          "configJson": {
+            "code": "blocked_if_answer_true",
+            "answerKey": "dischargeFacilityStaffOnlyInfo",
+            "blockedValue": "施設職員のみ",
+            "label": "退院・退所する施設の職員のみからの情報なら不可"
+          },
+          "message": "退院・退所する施設の職員のみからの情報なら不可",
+          "severity": "review",
+          "note": "Generated from prototype postCheckRules."
+        },
+        {
+          "constraintCode": "blocked_if_answer_true_02",
+          "constraintKind": "blocked_if_answer_true",
+          "configJson": {
+            "code": "blocked_if_answer_true",
+            "answerKey": "initialAdditionPlanned",
+            "blockedValue": "初回加算あり",
+            "label": "初回加算算定時は不可"
+          },
+          "message": "初回加算算定時は不可",
+          "severity": "review",
+          "note": "Generated from prototype postCheckRules."
+        },
+        {
+          "constraintCode": "monthly_limit_per_client_03",
+          "constraintKind": "monthly_limit_per_client",
+          "configJson": {
+            "code": "monthly_limit_per_client",
+            "limit": 1,
+            "additionCodes": [
+              "mededu",
+              "mededu_interview",
+              "mededu_meeting"
+            ],
+            "recordActionTypes": [
+              "面談",
+              "会議"
+            ],
+            "label": "同月1回まで"
+          },
+          "message": "同月1回まで",
+          "severity": "review",
+          "note": "Generated from prototype postCheckRules."
+        },
+        {
+          "constraintCode": "exclusive_with_addition_codes_04",
+          "constraintKind": "exclusive_with_addition_codes",
+          "configJson": {
+            "code": "exclusive_with_addition_codes",
+            "additionCodes": [
+              "conference"
+            ],
+            "label": "担当者会議加算との併算定不可"
+          },
+          "message": "担当者会議加算との併算定不可",
+          "severity": "review",
+          "note": "Generated from prototype postCheckRules."
+        }
+      ]
+    },
+    {
+      "branchCode": "mededu_meeting",
+      "branchName": "医療・保育・教育機関等連携加算（会議）",
+      "conditionGroups": [
+        {
+          "groupNo": 1,
+          "conditions": [
+            {
+              "fieldKey": "targetType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "児"
+              ],
+              "note": "利用者の対象区分"
+            },
+            {
+              "fieldKey": "organizationGroup",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "福祉サービス等提供機関"
+              ],
+              "note": "機関グループ"
+            },
+            {
+              "fieldKey": "serviceDecisionCategories",
+              "operatorCode": "includes_any",
+              "expectedValue": [
+                "障害福祉以外の福祉サービス"
+              ],
+              "note": "サービス判定区分の包含条件"
+            },
+            {
+              "fieldKey": "serviceDecisionCategories",
+              "operatorCode": "excludes_all",
+              "expectedValue": [
+                "障害福祉サービス"
+              ],
+              "note": "サービス判定区分の除外条件"
+            },
+            {
+              "fieldKey": "monthType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "モニタリング月",
+                "計画作成月"
+              ],
+              "note": "対応月区分"
+            },
+            {
+              "fieldKey": "placeType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "自事業所内",
+                "外出先"
+              ],
+              "note": "対応場所"
+            },
+            {
+              "fieldKey": "actionType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "会議"
+              ],
+              "note": "行為種別"
+            },
+            {
+              "fieldKey": "requiredInfoReceived",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "受けた"
+              ],
+              "note": "設問回答の必須条件"
+            }
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "constraintCode": "blocked_if_answer_true_01",
+          "constraintKind": "blocked_if_answer_true",
+          "configJson": {
+            "code": "blocked_if_answer_true",
+            "answerKey": "dischargeFacilityStaffOnlyInfo",
+            "blockedValue": "施設職員のみ",
+            "label": "退院・退所する施設の職員のみからの情報なら不可"
+          },
+          "message": "退院・退所する施設の職員のみからの情報なら不可",
+          "severity": "review",
+          "note": "Generated from prototype postCheckRules."
+        },
+        {
+          "constraintCode": "blocked_if_answer_true_02",
+          "constraintKind": "blocked_if_answer_true",
+          "configJson": {
+            "code": "blocked_if_answer_true",
+            "answerKey": "initialAdditionPlanned",
+            "blockedValue": "初回加算あり",
+            "label": "初回加算算定時は不可"
+          },
+          "message": "初回加算算定時は不可",
+          "severity": "review",
+          "note": "Generated from prototype postCheckRules."
+        },
+        {
+          "constraintCode": "monthly_limit_per_client_03",
+          "constraintKind": "monthly_limit_per_client",
+          "configJson": {
+            "code": "monthly_limit_per_client",
+            "limit": 1,
+            "additionCodes": [
+              "mededu",
+              "mededu_interview",
+              "mededu_meeting"
+            ],
+            "recordActionTypes": [
+              "面談",
+              "会議"
+            ],
+            "label": "同月1回まで"
+          },
+          "message": "同月1回まで",
+          "severity": "review",
+          "note": "Generated from prototype postCheckRules."
+        },
+        {
+          "constraintCode": "exclusive_with_addition_codes_04",
+          "constraintKind": "exclusive_with_addition_codes",
+          "configJson": {
+            "code": "exclusive_with_addition_codes",
+            "additionCodes": [
+              "conference"
+            ],
+            "label": "担当者会議加算との併算定不可"
+          },
+          "message": "担当者会議加算との併算定不可",
+          "severity": "review",
+          "note": "Generated from prototype postCheckRules."
+        }
+      ]
+    },
+    {
+      "branchCode": "intensive_visit",
+      "branchName": "集中支援加算（訪問）",
+      "conditionGroups": [
+        {
+          "groupNo": 1,
+          "conditions": [
+            {
+              "fieldKey": "organizationGroup",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "福祉サービス等提供機関"
+              ],
+              "note": "機関グループ"
+            },
+            {
+              "fieldKey": "serviceDecisionCategories",
+              "operatorCode": "includes_any",
+              "expectedValue": [
+                "障害福祉サービス",
+                "障害福祉以外の福祉サービス"
+              ],
+              "note": "サービス判定区分の包含条件"
+            },
+            {
+              "fieldKey": "monthType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "それ以外"
+              ],
+              "note": "対応月区分"
+            },
+            {
+              "fieldKey": "placeType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "外出先"
+              ],
+              "note": "対応場所"
+            },
+            {
+              "fieldKey": "actionType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "訪問"
+              ],
+              "note": "行為種別"
+            }
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "constraintCode": "monthly_action_count_min_01",
+          "constraintKind": "monthly_action_count_min",
+          "configJson": {
+            "code": "monthly_action_count_min",
+            "minimum": 2,
+            "actionTypes": [
+              "訪問"
+            ],
+            "label": "同月2回以上の訪問が必要"
+          },
+          "message": "同月2回以上の訪問が必要",
+          "severity": "review",
+          "note": "Generated from prototype postCheckRules."
+        }
+      ]
+    },
+    {
+      "branchCode": "intensive_scene_check",
+      "branchName": "集中支援加算（サービス提供場面確認）",
+      "conditionGroups": [
+        {
+          "groupNo": 1,
+          "conditions": [
+            {
+              "fieldKey": "organizationGroup",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "福祉サービス等提供機関"
+              ],
+              "note": "機関グループ"
+            },
+            {
+              "fieldKey": "serviceDecisionCategories",
+              "operatorCode": "includes_any",
+              "expectedValue": [
+                "障害福祉サービス",
+                "障害福祉以外の福祉サービス"
+              ],
+              "note": "サービス判定区分の包含条件"
+            },
+            {
+              "fieldKey": "monthType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "それ以外"
+              ],
+              "note": "対応月区分"
+            },
+            {
+              "fieldKey": "placeType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "外出先"
+              ],
+              "note": "対応場所"
+            },
+            {
+              "fieldKey": "actionType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "サービス提供場面確認"
+              ],
+              "note": "行為種別"
+            }
+          ]
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "branchCode": "intensive_meeting_host",
+      "branchName": "集中支援加算（会議開催）",
+      "conditionGroups": [
+        {
+          "groupNo": 1,
+          "conditions": [
+            {
+              "fieldKey": "organizationGroup",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "福祉サービス等提供機関"
+              ],
+              "note": "機関グループ"
+            },
+            {
+              "fieldKey": "serviceDecisionCategories",
+              "operatorCode": "includes_any",
+              "expectedValue": [
+                "障害福祉サービス",
+                "障害福祉以外の福祉サービス"
+              ],
+              "note": "サービス判定区分の包含条件"
+            },
+            {
+              "fieldKey": "monthType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "それ以外"
+              ],
+              "note": "対応月区分"
+            },
+            {
+              "fieldKey": "placeType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "自事業所内",
+                "外出先"
+              ],
+              "note": "対応場所"
+            },
+            {
+              "fieldKey": "actionType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "担当者会議開催"
+              ],
+              "note": "行為種別"
+            }
+          ]
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "branchCode": "intensive_meeting_join",
+      "branchName": "集中支援加算（会議参加）",
+      "conditionGroups": [
+        {
+          "groupNo": 1,
+          "conditions": [
+            {
+              "fieldKey": "organizationGroup",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "福祉サービス等提供機関"
+              ],
+              "note": "機関グループ"
+            },
+            {
+              "fieldKey": "serviceDecisionCategories",
+              "operatorCode": "includes_any",
+              "expectedValue": [
+                "障害福祉サービス",
+                "障害福祉以外の福祉サービス"
+              ],
+              "note": "サービス判定区分の包含条件"
+            },
+            {
+              "fieldKey": "monthType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "それ以外"
+              ],
+              "note": "対応月区分"
+            },
+            {
+              "fieldKey": "placeType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "自事業所内",
+                "外出先"
+              ],
+              "note": "対応場所"
+            },
+            {
+              "fieldKey": "actionType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "会議"
+              ],
+              "note": "行為種別"
+            }
+          ]
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "branchCode": "intensive_tsuuin",
+      "branchName": "集中支援加算（通院同行）",
+      "conditionGroups": [
+        {
+          "groupNo": 1,
+          "conditions": [
+            {
+              "fieldKey": "organizationGroup",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "病院・訪看・薬局グループ"
+              ],
+              "note": "機関グループ"
+            },
+            {
+              "fieldKey": "organizationType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "病院"
+              ],
+              "note": "機関種別"
+            },
+            {
+              "fieldKey": "serviceDecisionCategories",
+              "operatorCode": "includes_any",
+              "expectedValue": [
+                "医療関連"
+              ],
+              "note": "サービス判定区分の包含条件"
+            },
+            {
+              "fieldKey": "monthType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "それ以外"
+              ],
+              "note": "対応月区分"
+            },
+            {
+              "fieldKey": "placeType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "外出先"
+              ],
+              "note": "対応場所"
+            },
+            {
+              "fieldKey": "actionType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "通院同行"
+              ],
+              "note": "行為種別"
+            }
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "constraintCode": "monthly_limit_per_client_01",
+          "constraintKind": "monthly_limit_per_client",
+          "configJson": {
+            "code": "monthly_limit_per_client",
+            "limit": 3,
+            "additionCodes": [
+              "intensive",
+              "intensive_tsuuin"
+            ],
+            "recordActionTypes": [
+              "通院同行"
+            ],
+            "label": "同月3回まで"
+          },
+          "message": "同月3回まで",
+          "severity": "review",
+          "note": "Generated from prototype postCheckRules."
+        },
+        {
+          "constraintCode": "monthly_limit_per_client_by_organization_02",
+          "constraintKind": "monthly_limit_per_client_by_organization",
+          "configJson": {
+            "code": "monthly_limit_per_client_by_organization",
+            "limit": 1,
+            "additionCodes": [
+              "intensive",
+              "intensive_tsuuin"
+            ],
+            "recordActionTypes": [
+              "通院同行"
+            ],
+            "label": "同一病院等は月1回まで"
+          },
+          "message": "同一病院等は月1回まで",
+          "severity": "review",
+          "note": "Generated from prototype postCheckRules."
+        }
+      ]
+    },
+    {
+      "branchCode": "intensive_info",
+      "branchName": "集中支援加算（情報共有）",
+      "conditionGroups": [
+        {
+          "groupNo": 1,
+          "conditions": [
+            {
+              "fieldKey": "organizationGroup",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "福祉サービス等提供機関"
+              ],
+              "note": "機関グループ"
+            },
+            {
+              "fieldKey": "serviceDecisionCategories",
+              "operatorCode": "includes_any",
+              "expectedValue": [
+                "障害福祉サービス",
+                "障害福祉以外の福祉サービス"
+              ],
+              "note": "サービス判定区分の包含条件"
+            },
+            {
+              "fieldKey": "monthType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "それ以外"
+              ],
+              "note": "対応月区分"
+            },
+            {
+              "fieldKey": "placeType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "自事業所内",
+                "外出先"
+              ],
+              "note": "対応場所"
+            },
+            {
+              "fieldKey": "actionType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "情報共有"
+              ],
+              "note": "行為種別"
+            }
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "constraintCode": "monthly_limit_per_client_by_organization_group_01",
+          "constraintKind": "monthly_limit_per_client_by_organization_group",
+          "configJson": {
+            "code": "monthly_limit_per_client_by_organization_group",
+            "limit": 1,
+            "additionCodes": [
+              "intensive",
+              "intensive_info",
+              "intensive_info_medical",
+              "intensive_info_pharmacy"
+            ],
+            "recordActionTypes": [
+              "情報共有"
+            ],
+            "label": "同グループ月1回まで"
+          },
+          "message": "同グループ月1回まで",
+          "severity": "review",
+          "note": "Generated from prototype postCheckRules."
+        }
+      ]
+    },
+    {
+      "branchCode": "intensive_info_medical",
+      "branchName": "集中支援加算（情報共有）",
+      "conditionGroups": [
+        {
+          "groupNo": 1,
+          "conditions": [
+            {
+              "fieldKey": "organizationGroup",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "病院・訪看・薬局グループ"
+              ],
+              "note": "機関グループ"
+            },
+            {
+              "fieldKey": "organizationType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "病院",
+                "訪問看護"
+              ],
+              "note": "機関種別"
+            },
+            {
+              "fieldKey": "serviceDecisionCategories",
+              "operatorCode": "includes_any",
+              "expectedValue": [
+                "医療関連"
+              ],
+              "note": "サービス判定区分の包含条件"
+            },
+            {
+              "fieldKey": "monthType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "それ以外"
+              ],
+              "note": "対応月区分"
+            },
+            {
+              "fieldKey": "placeType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "自事業所内",
+                "外出先"
+              ],
+              "note": "対応場所"
+            },
+            {
+              "fieldKey": "actionType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "情報共有"
+              ],
+              "note": "行為種別"
+            },
+            {
+              "fieldKey": "hospitalAdmissionContext",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "入院に当たっていない"
+              ],
+              "note": "設問回答の必須条件"
+            }
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "constraintCode": "monthly_limit_per_client_by_organization_group_01",
+          "constraintKind": "monthly_limit_per_client_by_organization_group",
+          "configJson": {
+            "code": "monthly_limit_per_client_by_organization_group",
+            "limit": 1,
+            "additionCodes": [
+              "intensive",
+              "intensive_info",
+              "intensive_info_medical",
+              "intensive_info_pharmacy"
+            ],
+            "recordActionTypes": [
+              "情報共有"
+            ],
+            "label": "同グループ月1回まで"
+          },
+          "message": "同グループ月1回まで",
+          "severity": "review",
+          "note": "Generated from prototype postCheckRules."
+        }
+      ]
+    },
+    {
+      "branchCode": "intensive_info_pharmacy",
+      "branchName": "集中支援加算（情報共有）",
+      "conditionGroups": [
+        {
+          "groupNo": 1,
+          "conditions": [
+            {
+              "fieldKey": "organizationGroup",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "病院・訪看・薬局グループ"
+              ],
+              "note": "機関グループ"
+            },
+            {
+              "fieldKey": "organizationType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "薬局"
+              ],
+              "note": "機関種別"
+            },
+            {
+              "fieldKey": "serviceDecisionCategories",
+              "operatorCode": "includes_any",
+              "expectedValue": [
+                "医療関連"
+              ],
+              "note": "サービス判定区分の包含条件"
+            },
+            {
+              "fieldKey": "monthType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "それ以外"
+              ],
+              "note": "対応月区分"
+            },
+            {
+              "fieldKey": "placeType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "自事業所内",
+                "外出先"
+              ],
+              "note": "対応場所"
+            },
+            {
+              "fieldKey": "actionType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "情報共有"
+              ],
+              "note": "行為種別"
+            }
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "constraintCode": "monthly_limit_per_client_by_organization_group_01",
+          "constraintKind": "monthly_limit_per_client_by_organization_group",
+          "configJson": {
+            "code": "monthly_limit_per_client_by_organization_group",
+            "limit": 1,
+            "additionCodes": [
+              "intensive",
+              "intensive_info",
+              "intensive_info_medical",
+              "intensive_info_pharmacy"
+            ],
+            "recordActionTypes": [
+              "情報共有"
+            ],
+            "label": "同グループ月1回まで"
+          },
+          "message": "同グループ月1回まで",
+          "severity": "review",
+          "note": "Generated from prototype postCheckRules."
+        }
+      ]
+    },
+    {
+      "branchCode": "monitoring",
+      "branchName": "モニタリング加算",
+      "conditionGroups": [
+        {
+          "groupNo": 1,
+          "conditions": [
+            {
+              "fieldKey": "organizationGroup",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "福祉サービス等提供機関"
+              ],
+              "note": "機関グループ"
+            },
+            {
+              "fieldKey": "serviceDecisionCategories",
+              "operatorCode": "includes_any",
+              "expectedValue": [
+                "障害福祉サービス",
+                "障害福祉以外の福祉サービス"
+              ],
+              "note": "サービス判定区分の包含条件"
+            },
+            {
+              "fieldKey": "monthType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "モニタリング月",
+                "計画作成月",
+                "それ以外"
+              ],
+              "note": "対応月区分"
+            },
+            {
+              "fieldKey": "placeType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "外出先"
+              ],
+              "note": "対応場所"
+            },
+            {
+              "fieldKey": "actionType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "サービス提供場面確認"
+              ],
+              "note": "行為種別"
+            }
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "constraintCode": "monthly_limit_per_client_01",
+          "constraintKind": "monthly_limit_per_client",
+          "configJson": {
+            "code": "monthly_limit_per_client",
+            "limit": 1,
+            "additionCodes": [
+              "monitoring"
+            ],
+            "label": "同月1回まで"
+          },
+          "message": "同月1回まで",
+          "severity": "review",
+          "note": "Generated from prototype postCheckRules."
+        }
+      ]
+    },
+    {
+      "branchCode": "conference",
+      "branchName": "担当者会議加算",
+      "conditionGroups": [
+        {
+          "groupNo": 1,
+          "conditions": [
+            {
+              "fieldKey": "organizationGroup",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "福祉サービス等提供機関"
+              ],
+              "note": "機関グループ"
+            },
+            {
+              "fieldKey": "serviceDecisionCategories",
+              "operatorCode": "includes_any",
+              "expectedValue": [
+                "医療関連",
+                "障害福祉サービス",
+                "障害福祉以外の福祉サービス"
+              ],
+              "note": "サービス判定区分の包含条件"
+            },
+            {
+              "fieldKey": "monthType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "モニタリング月"
+              ],
+              "note": "対応月区分"
+            },
+            {
+              "fieldKey": "placeType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "自事業所内",
+                "外出先"
+              ],
+              "note": "対応場所"
+            },
+            {
+              "fieldKey": "actionType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "担当者会議開催"
+              ],
+              "note": "行為種別"
+            }
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "constraintCode": "monthly_limit_per_client_01",
+          "constraintKind": "monthly_limit_per_client",
+          "configJson": {
+            "code": "monthly_limit_per_client",
+            "limit": 1,
+            "additionCodes": [
+              "conference"
+            ],
+            "label": "同月1回まで"
+          },
+          "message": "同月1回まで",
+          "severity": "review",
+          "note": "Generated from prototype postCheckRules."
+        },
+        {
+          "constraintCode": "exclusive_with_addition_codes_02",
+          "constraintKind": "exclusive_with_addition_codes",
+          "configJson": {
+            "code": "exclusive_with_addition_codes",
+            "additionCodes": [
+              "mededu",
+              "mededu_interview",
+              "mededu_meeting"
+            ],
+            "recordActionTypes": [
+              "面談",
+              "会議"
+            ],
+            "label": "医保教（面談・会議）との併算定不可"
+          },
+          "message": "医保教（面談・会議）との併算定不可",
+          "severity": "review",
+          "note": "Generated from prototype postCheckRules."
+        }
+      ]
+    },
+    {
+      "branchCode": "discharge",
+      "branchName": "退院・退所加算",
+      "conditionGroups": [
+        {
+          "groupNo": 1,
+          "conditions": [
+            {
+              "fieldKey": "organizationGroup",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "病院・訪看・薬局グループ",
+                "福祉サービス等提供機関"
+              ],
+              "note": "機関グループ"
+            },
+            {
+              "fieldKey": "organizationType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "病院",
+                "入所施設",
+                "更生施設",
+                "児童施設",
+                "刑事施設"
+              ],
+              "note": "機関種別"
+            },
+            {
+              "fieldKey": "serviceDecisionCategories",
+              "operatorCode": "includes_any",
+              "expectedValue": [
+                "医療関連",
+                "障害福祉サービス",
+                "障害福祉以外の福祉サービス"
+              ],
+              "note": "サービス判定区分の包含条件"
+            },
+            {
+              "fieldKey": "monthType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "計画作成月",
+                "それ以外"
+              ],
+              "note": "対応月区分"
+            },
+            {
+              "fieldKey": "placeType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "自事業所内",
+                "外出先"
+              ],
+              "note": "対応場所"
+            },
+            {
+              "fieldKey": "actionType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "面談",
+                "退院前面談"
+              ],
+              "note": "行為種別"
+            },
+            {
+              "fieldKey": "serviceUseStartMonth",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "開始月である"
+              ],
+              "note": "設問回答の必須条件"
+            },
+            {
+              "fieldKey": "requiredInfoReceived",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "受けた"
+              ],
+              "note": "設問回答の必須条件"
+            }
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "constraintCode": "blocked_if_answer_true_01",
+          "constraintKind": "blocked_if_answer_true",
+          "configJson": {
+            "code": "blocked_if_answer_true",
+            "answerKey": "dischargeInpatientPeriodCount",
+            "blockedValue": "4回目以上・不明",
+            "label": "同一の入所・入院期間中は3回まで"
+          },
+          "message": "同一の入所・入院期間中は3回まで",
+          "severity": "review",
+          "note": "Generated from prototype postCheckRules."
+        },
+        {
+          "constraintCode": "blocked_if_answer_true_02",
+          "constraintKind": "blocked_if_answer_true",
+          "configJson": {
+            "code": "blocked_if_answer_true",
+            "answerKey": "initialAdditionPlanned",
+            "blockedValue": "初回加算あり",
+            "label": "初回加算算定時は不可"
+          },
+          "message": "初回加算算定時は不可",
+          "severity": "review",
+          "note": "Generated from prototype postCheckRules."
+        }
+      ]
+    },
+    {
+      "branchCode": "hospital_info_i",
+      "branchName": "入院時情報連携加算 I",
+      "conditionGroups": [
+        {
+          "groupNo": 1,
+          "conditions": [
+            {
+              "fieldKey": "organizationGroup",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "病院・訪看・薬局グループ"
+              ],
+              "note": "機関グループ"
+            },
+            {
+              "fieldKey": "organizationType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "病院"
+              ],
+              "note": "機関種別"
+            },
+            {
+              "fieldKey": "serviceDecisionCategories",
+              "operatorCode": "includes_any",
+              "expectedValue": [
+                "医療関連",
+                "障害福祉サービス",
+                "障害福祉以外の福祉サービス"
+              ],
+              "note": "サービス判定区分の包含条件"
+            },
+            {
+              "fieldKey": "monthType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "モニタリング月",
+                "計画作成月",
+                "それ以外"
+              ],
+              "note": "対応月区分"
+            },
+            {
+              "fieldKey": "placeType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "外出先"
+              ],
+              "note": "対応場所"
+            },
+            {
+              "fieldKey": "actionType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "情報共有"
+              ],
+              "note": "行為種別"
+            },
+            {
+              "fieldKey": "hospitalAdmissionContext",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "入院に当たっている"
+              ],
+              "note": "設問回答の必須条件"
+            }
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "constraintCode": "monthly_limit_per_client_01",
+          "constraintKind": "monthly_limit_per_client",
+          "configJson": {
+            "code": "monthly_limit_per_client",
+            "limit": 1,
+            "additionCodes": [
+              "hospital_info_i"
+            ],
+            "label": "同月1回まで"
+          },
+          "message": "同月1回まで",
+          "severity": "review",
+          "note": "Generated from prototype postCheckRules."
+        },
+        {
+          "constraintCode": "exclusive_with_addition_codes_02",
+          "constraintKind": "exclusive_with_addition_codes",
+          "configJson": {
+            "code": "exclusive_with_addition_codes",
+            "additionCodes": [
+              "hospital_info_ii"
+            ],
+            "label": "IIとの併算定不可"
+          },
+          "message": "IIとの併算定不可",
+          "severity": "review",
+          "note": "Generated from prototype postCheckRules."
+        }
+      ]
+    },
+    {
+      "branchCode": "hospital_info_ii",
+      "branchName": "入院時情報連携加算 II",
+      "conditionGroups": [
+        {
+          "groupNo": 1,
+          "conditions": [
+            {
+              "fieldKey": "organizationGroup",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "病院・訪看・薬局グループ"
+              ],
+              "note": "機関グループ"
+            },
+            {
+              "fieldKey": "organizationType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "病院"
+              ],
+              "note": "機関種別"
+            },
+            {
+              "fieldKey": "serviceDecisionCategories",
+              "operatorCode": "includes_any",
+              "expectedValue": [
+                "医療関連",
+                "障害福祉サービス",
+                "障害福祉以外の福祉サービス"
+              ],
+              "note": "サービス判定区分の包含条件"
+            },
+            {
+              "fieldKey": "monthType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "モニタリング月",
+                "計画作成月",
+                "それ以外"
+              ],
+              "note": "対応月区分"
+            },
+            {
+              "fieldKey": "placeType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "自事業所内"
+              ],
+              "note": "対応場所"
+            },
+            {
+              "fieldKey": "actionType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "情報共有"
+              ],
+              "note": "行為種別"
+            },
+            {
+              "fieldKey": "hospitalAdmissionContext",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "入院に当たっている"
+              ],
+              "note": "設問回答の必須条件"
+            }
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "constraintCode": "monthly_limit_per_client_01",
+          "constraintKind": "monthly_limit_per_client",
+          "configJson": {
+            "code": "monthly_limit_per_client",
+            "limit": 1,
+            "additionCodes": [
+              "hospital_info_ii"
+            ],
+            "label": "同月1回まで"
+          },
+          "message": "同月1回まで",
+          "severity": "review",
+          "note": "Generated from prototype postCheckRules."
+        },
+        {
+          "constraintCode": "exclusive_with_addition_codes_02",
+          "constraintKind": "exclusive_with_addition_codes",
+          "configJson": {
+            "code": "exclusive_with_addition_codes",
+            "additionCodes": [
+              "hospital_info_i"
+            ],
+            "label": "Iとの併算定不可"
+          },
+          "message": "Iとの併算定不可",
+          "severity": "review",
+          "note": "Generated from prototype postCheckRules."
+        }
+      ]
+    },
+    {
+      "branchCode": "edu_info",
+      "branchName": "保・教支援（情報共有）",
+      "conditionGroups": [
+        {
+          "groupNo": 1,
+          "conditions": [
+            {
+              "fieldKey": "targetType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "児"
+              ],
+              "note": "利用者の対象区分"
+            },
+            {
+              "fieldKey": "organizationGroup",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "福祉サービス等提供機関"
+              ],
+              "note": "機関グループ"
+            },
+            {
+              "fieldKey": "serviceDecisionCategories",
+              "operatorCode": "includes_any",
+              "expectedValue": [
+                "障害福祉以外の福祉サービス"
+              ],
+              "note": "サービス判定区分の包含条件"
+            },
+            {
+              "fieldKey": "monthType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "モニタリング月",
+                "計画作成月",
+                "それ以外"
+              ],
+              "note": "対応月区分"
+            },
+            {
+              "fieldKey": "placeType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "自事業所内",
+                "外出先"
+              ],
+              "note": "対応場所"
+            },
+            {
+              "fieldKey": "actionType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "情報共有"
+              ],
+              "note": "行為種別"
+            },
+            {
+              "fieldKey": "organizationType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "学校",
+                "保育",
+                "児童施設"
+              ],
+              "note": "conditionalRequiredAnswers 非該当の機関種別"
+            }
+          ]
+        },
+        {
+          "groupNo": 2,
+          "conditions": [
+            {
+              "fieldKey": "targetType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "児"
+              ],
+              "note": "利用者の対象区分"
+            },
+            {
+              "fieldKey": "organizationGroup",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "福祉サービス等提供機関"
+              ],
+              "note": "機関グループ"
+            },
+            {
+              "fieldKey": "serviceDecisionCategories",
+              "operatorCode": "includes_any",
+              "expectedValue": [
+                "障害福祉以外の福祉サービス"
+              ],
+              "note": "サービス判定区分の包含条件"
+            },
+            {
+              "fieldKey": "monthType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "モニタリング月",
+                "計画作成月",
+                "それ以外"
+              ],
+              "note": "対応月区分"
+            },
+            {
+              "fieldKey": "placeType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "自事業所内",
+                "外出先"
+              ],
+              "note": "対応場所"
+            },
+            {
+              "fieldKey": "actionType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "情報共有"
+              ],
+              "note": "行為種別"
+            },
+            {
+              "fieldKey": "organizationType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "企業",
+                "障害者就業・生活支援センター"
+              ],
+              "note": "conditionalRequiredAnswers で絞られた機関種別"
+            },
+            {
+              "fieldKey": "employmentStart",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "新規雇用あり"
+              ],
+              "note": "conditionalRequiredAnswers 由来の追加条件"
+            }
+          ]
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "branchCode": "edu_visit",
+      "branchName": "保・教支援（訪問面接）",
+      "conditionGroups": [
+        {
+          "groupNo": 1,
+          "conditions": [
+            {
+              "fieldKey": "targetType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "児"
+              ],
+              "note": "利用者の対象区分"
+            },
+            {
+              "fieldKey": "organizationGroup",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "福祉サービス等提供機関"
+              ],
+              "note": "機関グループ"
+            },
+            {
+              "fieldKey": "serviceDecisionCategories",
+              "operatorCode": "includes_any",
+              "expectedValue": [
+                "障害福祉以外の福祉サービス"
+              ],
+              "note": "サービス判定区分の包含条件"
+            },
+            {
+              "fieldKey": "monthType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "それ以外"
+              ],
+              "note": "対応月区分"
+            },
+            {
+              "fieldKey": "placeType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "外出先"
+              ],
+              "note": "対応場所"
+            },
+            {
+              "fieldKey": "actionType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "面談"
+              ],
+              "note": "行為種別"
+            },
+            {
+              "fieldKey": "organizationType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "学校",
+                "保育",
+                "児童施設"
+              ],
+              "note": "conditionalRequiredAnswers 非該当の機関種別"
+            }
+          ]
+        },
+        {
+          "groupNo": 2,
+          "conditions": [
+            {
+              "fieldKey": "targetType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "児"
+              ],
+              "note": "利用者の対象区分"
+            },
+            {
+              "fieldKey": "organizationGroup",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "福祉サービス等提供機関"
+              ],
+              "note": "機関グループ"
+            },
+            {
+              "fieldKey": "serviceDecisionCategories",
+              "operatorCode": "includes_any",
+              "expectedValue": [
+                "障害福祉以外の福祉サービス"
+              ],
+              "note": "サービス判定区分の包含条件"
+            },
+            {
+              "fieldKey": "monthType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "それ以外"
+              ],
+              "note": "対応月区分"
+            },
+            {
+              "fieldKey": "placeType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "外出先"
+              ],
+              "note": "対応場所"
+            },
+            {
+              "fieldKey": "actionType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "面談"
+              ],
+              "note": "行為種別"
+            },
+            {
+              "fieldKey": "organizationType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "企業",
+                "障害者就業・生活支援センター"
+              ],
+              "note": "conditionalRequiredAnswers で絞られた機関種別"
+            },
+            {
+              "fieldKey": "employmentStart",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "新規雇用あり"
+              ],
+              "note": "conditionalRequiredAnswers 由来の追加条件"
+            }
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "constraintCode": "monthly_addition_count_min_01",
+          "constraintKind": "monthly_addition_count_min",
+          "configJson": {
+            "code": "monthly_addition_count_min",
+            "minimum": 2,
+            "additionCodes": [
+              "edu_visit"
+            ],
+            "label": "同月2回以上の訪問面接が必要"
+          },
+          "message": "同月2回以上の訪問面接が必要",
+          "severity": "review",
+          "note": "Generated from prototype postCheckRules."
+        }
+      ]
+    },
+    {
+      "branchCode": "edu_meeting",
+      "branchName": "保・教支援（会議参加）",
+      "conditionGroups": [
+        {
+          "groupNo": 1,
+          "conditions": [
+            {
+              "fieldKey": "targetType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "児"
+              ],
+              "note": "利用者の対象区分"
+            },
+            {
+              "fieldKey": "organizationGroup",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "福祉サービス等提供機関"
+              ],
+              "note": "機関グループ"
+            },
+            {
+              "fieldKey": "serviceDecisionCategories",
+              "operatorCode": "includes_any",
+              "expectedValue": [
+                "障害福祉以外の福祉サービス"
+              ],
+              "note": "サービス判定区分の包含条件"
+            },
+            {
+              "fieldKey": "monthType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "それ以外"
+              ],
+              "note": "対応月区分"
+            },
+            {
+              "fieldKey": "placeType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "自事業所内",
+                "外出先"
+              ],
+              "note": "対応場所"
+            },
+            {
+              "fieldKey": "actionType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "会議"
+              ],
+              "note": "行為種別"
+            },
+            {
+              "fieldKey": "organizationType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "学校",
+                "保育",
+                "児童施設"
+              ],
+              "note": "conditionalRequiredAnswers 非該当の機関種別"
+            }
+          ]
+        },
+        {
+          "groupNo": 2,
+          "conditions": [
+            {
+              "fieldKey": "targetType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "児"
+              ],
+              "note": "利用者の対象区分"
+            },
+            {
+              "fieldKey": "organizationGroup",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "福祉サービス等提供機関"
+              ],
+              "note": "機関グループ"
+            },
+            {
+              "fieldKey": "serviceDecisionCategories",
+              "operatorCode": "includes_any",
+              "expectedValue": [
+                "障害福祉以外の福祉サービス"
+              ],
+              "note": "サービス判定区分の包含条件"
+            },
+            {
+              "fieldKey": "monthType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "それ以外"
+              ],
+              "note": "対応月区分"
+            },
+            {
+              "fieldKey": "placeType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "自事業所内",
+                "外出先"
+              ],
+              "note": "対応場所"
+            },
+            {
+              "fieldKey": "actionType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "会議"
+              ],
+              "note": "行為種別"
+            },
+            {
+              "fieldKey": "organizationType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "企業",
+                "障害者就業・生活支援センター"
+              ],
+              "note": "conditionalRequiredAnswers で絞られた機関種別"
+            },
+            {
+              "fieldKey": "employmentStart",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "新規雇用あり"
+              ],
+              "note": "conditionalRequiredAnswers 由来の追加条件"
+            }
+          ]
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "branchCode": "home_info",
+      "branchName": "居宅連携（情報共有）",
+      "conditionGroups": [
+        {
+          "groupNo": 1,
+          "conditions": [
+            {
+              "fieldKey": "targetType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "者"
+              ],
+              "note": "利用者の対象区分"
+            },
+            {
+              "fieldKey": "organizationGroup",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "福祉サービス等提供機関"
+              ],
+              "note": "機関グループ"
+            },
+            {
+              "fieldKey": "organizationType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "ケアマネ事業所"
+              ],
+              "note": "機関種別"
+            },
+            {
+              "fieldKey": "monthType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "モニタリング月",
+                "計画作成月",
+                "それ以外"
+              ],
+              "note": "対応月区分"
+            },
+            {
+              "fieldKey": "placeType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "自事業所内",
+                "外出先"
+              ],
+              "note": "対応場所"
+            },
+            {
+              "fieldKey": "actionType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "情報共有"
+              ],
+              "note": "行為種別"
+            },
+            {
+              "fieldKey": "careManagerStart",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "利用開始あり"
+              ],
+              "note": "設問回答の必須条件"
+            }
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "constraintCode": "monthly_limit_per_client_01",
+          "constraintKind": "monthly_limit_per_client",
+          "configJson": {
+            "code": "monthly_limit_per_client",
+            "limit": 2,
+            "additionCodes": [
+              "home_collab",
+              "home_info"
+            ],
+            "recordActionTypes": [
+              "情報共有"
+            ],
+            "label": "同月2回まで"
+          },
+          "message": "同月2回まで",
+          "severity": "review",
+          "note": "Generated from prototype postCheckRules."
+        }
+      ]
+    },
+    {
+      "branchCode": "home_visit",
+      "branchName": "居宅連携（訪問面接）",
+      "conditionGroups": [
+        {
+          "groupNo": 1,
+          "conditions": [
+            {
+              "fieldKey": "targetType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "者"
+              ],
+              "note": "利用者の対象区分"
+            },
+            {
+              "fieldKey": "organizationGroup",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "福祉サービス等提供機関"
+              ],
+              "note": "機関グループ"
+            },
+            {
+              "fieldKey": "organizationType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "ケアマネ事業所"
+              ],
+              "note": "機関種別"
+            },
+            {
+              "fieldKey": "monthType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "それ以外"
+              ],
+              "note": "対応月区分"
+            },
+            {
+              "fieldKey": "placeType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "外出先"
+              ],
+              "note": "対応場所"
+            },
+            {
+              "fieldKey": "actionType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "面談"
+              ],
+              "note": "行為種別"
+            },
+            {
+              "fieldKey": "careManagerStart",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "利用開始あり"
+              ],
+              "note": "設問回答の必須条件"
+            }
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "constraintCode": "monthly_addition_count_min_01",
+          "constraintKind": "monthly_addition_count_min",
+          "configJson": {
+            "code": "monthly_addition_count_min",
+            "minimum": 2,
+            "additionCodes": [
+              "home_visit"
+            ],
+            "label": "同月2回以上の訪問面接が必要"
+          },
+          "message": "同月2回以上の訪問面接が必要",
+          "severity": "review",
+          "note": "Generated from prototype postCheckRules."
+        }
+      ]
+    },
+    {
+      "branchCode": "home_meeting",
+      "branchName": "居宅連携（会議参加）",
+      "conditionGroups": [
+        {
+          "groupNo": 1,
+          "conditions": [
+            {
+              "fieldKey": "targetType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "者"
+              ],
+              "note": "利用者の対象区分"
+            },
+            {
+              "fieldKey": "organizationGroup",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "福祉サービス等提供機関"
+              ],
+              "note": "機関グループ"
+            },
+            {
+              "fieldKey": "organizationType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "ケアマネ事業所"
+              ],
+              "note": "機関種別"
+            },
+            {
+              "fieldKey": "monthType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "それ以外"
+              ],
+              "note": "対応月区分"
+            },
+            {
+              "fieldKey": "placeType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "自事業所内",
+                "外出先"
+              ],
+              "note": "対応場所"
+            },
+            {
+              "fieldKey": "actionType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "会議"
+              ],
+              "note": "行為種別"
+            },
+            {
+              "fieldKey": "careManagerStart",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "利用開始あり"
+              ],
+              "note": "設問回答の必須条件"
+            }
+          ]
+        }
+      ],
+      "constraints": []
+    },
+    {
+      "branchCode": "home_work_info",
+      "branchName": "居宅連携（就労）（情報共有）",
+      "conditionGroups": [
+        {
+          "groupNo": 1,
+          "conditions": [
+            {
+              "fieldKey": "targetType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "者"
+              ],
+              "note": "利用者の対象区分"
+            },
+            {
+              "fieldKey": "organizationGroup",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "福祉サービス等提供機関"
+              ],
+              "note": "機関グループ"
+            },
+            {
+              "fieldKey": "organizationType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "企業",
+                "障害者就業・生活支援センター"
+              ],
+              "note": "機関種別"
+            },
+            {
+              "fieldKey": "monthType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "モニタリング月",
+                "計画作成月",
+                "それ以外"
+              ],
+              "note": "対応月区分"
+            },
+            {
+              "fieldKey": "placeType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "自事業所内",
+                "外出先"
+              ],
+              "note": "対応場所"
+            },
+            {
+              "fieldKey": "actionType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "情報共有"
+              ],
+              "note": "行為種別"
+            },
+            {
+              "fieldKey": "employmentStart",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "新規雇用あり"
+              ],
+              "note": "設問回答の必須条件"
+            }
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "constraintCode": "monthly_limit_per_client_01",
+          "constraintKind": "monthly_limit_per_client",
+          "configJson": {
+            "code": "monthly_limit_per_client",
+            "limit": 2,
+            "additionCodes": [
+              "home_work_collab",
+              "home_work_info"
+            ],
+            "recordActionTypes": [
+              "情報共有"
+            ],
+            "label": "同月2回まで"
+          },
+          "message": "同月2回まで",
+          "severity": "review",
+          "note": "Generated from prototype postCheckRules."
+        }
+      ]
+    },
+    {
+      "branchCode": "home_work_visit",
+      "branchName": "居宅連携（就労）（訪問面接）",
+      "conditionGroups": [
+        {
+          "groupNo": 1,
+          "conditions": [
+            {
+              "fieldKey": "targetType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "者"
+              ],
+              "note": "利用者の対象区分"
+            },
+            {
+              "fieldKey": "organizationGroup",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "福祉サービス等提供機関"
+              ],
+              "note": "機関グループ"
+            },
+            {
+              "fieldKey": "organizationType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "企業",
+                "障害者就業・生活支援センター"
+              ],
+              "note": "機関種別"
+            },
+            {
+              "fieldKey": "monthType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "それ以外"
+              ],
+              "note": "対応月区分"
+            },
+            {
+              "fieldKey": "placeType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "外出先"
+              ],
+              "note": "対応場所"
+            },
+            {
+              "fieldKey": "actionType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "面談"
+              ],
+              "note": "行為種別"
+            },
+            {
+              "fieldKey": "employmentStart",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "新規雇用あり"
+              ],
+              "note": "設問回答の必須条件"
+            }
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "constraintCode": "monthly_addition_count_min_01",
+          "constraintKind": "monthly_addition_count_min",
+          "configJson": {
+            "code": "monthly_addition_count_min",
+            "minimum": 2,
+            "additionCodes": [
+              "home_work_visit"
+            ],
+            "label": "同月2回以上の訪問面接が必要"
+          },
+          "message": "同月2回以上の訪問面接が必要",
+          "severity": "review",
+          "note": "Generated from prototype postCheckRules."
+        }
+      ]
+    },
+    {
+      "branchCode": "home_work_meeting",
+      "branchName": "居宅連携（就労）（会議参加）",
+      "conditionGroups": [
+        {
+          "groupNo": 1,
+          "conditions": [
+            {
+              "fieldKey": "targetType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "者"
+              ],
+              "note": "利用者の対象区分"
+            },
+            {
+              "fieldKey": "organizationGroup",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "福祉サービス等提供機関"
+              ],
+              "note": "機関グループ"
+            },
+            {
+              "fieldKey": "organizationType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "企業",
+                "障害者就業・生活支援センター"
+              ],
+              "note": "機関種別"
+            },
+            {
+              "fieldKey": "monthType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "それ以外"
+              ],
+              "note": "対応月区分"
+            },
+            {
+              "fieldKey": "placeType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "自事業所内",
+                "外出先"
+              ],
+              "note": "対応場所"
+            },
+            {
+              "fieldKey": "actionType",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "会議"
+              ],
+              "note": "行為種別"
+            },
+            {
+              "fieldKey": "employmentStart",
+              "operatorCode": "one_of",
+              "expectedValue": [
+                "新規雇用あり"
+              ],
+              "note": "設問回答の必須条件"
+            }
+          ]
+        }
+      ],
+      "constraints": []
+    }
+  ]
+}

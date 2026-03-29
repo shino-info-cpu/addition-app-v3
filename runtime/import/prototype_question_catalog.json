@@ -1,0 +1,405 @@
+{
+  "generatedAt": "2026-03-29T01:12:27.723Z",
+  "source": "app/frontend/app.js",
+  "questions": [
+    {
+      "fieldKey": "monthType",
+      "label": "対応した時期はどれですか",
+      "inputType": "single_select",
+      "helpTextShort": "利用者の対象区分と機関・サービス条件は、選択済みの文脈から自動で候補に反映します。",
+      "displayOrder": 10,
+      "visibilityMode": "always",
+      "visibilityConfig": null,
+      "description": "",
+      "visibilityRules": [],
+      "options": [
+        {
+          "value": "モニタリング月",
+          "label": "モニタリング月",
+          "note": "モニタリング実施月に該当する場合",
+          "optionRules": []
+        },
+        {
+          "value": "計画作成月",
+          "label": "計画作成月",
+          "note": "計画作成や更新の対象月に該当する場合",
+          "optionRules": []
+        },
+        {
+          "value": "それ以外",
+          "label": "それ以外",
+          "note": "通常月の支援や集中支援など",
+          "optionRules": []
+        }
+      ]
+    },
+    {
+      "fieldKey": "placeType",
+      "label": "対応した場所はどこですか",
+      "inputType": "single_select",
+      "helpTextShort": "ここでは制度用語より先に、実際にどこで対応したかだけを聞きます。",
+      "displayOrder": 20,
+      "visibilityMode": "always",
+      "visibilityConfig": null,
+      "description": "",
+      "visibilityRules": [],
+      "options": [
+        {
+          "value": "自事業所内",
+          "label": "自事業所内",
+          "note": "電話、自事業所内の会議、面談など",
+          "optionRules": []
+        },
+        {
+          "value": "外出先",
+          "label": "外出先",
+          "note": "訪問、同行、外部会議、現地確認など",
+          "optionRules": []
+        }
+      ]
+    },
+    {
+      "fieldKey": "actionType",
+      "label": "その場で何をしましたか",
+      "inputType": "single_select",
+      "helpTextShort": "相談員が迷いやすい用語は、あとで管理者説明を載せられる前提です。",
+      "displayOrder": 30,
+      "visibilityMode": "answer_rules",
+      "visibilityConfig": null,
+      "description": "表示条件は seed 化済み。 選択肢条件は seed 化済み。",
+      "visibilityRules": [
+        {
+          "dependsOnFieldKey": "placeType",
+          "matchValues": [
+            "自事業所内",
+            "外出先"
+          ],
+          "clearOnHide": true,
+          "displayOrder": 10
+        }
+      ],
+      "options": [
+        {
+          "value": "訪問",
+          "label": "訪問",
+          "note": "現地へ行って支援状況や本人の様子を確認した",
+          "optionRules": [
+            {
+              "dependsOnFieldKey": "placeType",
+              "matchValues": [
+                "外出先"
+              ],
+              "displayOrder": 10,
+              "note": "Prototype の動的選択肢条件から生成。"
+            }
+          ]
+        },
+        {
+          "value": "通院同行",
+          "label": "通院同行",
+          "note": "病院受診などに同行し、必要な情報を共有した",
+          "optionRules": [
+            {
+              "dependsOnFieldKey": "placeType",
+              "matchValues": [
+                "外出先"
+              ],
+              "displayOrder": 10,
+              "note": "Prototype の動的選択肢条件から生成。"
+            }
+          ]
+        },
+        {
+          "value": "情報共有",
+          "label": "情報共有",
+          "note": "外部機関を訪ねるなどして必要な情報を伝えた",
+          "optionRules": []
+        },
+        {
+          "value": "会議",
+          "label": "会議",
+          "note": "担当者会議以外の外部会議や打合せに参加した",
+          "optionRules": []
+        },
+        {
+          "value": "担当者会議開催",
+          "label": "担当者会議開催",
+          "note": "外部会場などでサービス担当者会議を開催した",
+          "optionRules": []
+        },
+        {
+          "value": "面談",
+          "label": "面談",
+          "note": "外部で関係者や本人と面談した",
+          "optionRules": []
+        },
+        {
+          "value": "サービス提供場面確認",
+          "label": "サービス提供場面確認",
+          "note": "サービス提供の実際の場面を確認した",
+          "optionRules": [
+            {
+              "dependsOnFieldKey": "placeType",
+              "matchValues": [
+                "外出先"
+              ],
+              "displayOrder": 10,
+              "note": "Prototype の動的選択肢条件から生成。"
+            }
+          ]
+        },
+        {
+          "value": "退院前面談",
+          "label": "退院前面談",
+          "note": "退院・退所前の面談や調整を行った",
+          "optionRules": [
+            {
+              "dependsOnFieldKey": "placeType",
+              "matchValues": [
+                "外出先"
+              ],
+              "displayOrder": 10,
+              "note": "Prototype の動的選択肢条件から生成。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "fieldKey": "hospitalAdmissionContext",
+      "label": "今回の情報提供は入院に当たってのものですか",
+      "inputType": "single_select",
+      "helpTextShort": "入院時情報連携 I / II では、通常の病院連携と分けるために、入院に当たっての情報提供かどうかを先に確認します。",
+      "displayOrder": 40,
+      "visibilityMode": "candidate_requirement",
+      "visibilityConfig": {
+        "answerKey": "hospitalAdmissionContext",
+        "singleCandidateOnly": false
+      },
+      "description": "表示条件は seed 化済み。",
+      "visibilityRules": [],
+      "options": [
+        {
+          "value": "入院に当たっている",
+          "label": "入院に当たっている",
+          "note": "今回の情報提供は入院に当たって病院へ行った、または病院へ連絡したもの",
+          "optionRules": []
+        },
+        {
+          "value": "入院に当たっていない",
+          "label": "入院に当たっていない",
+          "note": "今回の情報提供は入院対応ではなく、通常の連携や別件の情報共有",
+          "optionRules": []
+        }
+      ]
+    },
+    {
+      "fieldKey": "requiredInfoReceived",
+      "label": "判定に必要な情報を相手から受けましたか",
+      "inputType": "single_select",
+      "helpTextShort": "医保教の面談・会議や退院・退所では、面談や調整だけでなく、必要な情報の提供を受けたかを確認します。",
+      "displayOrder": 44,
+      "visibilityMode": "candidate_requirement",
+      "visibilityConfig": {
+        "answerKey": "requiredInfoReceived",
+        "singleCandidateOnly": false
+      },
+      "description": "表示条件は seed 化済み。",
+      "visibilityRules": [],
+      "options": [
+        {
+          "value": "受けた",
+          "label": "受けた",
+          "note": "加算判定に必要な情報の提供を受けた",
+          "optionRules": []
+        },
+        {
+          "value": "受けていない",
+          "label": "受けていない",
+          "note": "面談や調整はしたが、必要な情報の提供は受けていない",
+          "optionRules": []
+        }
+      ]
+    },
+    {
+      "fieldKey": "dischargeFacilityStaffOnlyInfo",
+      "label": "得た情報は退院・退所する施設の職員からだけですか",
+      "inputType": "single_select",
+      "helpTextShort": "医保教の面談・会議では、退院・退所する施設の職員からの情報だけで終わる場合は不可です。",
+      "displayOrder": 45,
+      "visibilityMode": "candidate_requirement",
+      "visibilityConfig": {
+        "answerKey": "dischargeFacilityStaffOnlyInfo",
+        "singleCandidateOnly": false
+      },
+      "description": "表示条件は seed 化済み。",
+      "visibilityRules": [],
+      "options": [
+        {
+          "value": "施設職員以外も含む",
+          "label": "施設職員以外も含む",
+          "note": "退院・退所する施設の職員以外からの情報や調整も含まれている",
+          "optionRules": []
+        },
+        {
+          "value": "施設職員のみ",
+          "label": "施設職員のみ",
+          "note": "退院・退所する施設の職員からの情報だけで対応した",
+          "optionRules": []
+        }
+      ]
+    },
+    {
+      "fieldKey": "dischargeInpatientPeriodCount",
+      "label": "今回の調整は、同じ入所・入院期間中で何回目ですか",
+      "inputType": "single_select",
+      "helpTextShort": "退院・退所加算は、同じ入所・入院期間中で3回までです。分からない場合も要確認に回します。",
+      "displayOrder": 47,
+      "visibilityMode": "candidate_requirement",
+      "visibilityConfig": {
+        "answerKey": "dischargeInpatientPeriodCount",
+        "singleCandidateOnly": false
+      },
+      "description": "表示条件は seed 化済み。",
+      "visibilityRules": [],
+      "options": [
+        {
+          "value": "1回目",
+          "label": "1回目",
+          "note": "この入所・入院期間で最初の調整",
+          "optionRules": []
+        },
+        {
+          "value": "2回目",
+          "label": "2回目",
+          "note": "この入所・入院期間ですでに1回記録がある",
+          "optionRules": []
+        },
+        {
+          "value": "3回目",
+          "label": "3回目",
+          "note": "この入所・入院期間ですでに2回記録がある",
+          "optionRules": []
+        },
+        {
+          "value": "4回目以上・不明",
+          "label": "4回目以上・不明",
+          "note": "4回目以上、または回数を確定できない",
+          "optionRules": []
+        }
+      ]
+    },
+    {
+      "fieldKey": "initialAdditionPlanned",
+      "label": "この月に初回加算も算定しますか",
+      "inputType": "single_select",
+      "helpTextShort": "面談・会議系や退院・退所系では、初回加算との重複可否を最後に確認します。",
+      "displayOrder": 50,
+      "visibilityMode": "candidate_requirement",
+      "visibilityConfig": {
+        "answerKey": "initialAdditionPlanned",
+        "singleCandidateOnly": false
+      },
+      "description": "表示条件は seed 化済み。",
+      "visibilityRules": [],
+      "options": [
+        {
+          "value": "初回加算なし",
+          "label": "初回加算なし",
+          "note": "この月は初回加算を算定しない",
+          "optionRules": []
+        },
+        {
+          "value": "初回加算あり",
+          "label": "初回加算あり",
+          "note": "この月に初回加算も算定する予定がある",
+          "optionRules": []
+        }
+      ]
+    },
+    {
+      "fieldKey": "careManagerStart",
+      "label": "今回の支援はケアマネ利用開始に伴うものですか",
+      "inputType": "single_select",
+      "helpTextShort": "居宅連携系では、ケアマネ利用開始の文脈かどうかを候補の前提として確認します。",
+      "displayOrder": 40,
+      "visibilityMode": "candidate_requirement",
+      "visibilityConfig": {
+        "answerKey": "careManagerStart",
+        "singleCandidateOnly": false
+      },
+      "description": "表示条件は seed 化済み。",
+      "visibilityRules": [],
+      "options": [
+        {
+          "value": "利用開始あり",
+          "label": "利用開始あり",
+          "note": "今回の支援はケアマネ利用開始に伴う",
+          "optionRules": []
+        },
+        {
+          "value": "利用開始なし",
+          "label": "利用開始なし",
+          "note": "ケアマネ利用開始とは別の文脈",
+          "optionRules": []
+        }
+      ]
+    },
+    {
+      "fieldKey": "employmentStart",
+      "label": "今回の支援は通常の事業所への新規雇用に伴うものですか",
+      "inputType": "single_select",
+      "helpTextShort": "居宅連携（就労）系では、新規雇用開始の文脈かどうかを候補の前提として確認します。",
+      "displayOrder": 40,
+      "visibilityMode": "candidate_requirement",
+      "visibilityConfig": {
+        "answerKey": "employmentStart",
+        "singleCandidateOnly": false
+      },
+      "description": "表示条件は seed 化済み。",
+      "visibilityRules": [],
+      "options": [
+        {
+          "value": "新規雇用あり",
+          "label": "新規雇用あり",
+          "note": "通常の事業所への新規雇用に伴う支援",
+          "optionRules": []
+        },
+        {
+          "value": "新規雇用なし",
+          "label": "新規雇用なし",
+          "note": "新規雇用開始とは別の文脈",
+          "optionRules": []
+        }
+      ]
+    },
+    {
+      "fieldKey": "serviceUseStartMonth",
+      "label": "今回の調整はサービス等の利用開始月のものですか",
+      "inputType": "single_select",
+      "helpTextShort": "退院・退所加算では、候補が絞れた段階で、サービス等の利用開始月に行った調整かどうかを最後に確認します。",
+      "displayOrder": 46,
+      "visibilityMode": "candidate_requirement",
+      "visibilityConfig": {
+        "answerKey": "serviceUseStartMonth",
+        "singleCandidateOnly": true
+      },
+      "description": "表示条件は seed 化済み。",
+      "visibilityRules": [],
+      "options": [
+        {
+          "value": "開始月である",
+          "label": "開始月である",
+          "note": "今回の調整はサービス等の利用開始月に行った",
+          "optionRules": []
+        },
+        {
+          "value": "開始月ではない",
+          "label": "開始月ではない",
+          "note": "利用開始月とは別の月の調整",
+          "optionRules": []
+        }
+      ]
+    }
+  ]
+}

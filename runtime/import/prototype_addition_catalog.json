@@ -1,0 +1,304 @@
+{
+  "generatedAt": "2026-03-29T01:12:27.638Z",
+  "source": "app/frontend/app.js",
+  "families": [
+    {
+      "additionCode": "mededu",
+      "additionName": "医療・保育・教育機関等連携加算",
+      "shortName": "医療・保育・教育機関等連携加算",
+      "targetScope": "児者",
+      "note": "Generated from app/frontend/app.js prototype branch definitions.",
+      "branches": [
+        {
+          "branchCode": "mededu_tsuuin",
+          "branchName": "医療・保育・教育機関等連携加算（通院同行）",
+          "branchType": "通院同行",
+          "priority": 90,
+          "autoConfirmPriority": 90,
+          "description": "確定条件:\n- モニタリング月または計画作成月の病院等への通院同行で候補に残す\n- 後段では同月3回までと同一病院等は月1回までを確認する\n\n仮置き:\n- 診療所は病院と同じ扱いで判定する\n- 初回加算との関係はまだ後段へ未反映"
+        },
+        {
+          "branchCode": "mededu_info",
+          "branchName": "医療・保育・教育機関等連携加算（情報共有）",
+          "branchType": "情報共有",
+          "priority": 100,
+          "autoConfirmPriority": 100,
+          "description": "確定条件:\n- 情報共有で候補に残す\n- 障害福祉サービスは除外する\n- 後段では同グループ月1回までを確認する\n\n仮置き:\n- 元資料上は月区分の限定が薄いが、現段階では従来どおりモニタリング月または計画作成月に寄せている\n- 機関グループの最終境界はまだ仮置き"
+        },
+        {
+          "branchCode": "mededu_interview",
+          "branchName": "医療・保育・教育機関等連携加算（面談）",
+          "branchType": "面談",
+          "priority": 110,
+          "autoConfirmPriority": 110,
+          "description": "確定条件:\n- 児対象のみ\n- モニタリング月または計画作成月で候補に残す\n- 面談のみ\n- 必要な情報を受けた場合のみ\n- 障害福祉サービスは除外する\n- 同月1回まで\n- 初回加算算定時は不可\n- 担当者会議加算との併算定不可を後段で確認する\n\n仮置き:\n- 退院・退所加算との関係の細部はまだ未確定\n- 対象機関を福祉サービス等提供機関だけに絞っているが、制度境界の細部は未確定"
+        },
+        {
+          "branchCode": "mededu_meeting",
+          "branchName": "医療・保育・教育機関等連携加算（会議）",
+          "branchType": "会議",
+          "priority": 120,
+          "autoConfirmPriority": 120,
+          "description": "確定条件:\n- 児対象のみ\n- モニタリング月または計画作成月で候補に残す\n- 会議のみ\n- 必要な情報を受けた場合のみ\n- 障害福祉サービスは除外する\n- 同月1回まで\n- 初回加算算定時は不可\n- 担当者会議加算との併算定不可を後段で確認する\n\n仮置き:\n- 退院・退所加算との関係の細部はまだ未確定\n- 対象機関を福祉サービス等提供機関だけに絞っているが、制度境界の細部は未確定"
+        }
+      ]
+    },
+    {
+      "additionCode": "intensive",
+      "additionName": "集中支援加算",
+      "shortName": "集中支援加算",
+      "targetScope": "児者",
+      "note": "Generated from app/frontend/app.js prototype branch definitions.",
+      "branches": [
+        {
+          "branchCode": "intensive_visit",
+          "branchName": "集中支援加算（訪問）",
+          "branchType": "訪問",
+          "priority": 200,
+          "autoConfirmPriority": 200,
+          "description": "確定条件:\n- それ以外月で候補に残す\n- 訪問のみ\n- 同月2回以上の訪問を後段で確認する\n\n仮置き:\n- 機関グループの範囲は仮置き"
+        },
+        {
+          "branchCode": "intensive_scene_check",
+          "branchName": "集中支援加算（サービス提供場面確認）",
+          "branchType": "サービス提供場面確認",
+          "priority": 210,
+          "autoConfirmPriority": 210,
+          "description": "確定条件:\n- それ以外月で候補に残す\n- サービス提供場面確認のみ\n\n仮置き:\n- 機関グループの範囲は仮置き"
+        },
+        {
+          "branchCode": "intensive_meeting_host",
+          "branchName": "集中支援加算（会議開催）",
+          "branchType": "担当者会議開催",
+          "priority": 215,
+          "autoConfirmPriority": 215,
+          "description": "確定条件:\n- それ以外月で候補に残す\n- サービス担当者会議の開催のみ\n- 旧資料上、追加の回数上限は見当たらない\n\n仮置き:\n- 現行UIでは「サービス担当者会議の開催」を「担当者会議開催」に寄せている"
+        },
+        {
+          "branchCode": "intensive_meeting_join",
+          "branchName": "集中支援加算（会議参加）",
+          "branchType": "会議",
+          "priority": 220,
+          "autoConfirmPriority": 220,
+          "description": "確定条件:\n- それ以外月で候補に残す\n- 会議参加のみ\n- 旧資料上、追加の回数上限は見当たらない\n\n仮置き:\n- 現行UIでは「会議参加」を「会議」に寄せている"
+        },
+        {
+          "branchCode": "intensive_tsuuin",
+          "branchName": "集中支援加算（通院同行）",
+          "branchType": "通院同行",
+          "priority": 230,
+          "autoConfirmPriority": 230,
+          "description": "確定条件:\n- それ以外月の病院等への通院同行のみ候補に残す\n- 後段では同月3回までと同一病院等は月1回までを確認する"
+        },
+        {
+          "branchCode": "intensive_info",
+          "branchName": "集中支援加算（情報共有）",
+          "branchType": "情報共有",
+          "priority": 240,
+          "autoConfirmPriority": 240,
+          "description": "確定条件:\n- それ以外月で候補に残す\n- 福祉サービス等提供機関への情報共有のみ\n- 後段では同グループ月1回までを確認する\n\n仮置き:\n- 病院・訪看・薬局は内部的に別枝へ分けている"
+        },
+        {
+          "branchCode": "intensive_info_medical",
+          "branchName": "集中支援加算（情報共有）",
+          "branchType": "情報共有",
+          "priority": 241,
+          "autoConfirmPriority": 241,
+          "description": "確定条件:\n- それ以外月で候補に残す\n- 病院または訪問看護への情報共有のみ\n- 入院に当たっての情報共有は除外する\n- 後段では同グループ月1回までを確認する\n\n仮置き:\n- 薬局は別枝へ分けて、入院確認の質問対象から外している"
+        },
+        {
+          "branchCode": "intensive_info_pharmacy",
+          "branchName": "集中支援加算（情報共有）",
+          "branchType": "情報共有",
+          "priority": 242,
+          "autoConfirmPriority": 242,
+          "description": "確定条件:\n- それ以外月で候補に残す\n- 薬局への情報共有のみ\n- 後段では同グループ月1回までを確認する\n\n仮置き:\n- 薬局は病院/訪看枝と分けて、入院確認の質問を出さない"
+        }
+      ]
+    },
+    {
+      "additionCode": "monitoring",
+      "additionName": "モニタリング加算",
+      "shortName": "モニタリング加算",
+      "targetScope": "児者",
+      "note": "Generated from app/frontend/app.js prototype branch definitions.",
+      "branches": [
+        {
+          "branchCode": "monitoring",
+          "branchName": "モニタリング加算",
+          "branchType": "サービス提供場面確認",
+          "priority": 250,
+          "autoConfirmPriority": 250,
+          "description": "確定条件:\n- 提供現場の訪問確認で候補に残す\n- モニタリング月に限定しない\n- 同月1回まで\n\n仮置き:\n- 現行UIでは「提供現場訪問」を「サービス提供場面確認」に寄せている\n- 対象機関と対象サービスの制度境界はまだ仮置き"
+        }
+      ]
+    },
+    {
+      "additionCode": "conference",
+      "additionName": "担当者会議加算",
+      "shortName": "担当者会議加算",
+      "targetScope": "児者",
+      "note": "Generated from app/frontend/app.js prototype branch definitions.",
+      "branches": [
+        {
+          "branchCode": "conference",
+          "branchName": "担当者会議加算",
+          "branchType": "担当者会議開催",
+          "priority": 300,
+          "autoConfirmPriority": 300,
+          "description": "確定条件:\n- モニタリング月のみ\n- 福祉サービス等提供機関のみ\n- 担当者会議開催のみ\n- 同月1回まで\n- 医保教（面談・会議）との併算定不可を後段で確認する"
+        }
+      ]
+    },
+    {
+      "additionCode": "discharge",
+      "additionName": "退院・退所加算",
+      "shortName": "退院・退所加算",
+      "targetScope": "児者",
+      "note": "Generated from app/frontend/app.js prototype branch definitions.",
+      "branches": [
+        {
+          "branchCode": "discharge",
+          "branchName": "退院・退所加算",
+          "branchType": "面談 / 退院前面談",
+          "priority": 400,
+          "autoConfirmPriority": 400,
+          "description": "確定条件:\n- モニタリング月以外で候補に残す\n- 退院・退所対象施設の職員との対面面談のみ\n- 場所は限定しない\n- 必要な情報を受けた場合のみ\n- サービス等の利用開始月の調整のみ\n- 同一の入所・入院期間中は3回まで\n- 初回加算算定時は不可\n\n仮置き:\n- 現行UIでは旧ラベルの「退院前面談」も面談として受ける\n- 入所施設、更生施設、児童施設、刑事施設等は名称推定に強い語だけを使っている"
+        }
+      ]
+    },
+    {
+      "additionCode": "hospital_info_i",
+      "additionName": "入院時情報連携加算 I",
+      "shortName": "入院時情報連携加算 I",
+      "targetScope": "児者",
+      "note": "Generated from app/frontend/app.js prototype branch definitions.",
+      "branches": [
+        {
+          "branchCode": "hospital_info_i",
+          "branchName": "入院時情報連携加算 I",
+          "branchType": "情報共有",
+          "priority": 350,
+          "autoConfirmPriority": 350,
+          "description": "確定条件:\n- 入院に当たって病院へ訪問して必要情報を提供した場合に候補に残す\n- サービス判定区分では限定しない\n- 同月1回まで\n- IIとの併算定不可\n\n仮置き:\n- 現行UIでは「訪問情報提供」を「外出先 + 情報共有」に寄せている\n- 診療所は病院と同じ扱いで判定する"
+        }
+      ]
+    },
+    {
+      "additionCode": "hospital_info_ii",
+      "additionName": "入院時情報連携加算 II",
+      "shortName": "入院時情報連携加算 II",
+      "targetScope": "児者",
+      "note": "Generated from app/frontend/app.js prototype branch definitions.",
+      "branches": [
+        {
+          "branchCode": "hospital_info_ii",
+          "branchName": "入院時情報連携加算 II",
+          "branchType": "情報共有",
+          "priority": 360,
+          "autoConfirmPriority": 360,
+          "description": "確定条件:\n- 入院に当たって病院へ訪問以外の方法で必要情報を提供した場合に候補に残す\n- サービス判定区分では限定しない\n- 同月1回まで\n- Iとの併算定不可\n\n仮置き:\n- 現行UIでは「訪問以外情報提供」を「自事業所内 + 情報共有」に寄せている\n- 診療所は病院と同じ扱いで判定する"
+        }
+      ]
+    },
+    {
+      "additionCode": "edu_support",
+      "additionName": "保・教支援",
+      "shortName": "保・教支援",
+      "targetScope": "児",
+      "note": "Generated from app/frontend/app.js prototype branch definitions.",
+      "branches": [
+        {
+          "branchCode": "edu_info",
+          "branchName": "保・教支援（情報共有）",
+          "branchType": "情報共有",
+          "priority": 500,
+          "autoConfirmPriority": 500,
+          "description": "確定条件:\n- 児対象のみ\n- 障害福祉以外の福祉サービスの利用文脈で候補に残す\n- 学校・保育・児童施設への情報共有で候補に残す\n- 企業・就業生活支援センター等は新規雇用文脈のときだけ残す\n\n仮置き:\n- 集団生活施設など、学校・保育以外の対象境界はまだ仮置き"
+        },
+        {
+          "branchCode": "edu_visit",
+          "branchName": "保・教支援（訪問面接）",
+          "branchType": "面談",
+          "priority": 510,
+          "autoConfirmPriority": 510,
+          "description": "確定条件:\n- 児対象のみ\n- それ以外月のみ\n- 障害福祉以外の福祉サービスの利用文脈で候補に残す\n- 学校・保育・児童施設への訪問面接で候補に残す\n- 企業・就業生活支援センター等は新規雇用文脈のときだけ残す\n\n仮置き:\n- 現行UIでは「訪問面接」を「外出先 + 面談」に寄せている\n- 集団生活施設など、学校・保育以外の対象境界はまだ仮置き\n- 旧の総称記録は訪問面接の回数へ自動換算していない"
+        },
+        {
+          "branchCode": "edu_meeting",
+          "branchName": "保・教支援（会議参加）",
+          "branchType": "会議",
+          "priority": 520,
+          "autoConfirmPriority": 520,
+          "description": "確定条件:\n- 児対象のみ\n- それ以外月のみ\n- 障害福祉以外の福祉サービスの利用文脈で候補に残す\n- 学校・保育・児童施設との会議参加で候補に残す\n- 企業・就業生活支援センター等は新規雇用文脈のときだけ残す\n\n仮置き:\n- 現行UIでは「会議参加」を「会議」に寄せている\n- 集団生活施設など、学校・保育以外の対象境界はまだ仮置き"
+        }
+      ]
+    },
+    {
+      "additionCode": "home_collab",
+      "additionName": "居宅連携",
+      "shortName": "居宅連携",
+      "targetScope": "者",
+      "note": "Generated from app/frontend/app.js prototype branch definitions.",
+      "branches": [
+        {
+          "branchCode": "home_info",
+          "branchName": "居宅連携（情報共有）",
+          "branchType": "情報共有",
+          "priority": 600,
+          "autoConfirmPriority": 600,
+          "description": "確定条件:\n- 者対象のみ\n- ケアマネ事業所への情報共有で候補に残す\n- ケアマネ利用開始時のみ\n- 後段では同月2回までを確認する"
+        },
+        {
+          "branchCode": "home_visit",
+          "branchName": "居宅連携（訪問面接）",
+          "branchType": "面談",
+          "priority": 610,
+          "autoConfirmPriority": 610,
+          "description": "確定条件:\n- 者対象のみ\n- それ以外月のみ\n- ケアマネ事業所への訪問面接で候補に残す\n- ケアマネ利用開始時のみ\n- 後段では同月2回以上の訪問面接を確認する\n\n仮置き:\n- 現行UIでは「訪問面接」を「外出先 + 面談」に寄せている\n- 旧の総称記録は訪問面接の回数へ自動換算していない"
+        },
+        {
+          "branchCode": "home_meeting",
+          "branchName": "居宅連携（会議参加）",
+          "branchType": "会議",
+          "priority": 620,
+          "autoConfirmPriority": 620,
+          "description": "確定条件:\n- 者対象のみ\n- それ以外月のみ\n- ケアマネ事業所との会議参加で候補に残す\n- ケアマネ利用開始時のみ\n\n仮置き:\n- 現行UIでは「会議参加」を「会議」に寄せている"
+        }
+      ]
+    },
+    {
+      "additionCode": "home_work_collab",
+      "additionName": "居宅連携（就労）",
+      "shortName": "居宅連携（就労）",
+      "targetScope": "者",
+      "note": "Generated from app/frontend/app.js prototype branch definitions.",
+      "branches": [
+        {
+          "branchCode": "home_work_info",
+          "branchName": "居宅連携（就労）（情報共有）",
+          "branchType": "情報共有",
+          "priority": 700,
+          "autoConfirmPriority": 700,
+          "description": "確定条件:\n- 者対象のみ\n- 企業または障害者就業・生活支援センター等への情報共有で候補に残す\n- 新規雇用開始時のみ\n- 後段では同月2回までを確認する"
+        },
+        {
+          "branchCode": "home_work_visit",
+          "branchName": "居宅連携（就労）（訪問面接）",
+          "branchType": "面談",
+          "priority": 710,
+          "autoConfirmPriority": 710,
+          "description": "確定条件:\n- 者対象のみ\n- それ以外月のみ\n- 企業または障害者就業・生活支援センター等への訪問面接で候補に残す\n- 新規雇用開始時のみ\n- 後段では同月2回以上の訪問面接を確認する\n\n仮置き:\n- 現行UIでは「訪問面接」を「外出先 + 面談」に寄せている\n- 旧の総称記録は訪問面接の回数へ自動換算していない"
+        },
+        {
+          "branchCode": "home_work_meeting",
+          "branchName": "居宅連携（就労）（会議参加）",
+          "branchType": "会議",
+          "priority": 720,
+          "autoConfirmPriority": 720,
+          "description": "確定条件:\n- 者対象のみ\n- それ以外月のみ\n- 企業または障害者就業・生活支援センター等との会議参加で候補に残す\n- 新規雇用開始時のみ\n\n仮置き:\n- 現行UIでは「会議参加」を「会議」に寄せている"
+        }
+      ]
+    }
+  ]
+}

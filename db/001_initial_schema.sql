@@ -219,6 +219,8 @@ CREATE TABLE IF NOT EXISTS question_definition (
   example_display_mode VARCHAR(32) NOT NULL DEFAULT 'collapsed',
   option_source_type VARCHAR(32) NULL,
   option_source_ref VARCHAR(128) NULL,
+  visibility_mode VARCHAR(32) NOT NULL DEFAULT 'always',
+  visibility_config_json JSON NULL,
   reference_label_field VARCHAR(64) NULL,
   reference_sub_label_field VARCHAR(64) NULL,
   reference_search_fields_json JSON NULL,
@@ -270,6 +272,22 @@ CREATE TABLE IF NOT EXISTS question_visibility_rule (
   KEY idx_question_visibility_rule (question_definition_id, is_active, display_order),
   CONSTRAINT fk_question_visibility_definition FOREIGN KEY (question_definition_id)
     REFERENCES question_definition(question_definition_id)
+    ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS question_option_rule (
+  question_option_rule_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  question_option_id BIGINT NOT NULL,
+  depends_on_field_key VARCHAR(64) NOT NULL,
+  match_values_json JSON NOT NULL,
+  display_order INT NOT NULL DEFAULT 9999,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  note TEXT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  KEY idx_question_option_rule (question_option_id, is_active, display_order),
+  CONSTRAINT fk_question_option_rule_option FOREIGN KEY (question_option_id)
+    REFERENCES question_option(question_option_id)
     ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

@@ -26,6 +26,8 @@
 - `public/api/judgement-context.php`
 - `public/api/report-records.php`
 - `public/api/evaluation-cases.php`
+- `public/api/question-catalog.php`
+- `public/api/addition-catalog.php`
 
 ## Sakura Deployment Notes
 
@@ -34,11 +36,19 @@
 3. `src` と `config` は公開ルートの外に置くのが理想
 4. DB には `v3/db/001_initial_schema.sql` を流してから API を使う
 5. フロント試作は `./api` を優先し、開発中は `../backend/public/api` も自動で探します
+6. `addition_branch_id` まで保存したい場合は、`v3/db/004_seed_prototype_additions.sql` を DB に流してから API を使う
+7. 設問定義・表示条件・動的選択肢条件を DB から読みたい場合は、`v3/db/007_add_question_runtime_support.sql` を先に反映し、そのあと `v3/db/005_seed_prototype_questions.sql` と `v3/db/006_seed_prototype_branch_rules.sql` を流してから `public/api/question-catalog.php` を使う
+8. 候補枝・条件・後段制約を DB から読みたい場合は、`v3/db/004_seed_prototype_additions.sql` と `v3/db/006_seed_prototype_branch_rules.sql` を流してから `public/api/addition-catalog.php` を使う
+9. `evaluation_candidate` と `evaluation_result.addition_branch_id` まで branch 基準で保存したい場合も、`v3/db/004_seed_prototype_additions.sql` と `v3/db/006_seed_prototype_branch_rules.sql` を先に流しておく
+10. `report-records.php` で候補一覧要約まで返したい場合は、`evaluation_candidate` が保存される状態で運用する
 
 ## Notes
 
 - 今は `利用者 / 機関 / サービス / 相談員 / 判定文脈 / 集計 / 判定保存` の API までです
-- 判定ロジック自体はまだフロント試作側にあり、保存 API はその結果を `evaluation_case` ほかへ記録します
+- 判定ロジック自体はまだフロント試作側にあります
+- ただし保存 API は、seed 済みの `addition` / `addition_branch` があれば `evaluation_result.addition_branch_id` まで記録します
+- 同じ条件がそろっていれば、保存 API は `evaluation_candidate` に候補枝一覧も記録します
+- `report-records.php` は、`evaluation_candidate` があれば `candidate_count` と `candidate_names_summary` も返します
 - Composer なしでも動く形にしてあるので、共有レンタルサーバーに載せやすいはずです
 - さくら側が PHP 7.4 の場合を想定し、バックエンドは PHP 7.4 互換の記法に寄せています
 - ログインは将来的に Google Workspace を使う前提です

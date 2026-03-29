@@ -770,6 +770,11 @@ tbody tr:hover {
   margin: 0;
 }
 
+.detail-text-block {
+  white-space: pre-line;
+  line-height: 1.6;
+}
+
 .simple-master-card {
   overflow: auto;
 }

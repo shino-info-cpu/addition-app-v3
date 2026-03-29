@@ -1,886 +1,3 @@
-const data = {
-  staff: [
-    { staffId: "501", staffName: "相談 花子", email: "hanako@example.jp" },
-    { staffId: "502", staffName: "支援 次郎", email: "jiro@example.jp" },
-    { staffId: "503", staffName: "調整 三郎", email: "saburo@example.jp" },
-  ],
-  clients: [
-    { clientId: "1001", clientName: "山田 太郎", clientNameKana: "やまだ たろう", targetType: "児" },
-    { clientId: "1002", clientName: "佐藤 花子", clientNameKana: "さとう はなこ", targetType: "者" },
-    { clientId: "1003", clientName: "高橋 一郎", clientNameKana: "たかはし いちろう", targetType: "者" },
-  ],
-  organizations: [
-    { organizationId: "10", organizationName: "しののめ相談支援", organizationType: "相談支援事業所", organizationGroup: "福祉サービス等提供機関", serviceIds: ["201", "202"] },
-    { organizationId: "11", organizationName: "あおぞら支援室", organizationType: "相談支援事業所", organizationGroup: "福祉サービス等提供機関", serviceIds: ["202", "203"] },
-    { organizationId: "21", organizationName: "東雲総合病院", organizationType: "病院", organizationGroup: "病院・訪看・薬局グループ", serviceIds: ["301"] },
-    { organizationId: "22", organizationName: "みらい訪問看護", organizationType: "訪問看護", organizationGroup: "病院・訪看・薬局グループ", serviceIds: ["302"] },
-  ],
-  services: [
-    { serviceId: "201", serviceName: "計画相談", serviceCategory: "相談支援", targetScope: "児者", groupName: "初回群" },
-    { serviceId: "202", serviceName: "障害児相談", serviceCategory: "福祉", targetScope: "児", groupName: "モニタ群" },
-    { serviceId: "203", serviceName: "生活介護", serviceCategory: "障害福祉サービス", targetScope: "者", groupName: "地域支援群" },
-    { serviceId: "301", serviceName: "医療連携", serviceCategory: "医療", targetScope: "児者", groupName: "病院群" },
-    { serviceId: "302", serviceName: "訪看連携", serviceCategory: "医療", targetScope: "児者", groupName: "訪看群" },
-  ],
-  enrollments: [
-    { enrollmentId: "e1001-10-201", clientId: "1001", organizationId: "10", serviceId: "201" },
-    { enrollmentId: "e1001-21-301", clientId: "1001", organizationId: "21", serviceId: "301" },
-    { enrollmentId: "e1002-11-203", clientId: "1002", organizationId: "11", serviceId: "203" },
-    { enrollmentId: "e1002-22-302", clientId: "1002", organizationId: "22", serviceId: "302" },
-    { enrollmentId: "e1003-10-201", clientId: "1003", organizationId: "10", serviceId: "201" },
-  ],
-  // Prototype branch set used while the decision tree is still being verified.
-  // Confirmed rules come from conversation-verified制度要件.
-  // Provisional rules are intentionally left visible here so we do not mistake
-  // temporary trial settings for finalized制度定義.
-  additions: [
-    {
-      additionCode: "mededu_tsuuin",
-      additionFamilyCode: "mededu",
-      additionFamilyName: "医療・保育・教育機関等連携加算",
-      additionName: "医療・保育・教育機関等連携加算（通院同行）",
-      historyAdditionCodes: ["mededu", "mededu_tsuuin", "mededu_info", "mededu_interview", "mededu_meeting"],
-      ruleStatus: "一部確定",
-      confirmedRules: [
-        "モニタリング月または計画作成月の病院等への通院同行で候補に残す",
-        "後段では同月3回までと同一病院等は月1回までを確認する",
-      ],
-      provisionalRules: [
-        "診療所は病院と同じ扱いで判定する",
-        "初回加算との関係はまだ後段へ未反映",
-      ],
-      priority: 9,
-      targetTypes: ["共通", "児", "者"],
-      monthTypes: ["モニタリング月", "計画作成月"],
-      organizationGroups: ["病院・訪看・薬局グループ"],
-      organizationTypes: ["病院"],
-      serviceDecisionInclude: ["医療関連"],
-      placeTypes: ["外出先"],
-      actionTypes: ["通院同行"],
-      postCheckRules: [
-        { code: "monthly_limit_per_client", limit: 3, additionCodes: ["mededu", "mededu_tsuuin"], recordActionTypes: ["通院同行"], label: "同月3回まで" },
-        { code: "monthly_limit_per_client_by_organization", limit: 1, additionCodes: ["mededu", "mededu_tsuuin"], recordActionTypes: ["通院同行"], label: "同一病院等は月1回まで" },
-      ],
-      postCheck: "通院同行先と同行時の情報共有内容を記録する。同月3回まで、同一病院等は月1回まで。",
-    },
-    {
-      additionCode: "mededu_info",
-      additionFamilyCode: "mededu",
-      additionFamilyName: "医療・保育・教育機関等連携加算",
-      additionName: "医療・保育・教育機関等連携加算（情報共有）",
-      historyAdditionCodes: ["mededu", "mededu_tsuuin", "mededu_info", "mededu_interview", "mededu_meeting"],
-      ruleStatus: "一部確定",
-      confirmedRules: [
-        "情報共有で候補に残す",
-        "障害福祉サービスは除外する",
-        "後段では同グループ月1回までを確認する",
-      ],
-      provisionalRules: [
-        "元資料上は月区分の限定が薄いが、現段階では従来どおりモニタリング月または計画作成月に寄せている",
-        "機関グループの最終境界はまだ仮置き",
-      ],
-      priority: 10,
-      targetTypes: ["共通", "児", "者"],
-      monthTypes: ["モニタリング月", "計画作成月"],
-      organizationGroups: ["病院・訪看・薬局グループ", "福祉サービス等提供機関"],
-      serviceDecisionInclude: ["医療関連", "障害福祉以外の福祉サービス", "相談支援"],
-      serviceDecisionExclude: ["障害福祉サービス"],
-      placeTypes: ["自事業所内", "外出先"],
-      actionTypes: ["情報共有"],
-      postCheckRules: [
-        { code: "monthly_limit_per_client_by_organization_group", limit: 1, additionCodes: ["mededu", "mededu_info"], recordActionTypes: ["情報共有"], label: "同グループ月1回まで" },
-      ],
-      postCheck: "相手先グループごとに月1回まで。情報共有先を記録する。",
-    },
-    {
-      additionCode: "mededu_interview",
-      additionFamilyCode: "mededu",
-      additionFamilyName: "医療・保育・教育機関等連携加算",
-      additionName: "医療・保育・教育機関等連携加算（面談）",
-      historyAdditionCodes: ["mededu", "mededu_tsuuin", "mededu_info", "mededu_interview", "mededu_meeting"],
-      ruleStatus: "一部確定",
-      confirmedRules: [
-        "モニタリング月または計画作成月で候補に残す",
-        "面談のみ",
-        "障害福祉サービスは除外する",
-        "初回加算算定時は不可",
-        "担当者会議加算との併算定不可を後段で確認する",
-      ],
-      provisionalRules: [
-        "退院・退所加算との関係の細部はまだ未確定",
-        "対象機関を福祉サービス等提供機関だけに絞っているが、制度境界の細部は未確定",
-      ],
-      priority: 11,
-      targetTypes: ["共通", "児", "者"],
-      monthTypes: ["モニタリング月", "計画作成月"],
-      organizationGroups: ["福祉サービス等提供機関"],
-      serviceDecisionInclude: ["障害福祉以外の福祉サービス", "相談支援"],
-      serviceDecisionExclude: ["障害福祉サービス"],
-      placeTypes: ["自事業所内", "外出先"],
-      actionTypes: ["面談"],
-      postCheckRules: [
-        { code: "blocked_if_answer_true", answerKey: "dischargeFacilityStaffOnlyInfo", blockedValue: "施設職員のみ", label: "退院・退所する施設の職員のみからの情報なら不可" },
-        { code: "blocked_if_answer_true", answerKey: "initialAdditionPlanned", blockedValue: "初回加算あり", label: "初回加算算定時は不可" },
-        { code: "monthly_limit_per_client_by_organization_group", limit: 1, additionCodes: ["mededu", "mededu_interview", "mededu_meeting"], recordActionTypes: ["面談", "会議"], label: "同グループ月1回まで" },
-        { code: "exclusive_with_addition_codes", additionCodes: ["conference"], label: "担当者会議加算との併算定不可" },
-      ],
-      postCheck: "面談相手と受けた情報を記録する。担当者会議加算との重複は後段で確認する。",
-    },
-    {
-      additionCode: "mededu_meeting",
-      additionFamilyCode: "mededu",
-      additionFamilyName: "医療・保育・教育機関等連携加算",
-      additionName: "医療・保育・教育機関等連携加算（会議）",
-      historyAdditionCodes: ["mededu", "mededu_tsuuin", "mededu_info", "mededu_interview", "mededu_meeting"],
-      ruleStatus: "一部確定",
-      confirmedRules: [
-        "モニタリング月または計画作成月で候補に残す",
-        "会議のみ",
-        "障害福祉サービスは除外する",
-        "初回加算算定時は不可",
-        "担当者会議加算との併算定不可を後段で確認する",
-      ],
-      provisionalRules: [
-        "退院・退所加算との関係の細部はまだ未確定",
-        "対象機関を福祉サービス等提供機関だけに絞っているが、制度境界の細部は未確定",
-      ],
-      priority: 12,
-      targetTypes: ["共通", "児", "者"],
-      monthTypes: ["モニタリング月", "計画作成月"],
-      organizationGroups: ["福祉サービス等提供機関"],
-      serviceDecisionInclude: ["障害福祉以外の福祉サービス", "相談支援"],
-      serviceDecisionExclude: ["障害福祉サービス"],
-      placeTypes: ["自事業所内", "外出先"],
-      actionTypes: ["会議"],
-      postCheckRules: [
-        { code: "blocked_if_answer_true", answerKey: "dischargeFacilityStaffOnlyInfo", blockedValue: "施設職員のみ", label: "退院・退所する施設の職員のみからの情報なら不可" },
-        { code: "blocked_if_answer_true", answerKey: "initialAdditionPlanned", blockedValue: "初回加算あり", label: "初回加算算定時は不可" },
-        { code: "monthly_limit_per_client_by_organization_group", limit: 1, additionCodes: ["mededu", "mededu_interview", "mededu_meeting"], recordActionTypes: ["面談", "会議"], label: "同グループ月1回まで" },
-        { code: "exclusive_with_addition_codes", additionCodes: ["conference"], label: "担当者会議加算との併算定不可" },
-      ],
-      postCheck: "会議参加先と得た情報を記録する。担当者会議加算との重複は後段で確認する。",
-    },
-    {
-      additionCode: "intensive_visit",
-      additionFamilyCode: "intensive",
-      additionFamilyName: "集中支援加算",
-      additionName: "集中支援加算（訪問）",
-      historyAdditionCodes: [
-        "intensive",
-        "intensive_visit",
-        "intensive_scene_check",
-        "intensive_meeting_host",
-        "intensive_meeting_join",
-        "intensive_tsuuin",
-        "intensive_info",
-        "intensive_info_medical",
-        "intensive_info_pharmacy",
-      ],
-      ruleStatus: "一部確定",
-      confirmedRules: [
-        "それ以外月で候補に残す",
-        "訪問のみ",
-        "同月2回以上の訪問を後段で確認する",
-      ],
-      provisionalRules: [
-        "機関グループの範囲は仮置き",
-      ],
-      priority: 20,
-      targetTypes: ["共通", "児", "者"],
-      monthTypes: ["それ以外"],
-      organizationGroups: ["福祉サービス等提供機関"],
-      serviceDecisionInclude: ["障害福祉サービス", "障害福祉以外の福祉サービス", "相談支援"],
-      placeTypes: ["外出先"],
-      actionTypes: ["訪問"],
-      postCheckRules: [
-        {
-          code: "monthly_action_count_min",
-          minimum: 2,
-          actionTypes: ["訪問"],
-          label: "同月2回以上の訪問が必要",
-        },
-      ],
-      postCheck: "訪問回数要件を後段で確認する。",
-    },
-    {
-      additionCode: "intensive_scene_check",
-      additionFamilyCode: "intensive",
-      additionFamilyName: "集中支援加算",
-      additionName: "集中支援加算（サービス提供場面確認）",
-      historyAdditionCodes: [
-        "intensive",
-        "intensive_visit",
-        "intensive_scene_check",
-        "intensive_meeting_host",
-        "intensive_meeting_join",
-        "intensive_tsuuin",
-        "intensive_info",
-        "intensive_info_medical",
-        "intensive_info_pharmacy",
-      ],
-      ruleStatus: "一部確定",
-      confirmedRules: [
-        "それ以外月で候補に残す",
-        "サービス提供場面確認のみ",
-      ],
-      provisionalRules: [
-        "機関グループの範囲は仮置き",
-      ],
-      priority: 21,
-      targetTypes: ["共通", "児", "者"],
-      monthTypes: ["それ以外"],
-      organizationGroups: ["福祉サービス等提供機関"],
-      serviceDecisionInclude: ["障害福祉サービス", "障害福祉以外の福祉サービス", "相談支援"],
-      placeTypes: ["外出先"],
-      actionTypes: ["サービス提供場面確認"],
-      postCheckRules: [],
-      postCheck: "確認した提供場面の内容を記録する。",
-    },
-    {
-      additionCode: "intensive_meeting_host",
-      additionFamilyCode: "intensive",
-      additionFamilyName: "集中支援加算",
-      additionName: "集中支援加算（会議開催）",
-      historyAdditionCodes: [
-        "intensive",
-        "intensive_visit",
-        "intensive_scene_check",
-        "intensive_meeting_host",
-        "intensive_meeting_join",
-        "intensive_tsuuin",
-        "intensive_info",
-        "intensive_info_medical",
-        "intensive_info_pharmacy",
-      ],
-      ruleStatus: "一部確定",
-      confirmedRules: [
-        "それ以外月で候補に残す",
-        "サービス担当者会議の開催のみ",
-        "旧資料上、追加の回数上限は見当たらない",
-      ],
-      provisionalRules: [
-        "現行UIでは「サービス担当者会議の開催」を「担当者会議開催」に寄せている",
-      ],
-      priority: 21.5,
-      targetTypes: ["共通", "児", "者"],
-      monthTypes: ["それ以外"],
-      organizationGroups: ["福祉サービス等提供機関"],
-      serviceDecisionInclude: ["障害福祉サービス", "障害福祉以外の福祉サービス", "相談支援"],
-      placeTypes: ["自事業所内", "外出先"],
-      actionTypes: ["担当者会議開催"],
-      postCheckRules: [],
-      postCheck: "開催した会議の参加者と検討内容を記録する。",
-    },
-    {
-      additionCode: "intensive_meeting_join",
-      additionFamilyCode: "intensive",
-      additionFamilyName: "集中支援加算",
-      additionName: "集中支援加算（会議参加）",
-      historyAdditionCodes: [
-        "intensive",
-        "intensive_visit",
-        "intensive_scene_check",
-        "intensive_meeting_host",
-        "intensive_meeting_join",
-        "intensive_tsuuin",
-        "intensive_info",
-        "intensive_info_medical",
-        "intensive_info_pharmacy",
-      ],
-      ruleStatus: "一部確定",
-      confirmedRules: [
-        "それ以外月で候補に残す",
-        "会議参加のみ",
-        "旧資料上、追加の回数上限は見当たらない",
-      ],
-      provisionalRules: [
-        "現行UIでは「会議参加」を「会議」に寄せている",
-      ],
-      priority: 22,
-      targetTypes: ["共通", "児", "者"],
-      monthTypes: ["それ以外"],
-      organizationGroups: ["福祉サービス等提供機関"],
-      serviceDecisionInclude: ["障害福祉サービス", "障害福祉以外の福祉サービス", "相談支援"],
-      placeTypes: ["自事業所内", "外出先"],
-      actionTypes: ["会議"],
-      postCheckRules: [],
-      postCheck: "参加した会議の相手先と確認内容を記録する。",
-    },
-    {
-      additionCode: "intensive_tsuuin",
-      additionFamilyCode: "intensive",
-      additionFamilyName: "集中支援加算",
-      additionName: "集中支援加算（通院同行）",
-      historyAdditionCodes: [
-        "intensive",
-        "intensive_visit",
-        "intensive_scene_check",
-        "intensive_meeting_host",
-        "intensive_meeting_join",
-        "intensive_tsuuin",
-        "intensive_info",
-        "intensive_info_medical",
-        "intensive_info_pharmacy",
-      ],
-      ruleStatus: "一部確定",
-      confirmedRules: [
-        "それ以外月の病院等への通院同行のみ候補に残す",
-        "後段では同月3回までと同一病院等は月1回までを確認する",
-      ],
-      provisionalRules: [],
-      priority: 23,
-      targetTypes: ["共通", "児", "者"],
-      monthTypes: ["それ以外"],
-      organizationGroups: ["病院・訪看・薬局グループ"],
-      organizationTypes: ["病院"],
-      serviceDecisionInclude: ["医療関連"],
-      placeTypes: ["外出先"],
-      actionTypes: ["通院同行"],
-      postCheckRules: [
-        { code: "monthly_limit_per_client", limit: 3, additionCodes: ["intensive", "intensive_tsuuin"], recordActionTypes: ["通院同行"], label: "同月3回まで" },
-        { code: "monthly_limit_per_client_by_organization", limit: 1, additionCodes: ["intensive", "intensive_tsuuin"], recordActionTypes: ["通院同行"], label: "同一病院等は月1回まで" },
-      ],
-      postCheck: "通院同行先と同行時の確認内容を記録する。同月3回まで、同一病院等は月1回まで。",
-    },
-    {
-      additionCode: "intensive_info",
-      additionFamilyCode: "intensive",
-      additionFamilyName: "集中支援加算",
-      additionName: "集中支援加算（情報共有）",
-      historyAdditionCodes: [
-        "intensive",
-        "intensive_visit",
-        "intensive_scene_check",
-        "intensive_meeting_host",
-        "intensive_meeting_join",
-        "intensive_tsuuin",
-        "intensive_info",
-        "intensive_info_medical",
-        "intensive_info_pharmacy",
-      ],
-      ruleStatus: "一部確定",
-      confirmedRules: [
-        "それ以外月で候補に残す",
-        "福祉サービス等提供機関への情報共有のみ",
-        "後段では同グループ月1回までを確認する",
-      ],
-      provisionalRules: [
-        "病院・訪看・薬局は内部的に別枝へ分けている",
-      ],
-      priority: 24,
-      targetTypes: ["共通", "児", "者"],
-      monthTypes: ["それ以外"],
-      organizationGroups: ["福祉サービス等提供機関"],
-      serviceDecisionInclude: ["障害福祉サービス", "障害福祉以外の福祉サービス", "相談支援"],
-      placeTypes: ["自事業所内", "外出先"],
-      actionTypes: ["情報共有"],
-      postCheckRules: [
-        { code: "monthly_limit_per_client_by_organization_group", limit: 1, additionCodes: ["intensive", "intensive_info", "intensive_info_medical", "intensive_info_pharmacy"], recordActionTypes: ["情報共有"], label: "同グループ月1回まで" },
-      ],
-      postCheck: "共有した情報と相手先を記録する。同グループ月1回まで。",
-    },
-    {
-      additionCode: "intensive_info_medical",
-      additionFamilyCode: "intensive",
-      additionFamilyName: "集中支援加算",
-      additionName: "集中支援加算（情報共有）",
-      historyAdditionCodes: [
-        "intensive",
-        "intensive_visit",
-        "intensive_scene_check",
-        "intensive_meeting_host",
-        "intensive_meeting_join",
-        "intensive_tsuuin",
-        "intensive_info",
-        "intensive_info_medical",
-        "intensive_info_pharmacy",
-      ],
-      ruleStatus: "一部確定",
-      confirmedRules: [
-        "それ以外月で候補に残す",
-        "病院または訪問看護への情報共有のみ",
-        "入院に当たっての情報共有は除外する",
-        "後段では同グループ月1回までを確認する",
-      ],
-      provisionalRules: [
-        "薬局は別枝へ分けて、入院確認の質問対象から外している",
-      ],
-      priority: 24.1,
-      targetTypes: ["共通", "児", "者"],
-      monthTypes: ["それ以外"],
-      organizationGroups: ["病院・訪看・薬局グループ"],
-      organizationTypes: ["病院", "訪問看護"],
-      requiredAnswers: { hospitalAdmissionContext: "入院に当たっていない" },
-      serviceDecisionInclude: ["医療関連"],
-      placeTypes: ["自事業所内", "外出先"],
-      actionTypes: ["情報共有"],
-      postCheckRules: [
-        { code: "monthly_limit_per_client_by_organization_group", limit: 1, additionCodes: ["intensive", "intensive_info", "intensive_info_medical", "intensive_info_pharmacy"], recordActionTypes: ["情報共有"], label: "同グループ月1回まで" },
-      ],
-      postCheck: "共有した情報と相手先を記録する。同グループ月1回まで。",
-    },
-    {
-      additionCode: "intensive_info_pharmacy",
-      additionFamilyCode: "intensive",
-      additionFamilyName: "集中支援加算",
-      additionName: "集中支援加算（情報共有）",
-      historyAdditionCodes: [
-        "intensive",
-        "intensive_visit",
-        "intensive_scene_check",
-        "intensive_meeting_host",
-        "intensive_meeting_join",
-        "intensive_tsuuin",
-        "intensive_info",
-        "intensive_info_medical",
-        "intensive_info_pharmacy",
-      ],
-      ruleStatus: "一部確定",
-      confirmedRules: [
-        "それ以外月で候補に残す",
-        "薬局への情報共有のみ",
-        "後段では同グループ月1回までを確認する",
-      ],
-      provisionalRules: [
-        "薬局は病院/訪看枝と分けて、入院確認の質問を出さない",
-      ],
-      priority: 24.2,
-      targetTypes: ["共通", "児", "者"],
-      monthTypes: ["それ以外"],
-      organizationGroups: ["病院・訪看・薬局グループ"],
-      organizationTypes: ["薬局"],
-      serviceDecisionInclude: ["医療関連"],
-      placeTypes: ["自事業所内", "外出先"],
-      actionTypes: ["情報共有"],
-      postCheckRules: [
-        { code: "monthly_limit_per_client_by_organization_group", limit: 1, additionCodes: ["intensive", "intensive_info", "intensive_info_medical", "intensive_info_pharmacy"], recordActionTypes: ["情報共有"], label: "同グループ月1回まで" },
-      ],
-      postCheck: "共有した情報と相手先を記録する。同グループ月1回まで。",
-    },
-    {
-      additionCode: "monitoring",
-      additionName: "モニタリング加算",
-      ruleStatus: "一部確定",
-      confirmedRules: [
-        "提供現場の訪問確認で候補に残す",
-        "モニタリング月に限定しない",
-        "同月1回まで",
-      ],
-      provisionalRules: [
-        "現行UIでは「提供現場訪問」を「サービス提供場面確認」に寄せている",
-        "対象機関と対象サービスの制度境界はまだ仮置き",
-      ],
-      priority: 25,
-      targetTypes: ["共通", "児", "者"],
-      monthTypes: ["モニタリング月", "計画作成月", "それ以外"],
-      organizationGroups: ["福祉サービス等提供機関"],
-      serviceDecisionInclude: ["障害福祉サービス", "障害福祉以外の福祉サービス"],
-      placeTypes: ["外出先"],
-      actionTypes: ["サービス提供場面確認"],
-      postCheckRules: [
-        { code: "monthly_limit_per_client", limit: 1, additionCodes: ["monitoring"], label: "同月1回まで" },
-      ],
-      postCheck: "提供現場の訪問確認内容と確認結果を記録する。月1回まで。",
-    },
-    {
-      additionCode: "conference",
-      additionName: "担当者会議加算",
-      ruleStatus: "確定条件あり",
-      confirmedRules: [
-        "モニタリング月のみ",
-        "福祉サービス等提供機関のみ",
-        "担当者会議開催のみ",
-        "同月1回まで",
-        "医保教（面談・会議）との併算定不可を後段で確認する",
-      ],
-      provisionalRules: [],
-      priority: 30,
-      targetTypes: ["共通", "児", "者"],
-      monthTypes: ["モニタリング月"],
-      organizationGroups: ["福祉サービス等提供機関"],
-      serviceDecisionInclude: ["医療関連", "障害福祉サービス", "障害福祉以外の福祉サービス", "相談支援"],
-      placeTypes: ["自事業所内", "外出先"],
-      actionTypes: ["担当者会議開催"],
-      postCheckRules: [
-        {
-          code: "monthly_limit_per_client",
-          limit: 1,
-          additionCodes: ["conference"],
-          label: "同月1回まで",
-        },
-        {
-          code: "exclusive_with_addition_codes",
-          additionCodes: ["mededu", "mededu_interview", "mededu_meeting"],
-          recordActionTypes: ["面談", "会議"],
-          label: "医保教（面談・会議）との併算定不可",
-        },
-      ],
-      postCheck: "モニタリングに当たって開催した担当者会議の参加者と開催内容を記録する。同月1回まで。医保教（面談・会議）との重複は後段で確認する。",
-    },
-    {
-      additionCode: "discharge",
-      additionName: "退院・退所加算",
-      ruleStatus: "仮置き多め",
-      confirmedRules: [
-        "病院や退院・退所対象施設での外出先対応に限り、退院前面談を要件にする",
-        "サービス等の利用開始月の調整のみ",
-        "初回加算算定時は不可",
-      ],
-      provisionalRules: [
-        "対象月の扱いは仮置き",
-        "入所施設、更生施設、児童施設、刑事施設等は名称推定に強い語だけを使っている",
-      ],
-      priority: 40,
-      targetTypes: ["共通", "児", "者"],
-      monthTypes: ["計画作成月", "それ以外"],
-      organizationGroups: ["病院・訪看・薬局グループ", "福祉サービス等提供機関"],
-      organizationTypes: ["病院", "入所施設", "更生施設", "児童施設", "刑事施設"],
-      serviceDecisionInclude: ["医療関連", "障害福祉サービス", "障害福祉以外の福祉サービス"],
-      placeTypes: ["外出先"],
-      actionTypes: ["退院前面談"],
-      requiredAnswers: { serviceUseStartMonth: "開始月である" },
-      postCheckRules: [
-        { code: "blocked_if_answer_true", answerKey: "initialAdditionPlanned", blockedValue: "初回加算あり", label: "初回加算算定時は不可" },
-      ],
-      postCheck: "退院前後の場面確認が必要。面談先の記録を残す。",
-    },
-    {
-      additionCode: "hospital_info_i",
-      additionName: "入院時情報連携加算 I",
-      ruleStatus: "一部確定",
-      confirmedRules: [
-        "入院に当たって病院へ訪問して必要情報を提供した場合に候補に残す",
-        "同月1回まで",
-        "IIとの併算定不可",
-      ],
-      provisionalRules: [
-        "現行UIでは「訪問情報提供」を「外出先 + 情報共有」に寄せている",
-        "診療所は病院と同じ扱いで判定する",
-      ],
-      priority: 35,
-      targetTypes: ["共通", "児", "者"],
-      monthTypes: ["モニタリング月", "計画作成月", "それ以外"],
-      organizationGroups: ["病院・訪看・薬局グループ"],
-      organizationTypes: ["病院"],
-      serviceDecisionInclude: ["医療関連"],
-      placeTypes: ["外出先"],
-      actionTypes: ["情報共有"],
-      requiredAnswers: { hospitalAdmissionContext: "入院に当たっている" },
-      postCheckRules: [
-        { code: "monthly_limit_per_client", limit: 1, additionCodes: ["hospital_info_i"], label: "同月1回まで" },
-        { code: "exclusive_with_addition_codes", additionCodes: ["hospital_info_ii"], label: "IIとの併算定不可" },
-      ],
-      postCheck: "病院訪問による情報提供内容を記録する。",
-    },
-    {
-      additionCode: "hospital_info_ii",
-      additionName: "入院時情報連携加算 II",
-      ruleStatus: "一部確定",
-      confirmedRules: [
-        "入院に当たって病院へ訪問以外の方法で必要情報を提供した場合に候補に残す",
-        "同月1回まで",
-        "Iとの併算定不可",
-      ],
-      provisionalRules: [
-        "現行UIでは「訪問以外情報提供」を「自事業所内 + 情報共有」に寄せている",
-        "診療所は病院と同じ扱いで判定する",
-      ],
-      priority: 36,
-      targetTypes: ["共通", "児", "者"],
-      monthTypes: ["モニタリング月", "計画作成月", "それ以外"],
-      organizationGroups: ["病院・訪看・薬局グループ"],
-      organizationTypes: ["病院"],
-      serviceDecisionInclude: ["医療関連"],
-      placeTypes: ["自事業所内"],
-      actionTypes: ["情報共有"],
-      requiredAnswers: { hospitalAdmissionContext: "入院に当たっている" },
-      postCheckRules: [
-        { code: "monthly_limit_per_client", limit: 1, additionCodes: ["hospital_info_ii"], label: "同月1回まで" },
-        { code: "exclusive_with_addition_codes", additionCodes: ["hospital_info_i"], label: "Iとの併算定不可" },
-      ],
-      postCheck: "訪問以外で提供した情報内容と提供方法を記録する。",
-    },
-    {
-      additionCode: "edu_info",
-      additionFamilyCode: "edu_support",
-      additionFamilyName: "保・教支援",
-      additionName: "保・教支援（情報共有）",
-      historyAdditionCodes: ["edu_support", "edu_info", "edu_visit", "edu_meeting"],
-      ruleStatus: "一部確定",
-      confirmedRules: [
-        "児対象のみ",
-        "障害福祉サービス・相談支援・障害福祉以外の福祉サービスの利用文脈で候補に残す",
-        "学校・保育・企業・就業生活支援センター等への情報共有で候補に残す",
-      ],
-      provisionalRules: [
-        "集団生活施設など、学校・保育以外の対象境界はまだ仮置き",
-      ],
-      priority: 50,
-      targetTypes: ["児"],
-      monthTypes: ["モニタリング月", "計画作成月", "それ以外"],
-      organizationGroups: ["福祉サービス等提供機関"],
-      organizationTypes: ["学校", "保育", "児童施設", "企業", "障害者就業・生活支援センター"],
-      serviceDecisionInclude: ["障害福祉サービス", "相談支援", "障害福祉以外の福祉サービス"],
-      placeTypes: ["自事業所内", "外出先"],
-      actionTypes: ["情報共有"],
-      postCheckRules: [],
-      postCheck: "情報共有先と支援内容の検討協力内容を記録する。",
-    },
-    {
-      additionCode: "edu_visit",
-      additionFamilyCode: "edu_support",
-      additionFamilyName: "保・教支援",
-      additionName: "保・教支援（訪問面接）",
-      historyAdditionCodes: ["edu_support", "edu_info", "edu_visit", "edu_meeting"],
-      ruleStatus: "一部確定",
-      confirmedRules: [
-        "児対象のみ",
-        "それ以外月のみ",
-        "障害福祉サービス・相談支援・障害福祉以外の福祉サービスの利用文脈で候補に残す",
-        "学校・保育・企業・就業生活支援センター等への訪問面接で候補に残す",
-      ],
-      provisionalRules: [
-        "現行UIでは「訪問面接」を「外出先 + 面談」に寄せている",
-        "集団生活施設など、学校・保育以外の対象境界はまだ仮置き",
-        "旧の総称記録は訪問面接の回数へ自動換算していない",
-      ],
-      priority: 51,
-      targetTypes: ["児"],
-      monthTypes: ["それ以外"],
-      organizationGroups: ["福祉サービス等提供機関"],
-      organizationTypes: ["学校", "保育", "児童施設", "企業", "障害者就業・生活支援センター"],
-      serviceDecisionInclude: ["障害福祉サービス", "相談支援", "障害福祉以外の福祉サービス"],
-      placeTypes: ["外出先"],
-      actionTypes: ["面談"],
-      postCheckRules: [
-        {
-          code: "monthly_addition_count_min",
-          minimum: 2,
-          additionCodes: ["edu_visit"],
-          label: "同月2回以上の訪問面接が必要",
-        },
-      ],
-      postCheck: "訪問面接した相手先と確認した内容を記録する。月内の訪問面接回数は後段で確認する。",
-    },
-    {
-      additionCode: "edu_meeting",
-      additionFamilyCode: "edu_support",
-      additionFamilyName: "保・教支援",
-      additionName: "保・教支援（会議参加）",
-      historyAdditionCodes: ["edu_support", "edu_info", "edu_visit", "edu_meeting"],
-      ruleStatus: "一部確定",
-      confirmedRules: [
-        "児対象のみ",
-        "それ以外月のみ",
-        "障害福祉サービス・相談支援・障害福祉以外の福祉サービスの利用文脈で候補に残す",
-        "学校・保育・企業・就業生活支援センター等との会議参加で候補に残す",
-      ],
-      provisionalRules: [
-        "現行UIでは「会議参加」を「会議」に寄せている",
-        "集団生活施設など、学校・保育以外の対象境界はまだ仮置き",
-      ],
-      priority: 52,
-      targetTypes: ["児"],
-      monthTypes: ["それ以外"],
-      organizationGroups: ["福祉サービス等提供機関"],
-      organizationTypes: ["学校", "保育", "児童施設", "企業", "障害者就業・生活支援センター"],
-      serviceDecisionInclude: ["障害福祉サービス", "相談支援", "障害福祉以外の福祉サービス"],
-      placeTypes: ["自事業所内", "外出先"],
-      actionTypes: ["会議"],
-      postCheckRules: [],
-      postCheck: "参加した会議の相手先と共有した内容を記録する。",
-    },
-    {
-      additionCode: "home_info",
-      additionFamilyCode: "home_collab",
-      additionFamilyName: "居宅連携",
-      additionName: "居宅連携（情報共有）",
-      historyAdditionCodes: ["home_collab", "home_info", "home_visit", "home_meeting"],
-      ruleStatus: "一部確定",
-      confirmedRules: [
-        "者対象のみ",
-        "ケアマネ事業所への情報共有で候補に残す",
-        "ケアマネ利用開始時のみ",
-        "後段では同月2回までを確認する",
-      ],
-      provisionalRules: [],
-      priority: 60,
-      targetTypes: ["者"],
-      monthTypes: ["モニタリング月", "計画作成月", "それ以外"],
-      organizationGroups: ["福祉サービス等提供機関"],
-      organizationTypes: ["ケアマネ事業所"],
-      placeTypes: ["自事業所内", "外出先"],
-      actionTypes: ["情報共有"],
-      requiredAnswers: { careManagerStart: "利用開始あり" },
-      postCheckRules: [
-        { code: "monthly_limit_per_client", limit: 2, additionCodes: ["home_collab", "home_info"], recordActionTypes: ["情報共有"], label: "同月2回まで" },
-      ],
-      postCheck: "ケアマネへ提供した情報と協力内容を記録する。月2回まで。",
-    },
-    {
-      additionCode: "home_visit",
-      additionFamilyCode: "home_collab",
-      additionFamilyName: "居宅連携",
-      additionName: "居宅連携（訪問面接）",
-      historyAdditionCodes: ["home_collab", "home_info", "home_visit", "home_meeting"],
-      ruleStatus: "一部確定",
-      confirmedRules: [
-        "者対象のみ",
-        "それ以外月のみ",
-        "ケアマネ事業所への訪問面接で候補に残す",
-        "ケアマネ利用開始時のみ",
-        "後段では同月2回以上の訪問面接を確認する",
-      ],
-      provisionalRules: [
-        "現行UIでは「訪問面接」を「外出先 + 面談」に寄せている",
-        "旧の総称記録は訪問面接の回数へ自動換算していない",
-      ],
-      priority: 61,
-      targetTypes: ["者"],
-      monthTypes: ["それ以外"],
-      organizationGroups: ["福祉サービス等提供機関"],
-      organizationTypes: ["ケアマネ事業所"],
-      placeTypes: ["外出先"],
-      actionTypes: ["面談"],
-      requiredAnswers: { careManagerStart: "利用開始あり" },
-      postCheckRules: [
-        {
-          code: "monthly_addition_count_min",
-          minimum: 2,
-          additionCodes: ["home_visit"],
-          label: "同月2回以上の訪問面接が必要",
-        },
-      ],
-      postCheck: "訪問面接したケアマネと確認した内容を記録する。月内の訪問面接回数は後段で確認する。",
-    },
-    {
-      additionCode: "home_meeting",
-      additionFamilyCode: "home_collab",
-      additionFamilyName: "居宅連携",
-      additionName: "居宅連携（会議参加）",
-      historyAdditionCodes: ["home_collab", "home_info", "home_visit", "home_meeting"],
-      ruleStatus: "一部確定",
-      confirmedRules: [
-        "者対象のみ",
-        "それ以外月のみ",
-        "ケアマネ事業所との会議参加で候補に残す",
-        "ケアマネ利用開始時のみ",
-      ],
-      provisionalRules: [
-        "現行UIでは「会議参加」を「会議」に寄せている",
-      ],
-      priority: 62,
-      targetTypes: ["者"],
-      monthTypes: ["それ以外"],
-      organizationGroups: ["福祉サービス等提供機関"],
-      organizationTypes: ["ケアマネ事業所"],
-      placeTypes: ["自事業所内", "外出先"],
-      actionTypes: ["会議"],
-      requiredAnswers: { careManagerStart: "利用開始あり" },
-      postCheckRules: [],
-      postCheck: "参加した会議の相手先と共有した内容を記録する。",
-    },
-    {
-      additionCode: "home_work_info",
-      additionFamilyCode: "home_work_collab",
-      additionFamilyName: "居宅連携（就労）",
-      additionName: "居宅連携（就労）（情報共有）",
-      historyAdditionCodes: ["home_work_collab", "home_work_info", "home_work_visit", "home_work_meeting"],
-      ruleStatus: "一部確定",
-      confirmedRules: [
-        "者対象のみ",
-        "企業または障害者就業・生活支援センター等への情報共有で候補に残す",
-        "新規雇用開始時のみ",
-        "後段では同月2回までを確認する",
-      ],
-      provisionalRules: [],
-      priority: 70,
-      targetTypes: ["者"],
-      monthTypes: ["モニタリング月", "計画作成月", "それ以外"],
-      organizationGroups: ["福祉サービス等提供機関"],
-      organizationTypes: ["企業", "障害者就業・生活支援センター"],
-      placeTypes: ["自事業所内", "外出先"],
-      actionTypes: ["情報共有"],
-      requiredAnswers: { employmentStart: "新規雇用あり" },
-      postCheckRules: [
-        { code: "monthly_limit_per_client", limit: 2, additionCodes: ["home_work_collab", "home_work_info"], recordActionTypes: ["情報共有"], label: "同月2回まで" },
-      ],
-      postCheck: "就労先や就業生活支援センター等へ提供した情報を記録する。月2回まで。",
-    },
-    {
-      additionCode: "home_work_visit",
-      additionFamilyCode: "home_work_collab",
-      additionFamilyName: "居宅連携（就労）",
-      additionName: "居宅連携（就労）（訪問面接）",
-      historyAdditionCodes: ["home_work_collab", "home_work_info", "home_work_visit", "home_work_meeting"],
-      ruleStatus: "一部確定",
-      confirmedRules: [
-        "者対象のみ",
-        "それ以外月のみ",
-        "企業または障害者就業・生活支援センター等への訪問面接で候補に残す",
-        "新規雇用開始時のみ",
-        "後段では同月2回以上の訪問面接を確認する",
-      ],
-      provisionalRules: [
-        "現行UIでは「訪問面接」を「外出先 + 面談」に寄せている",
-        "旧の総称記録は訪問面接の回数へ自動換算していない",
-      ],
-      priority: 71,
-      targetTypes: ["者"],
-      monthTypes: ["それ以外"],
-      organizationGroups: ["福祉サービス等提供機関"],
-      organizationTypes: ["企業", "障害者就業・生活支援センター"],
-      placeTypes: ["外出先"],
-      actionTypes: ["面談"],
-      requiredAnswers: { employmentStart: "新規雇用あり" },
-      postCheckRules: [
-        {
-          code: "monthly_addition_count_min",
-          minimum: 2,
-          additionCodes: ["home_work_visit"],
-          label: "同月2回以上の訪問面接が必要",
-        },
-      ],
-      postCheck: "訪問面接した就労先等と確認した内容を記録する。月内の訪問面接回数は後段で確認する。",
-    },
-    {
-      additionCode: "home_work_meeting",
-      additionFamilyCode: "home_work_collab",
-      additionFamilyName: "居宅連携（就労）",
-      additionName: "居宅連携（就労）（会議参加）",
-      historyAdditionCodes: ["home_work_collab", "home_work_info", "home_work_visit", "home_work_meeting"],
-      ruleStatus: "一部確定",
-      confirmedRules: [
-        "者対象のみ",
-        "それ以外月のみ",
-        "企業または障害者就業・生活支援センター等との会議参加で候補に残す",
-        "新規雇用開始時のみ",
-      ],
-      provisionalRules: [
-        "現行UIでは「会議参加」を「会議」に寄せている",
-      ],
-      priority: 72,
-      targetTypes: ["者"],
-      monthTypes: ["それ以外"],
-      organizationGroups: ["福祉サービス等提供機関"],
-      organizationTypes: ["企業", "障害者就業・生活支援センター"],
-      placeTypes: ["自事業所内", "外出先"],
-      actionTypes: ["会議"],
-      requiredAnswers: { employmentStart: "新規雇用あり" },
-      postCheckRules: [],
-      postCheck: "参加した会議の相手先と共有した内容を記録する。",
-    },
-  ],
-  reportRecords: [
-    { recordId: "r1", targetMonth: "2026-03", performedAt: "2026-03-14 09:05", clientId: "1001", organizationId: "21", serviceId: "301", staffId: "501", additionCode: "mededu", actionType: "情報共有", finalStatus: "自動確定", postCheckStatus: "ok", postCheckSummary: "同月1回まで。今月既存0件で範囲内です。", evaluatedAt: "2026-03-14 09:20", rationale: "病院グループ / 計画作成月 / 自事業所内 / 情報共有", savedNote: "病院と支援方針を共有し、今後の通院支援計画を確認した。" },
-    { recordId: "r2", targetMonth: "2026-03", performedAt: "2026-03-14 09:50", clientId: "1002", organizationId: "11", serviceId: "203", staffId: "502", additionCode: "intensive", actionType: "訪問", finalStatus: "要確認", postCheckStatus: "review", postCheckSummary: "同月2回以上の訪問が必要。今回を含めて1回です。 / 同一機関を除き月3回まで。今回を含めて1機関です。", evaluatedAt: "2026-03-14 10:05", rationale: "福祉サービス等提供機関 / それ以外 / 外出先 / 訪問", savedNote: "生活介護の現場を訪問し、利用状況と支援上の課題を確認した。" },
-    { recordId: "r3", targetMonth: "2026-03", performedAt: "2026-03-14 11:10", clientId: "1003", organizationId: "10", serviceId: "201", staffId: "501", additionCode: "conference", actionType: "担当者会議開催", finalStatus: "自動確定", postCheckStatus: "ok", postCheckSummary: "モニタリングに当たって開催した担当者会議の参加者と開催内容を記録する。", evaluatedAt: "2026-03-14 11:42", rationale: "福祉サービス等提供機関 / モニタリング月 / 自事業所内 / 担当者会議開催", savedNote: "モニタリングに当たり担当者会議を開催し、関係機関で支援方針を共有した。" },
-    { recordId: "r4", targetMonth: "2026-02", performedAt: "2026-02-28 15:30", clientId: "1001", organizationId: "21", serviceId: "301", staffId: "501", additionCode: "discharge", actionType: "退院前面談", finalStatus: "自動確定", postCheckStatus: "ok", postCheckSummary: "退院前後の場面確認が必要。面談先の記録を残す。", evaluatedAt: "2026-02-28 16:18", rationale: "病院グループ / それ以外 / 外出先 / 退院前面談", savedNote: "退院前面談に参加し、退院後支援体制を調整した。" },
-    { recordId: "r5", targetMonth: "2026-03", performedAt: "2026-03-13 13:25", clientId: "1002", organizationId: "22", serviceId: "302", staffId: "503", additionCode: "mededu", actionType: "面談", finalStatus: "自動確定", postCheckStatus: "ok", postCheckSummary: "同月1回まで。今月既存0件で範囲内です。", evaluatedAt: "2026-03-13 14:00", rationale: "病院・訪看・薬局グループ / モニタリング月 / 外出先 / 面談", savedNote: "訪看と面談し、モニタリング結果を共有した。" },
-    { recordId: "r6", targetMonth: "2026-01", performedAt: "2026-01-21 10:15", clientId: "1003", organizationId: "21", serviceId: "301", staffId: "501", additionCode: "hospital_info_i", actionType: "情報共有", finalStatus: "自動確定", postCheckStatus: "ok", postCheckSummary: "同月1回まで。今月既存0件で範囲内です。 / IIとの併算定不可。今月の併算定不可記録は見つかっていません。", evaluatedAt: "2026-01-21 10:40", rationale: "病院グループ / 外出先 / 情報共有", savedNote: "入院に当たり病院を訪問し、生活状況と支援上の留意点を情報提供した。" },
-  ],
-};
-
 const baseReportViews = {
   monthly_claim: {
     name: "月次請求用",
@@ -924,138 +41,6 @@ const columnCatalog = {
   savedNote: { label: "保存文", getValue: (record) => record.savedNote },
 };
 
-const questionDefinitions = [
-  {
-    key: "monthType",
-    order: 10,
-    label: "対応した時期はどれですか",
-    helper: "利用者の対象区分と機関・サービス条件は、選択済みの文脈から自動で候補に反映します。",
-    options: [
-      { value: "モニタリング月", note: "モニタリング実施月に該当する場合" },
-      { value: "計画作成月", note: "計画作成や更新の対象月に該当する場合" },
-      { value: "それ以外", note: "通常月の支援や集中支援など" },
-    ],
-  },
-  {
-    key: "placeType",
-    order: 20,
-    label: "対応した場所はどこですか",
-    helper: "ここでは制度用語より先に、実際にどこで対応したかだけを聞きます。",
-    options: [
-      { value: "自事業所内", note: "電話、自事業所内の会議、面談など" },
-      { value: "外出先", note: "訪問、同行、外部会議、現地確認など" },
-    ],
-  },
-  {
-    key: "actionType",
-    order: 30,
-    label: "その場で何をしましたか",
-    helper: "相談員が迷いやすい用語は、あとで管理者説明を載せられる前提です。",
-    visibleWhen({ answers }) {
-      return Boolean(answers.placeType);
-    },
-    getOptions(answers) {
-      if (answers.placeType === "自事業所内") {
-        return [
-          { value: "情報共有", note: "電話や文書、短時間面談で情報をやり取りした" },
-          { value: "会議", note: "担当者会議以外の打合せや連絡会を行った" },
-          { value: "担当者会議開催", note: "モニタリングに当たりサービス担当者会議を開催した" },
-          { value: "面談", note: "個別に面談して状況や支援を確認した" },
-        ];
-      }
-
-      return [
-        { value: "訪問", note: "現地へ行って支援状況や本人の様子を確認した" },
-        { value: "通院同行", note: "病院受診などに同行し、必要な情報を共有した" },
-        { value: "情報共有", note: "外部機関を訪ねるなどして必要な情報を伝えた" },
-        { value: "会議", note: "担当者会議以外の外部会議や打合せに参加した" },
-        { value: "担当者会議開催", note: "外部会場などでサービス担当者会議を開催した" },
-        { value: "面談", note: "外部で関係者や本人と面談した" },
-        { value: "サービス提供場面確認", note: "サービス提供の実際の場面を確認した" },
-        { value: "退院前面談", note: "退院・退所前の面談や調整を行った" },
-      ];
-    },
-  },
-  {
-    key: "hospitalAdmissionContext",
-    order: 40,
-    label: "今回の情報提供は入院に当たってのものですか",
-    helper: "入院時情報連携 I / II では、通常の病院連携と分けるために、入院に当たっての情報提供かどうかを先に確認します。",
-    visibleWhen() {
-      return shouldShowCandidateFactQuestion("hospitalAdmissionContext");
-    },
-    options: [
-      { value: "入院に当たっている", note: "今回の情報提供は入院に当たって病院へ行った、または病院へ連絡したもの" },
-      { value: "入院に当たっていない", note: "今回の情報提供は入院対応ではなく、通常の連携や別件の情報共有" },
-    ],
-  },
-  {
-    key: "dischargeFacilityStaffOnlyInfo",
-    order: 45,
-    label: "得た情報は退院・退所する施設の職員からだけですか",
-    helper: "医保教の面談・会議では、退院・退所する施設の職員からの情報だけで終わる場合は不可です。",
-    visibleWhen({ candidates }) {
-      return candidates.some((candidate) => candidateRequiresAnswer(candidate, "dischargeFacilityStaffOnlyInfo"));
-    },
-    options: [
-      { value: "施設職員以外も含む", note: "退院・退所する施設の職員以外からの情報や調整も含まれている" },
-      { value: "施設職員のみ", note: "退院・退所する施設の職員からの情報だけで対応した" },
-    ],
-  },
-  {
-    key: "initialAdditionPlanned",
-    order: 50,
-    label: "この月に初回加算も算定しますか",
-    helper: "面談・会議系や退院・退所系では、初回加算との重複可否を最後に確認します。",
-    visibleWhen({ candidates }) {
-      return candidates.some((candidate) => candidateRequiresAnswer(candidate, "initialAdditionPlanned"));
-    },
-    options: [
-      { value: "初回加算なし", note: "この月は初回加算を算定しない" },
-      { value: "初回加算あり", note: "この月に初回加算も算定する予定がある" },
-    ],
-  },
-  {
-    key: "careManagerStart",
-    order: 40,
-    label: "今回の支援はケアマネ利用開始に伴うものですか",
-    helper: "居宅連携系では、ケアマネ利用開始の文脈かどうかを候補の前提として確認します。",
-    visibleWhen() {
-      return shouldShowCandidateFactQuestion("careManagerStart");
-    },
-    options: [
-      { value: "利用開始あり", note: "今回の支援はケアマネ利用開始に伴う" },
-      { value: "利用開始なし", note: "ケアマネ利用開始とは別の文脈" },
-    ],
-  },
-  {
-    key: "employmentStart",
-    order: 40,
-    label: "今回の支援は通常の事業所への新規雇用に伴うものですか",
-    helper: "居宅連携（就労）系では、新規雇用開始の文脈かどうかを候補の前提として確認します。",
-    visibleWhen() {
-      return shouldShowCandidateFactQuestion("employmentStart");
-    },
-    options: [
-      { value: "新規雇用あり", note: "通常の事業所への新規雇用に伴う支援" },
-      { value: "新規雇用なし", note: "新規雇用開始とは別の文脈" },
-    ],
-  },
-  {
-    key: "serviceUseStartMonth",
-    order: 40,
-    label: "今回の調整はサービス等の利用開始月のものですか",
-    helper: "退院・退所加算では、サービス等の利用開始月に行った調整かどうかを候補の前提として確認します。",
-    visibleWhen() {
-      return shouldShowCandidateFactQuestion("serviceUseStartMonth");
-    },
-    options: [
-      { value: "開始月である", note: "今回の調整はサービス等の利用開始月に行った" },
-      { value: "開始月ではない", note: "利用開始月とは別の月の調整" },
-    ],
-  },
-];
-
 const state = {
   activeSection: "judgement",
   quickSearch: "",
@@ -1066,6 +51,8 @@ const state = {
     organizations: "sample",
     services: "sample",
     staffs: "sample",
+    questions: "sample",
+    additions: "sample",
     judgement: "sample",
     report: "sample",
     relations: "sample",
@@ -1076,6 +63,10 @@ const state = {
     organizations: [],
     services: [],
     staffs: [],
+  },
+  ruleCatalog: {
+    questions: [],
+    additions: [],
   },
   judgement: {
     clientId: "1001",
@@ -1097,7 +88,9 @@ const state = {
       placeType: "",
       actionType: "",
       hospitalAdmissionContext: "",
+      requiredInfoReceived: "",
       dischargeFacilityStaffOnlyInfo: "",
+      dischargeInpatientPeriodCount: "",
       initialAdditionPlanned: "",
       careManagerStart: "",
       employmentStart: "",
@@ -1141,6 +134,16 @@ const state = {
   },
 };
 
+const ruleRuntimeAdapterFactory = globalThis.__KASAN_RULE_RUNTIME_ADAPTER__;
+if (!ruleRuntimeAdapterFactory || typeof ruleRuntimeAdapterFactory.createRuleRuntimeAdapter !== "function") {
+  throw new Error("rule-runtime-adapter.js の読み込みに失敗しました。");
+}
+
+const ruleRuntimeAdapter = ruleRuntimeAdapterFactory.createRuleRuntimeAdapter({
+  state,
+  normalizeNumericId,
+});
+
 state.report.records = buildSampleReportRecords();
 
 const dom = {
@@ -1149,6 +152,7 @@ const dom = {
   quickSearchInput: document.querySelector("#quick-search-input"),
   quickSearchStatus: document.querySelector("#quick-search-status"),
   apiDataStatus: document.querySelector("#api-data-status"),
+  ruleRuntimeStatus: document.querySelector("#rule-runtime-status"),
   judgement: {
     status: document.querySelector("#judgement-status"),
     client: document.querySelector("#judgement-client"),
@@ -1199,8 +203,10 @@ const dom = {
     detailClient: document.querySelector("#report-detail-client"),
     detailPerformedAt: document.querySelector("#report-detail-performed-at"),
     detailAddition: document.querySelector("#report-detail-addition"),
+    detailIdentity: document.querySelector("#report-detail-identity"),
     detailEvaluatedAt: document.querySelector("#report-detail-evaluated-at"),
     detailPostCheck: document.querySelector("#report-detail-post-check"),
+    detailCandidates: document.querySelector("#report-detail-candidates"),
     detailRationale: document.querySelector("#report-detail-rationale"),
     detailNote: document.querySelector("#report-detail-note"),
     viewSummary: document.querySelector("#report-view-summary"),
@@ -1264,6 +270,8 @@ async function initializeApiData() {
   }
 
   await loadMastersFromApi();
+  await loadQuestionCatalogFromApi();
+  await loadAdditionCatalogFromApi();
   ensureRelationSelections();
   await Promise.all([
     loadOrganizationServices(state.relations.selectedOrganizationId),
@@ -1324,6 +332,58 @@ async function loadMastersFromApi() {
   renderMasters();
   renderJudgement();
   renderQuickSearchStatus();
+}
+
+async function loadQuestionCatalogFromApi() {
+  if (!canUseApiQuestionCatalog()) {
+    setRuleCatalogSection("questions", "sample", []);
+    renderJudgement();
+    return;
+  }
+
+  try {
+    const response = await fetchApiJson(buildApiUrl("question-catalog.php"));
+    const normalizedQuestions = Array.isArray(response.questions) ? response.questions : [];
+    if (normalizedQuestions.length === 0) {
+      setRuleCatalogSection("questions", "sample", []);
+      state.dataSource.note = "設問catalog未投入";
+    } else {
+      setRuleCatalogSection("questions", "api", normalizedQuestions);
+      state.dataSource.note = "";
+    }
+  } catch (error) {
+    setRuleCatalogSection("questions", "sample", []);
+    state.dataSource.note = error.message;
+  } finally {
+    updateApiDataStatusPill();
+    renderJudgement();
+  }
+}
+
+async function loadAdditionCatalogFromApi() {
+  if (!canUseApiAdditionCatalog()) {
+    setRuleCatalogSection("additions", "sample", []);
+    renderJudgement();
+    return;
+  }
+
+  try {
+    const response = await fetchApiJson(buildApiUrl("addition-catalog.php"));
+    const normalizedAdditions = flattenApiAdditionCatalogBranches(response.additions ?? []);
+    if (normalizedAdditions.length === 0) {
+      setRuleCatalogSection("additions", "sample", []);
+      state.dataSource.note = "加算catalog未投入";
+    } else {
+      setRuleCatalogSection("additions", "api", normalizedAdditions);
+      state.dataSource.note = "";
+    }
+  } catch (error) {
+    setRuleCatalogSection("additions", "sample", []);
+    state.dataSource.note = error.message;
+  } finally {
+    updateApiDataStatusPill();
+    renderJudgement();
+  }
 }
 
 async function loadOrganizationServices(organizationId, { force = false } = {}) {
@@ -1584,12 +644,13 @@ async function loadJudgementHistoryRecords(clientId, targetMonth) {
 }
 
 function initializeJudgementDefaults() {
-  const enrollment = data.enrollments.find((item) => item.clientId === state.judgement.clientId);
+  const prototypeData = getPrototypeDataSource();
+  const enrollment = prototypeData.enrollments.find((item) => item.clientId === state.judgement.clientId);
   if (enrollment) {
     state.judgement.organizationId = enrollment.organizationId;
     state.judgement.serviceId = enrollment.serviceId;
   }
-  state.judgement.staffId = data.staff[0]?.staffId ?? "";
+  state.judgement.staffId = prototypeData.staff[0]?.staffId ?? "";
 }
 
 function initializeReportFilters() {
@@ -1597,8 +658,9 @@ function initializeReportFilters() {
 }
 
 function initializeRelationDefaults() {
-  state.relations.selectedClientId = data.clients[0]?.clientId ?? "";
-  state.relations.selectedOrganizationId = data.organizations[0]?.organizationId ?? "";
+  const prototypeData = getPrototypeDataSource();
+  state.relations.selectedClientId = prototypeData.clients[0]?.clientId ?? "";
+  state.relations.selectedOrganizationId = prototypeData.organizations[0]?.organizationId ?? "";
   state.relations.clientOrganizationId = state.relations.selectedOrganizationId;
 }
 
@@ -1916,6 +978,10 @@ async function saveJudgementEvaluation() {
 }
 
 function buildJudgementSavePayload(snapshot) {
+  const topCandidateReference = getJudgementCandidateReference(snapshot.topCandidate);
+  const candidateStorageEntries = Array.isArray(snapshot.candidateStorageEntries)
+    ? snapshot.candidateStorageEntries
+    : buildJudgementCandidateStorageEntries(snapshot.candidates, snapshot.topCandidate);
   return {
     client_enrollment_id: snapshot.clientEnrollmentId,
     client_id: Number(snapshot.client.clientId),
@@ -1929,6 +995,7 @@ function buildJudgementSavePayload(snapshot) {
     addition_name: snapshot.displayAdditionName,
     message: snapshot.rationale,
     final_note_text: snapshot.noteText,
+    candidates: buildJudgementCandidatePayload(snapshot),
     answers: { ...state.judgement.answers },
     request: {
       client_id: snapshot.client.clientId,
@@ -1945,15 +1012,18 @@ function buildJudgementSavePayload(snapshot) {
       target_month: state.judgement.targetMonth,
       performed_at: snapshot.performedAt || "",
       answers: { ...state.judgement.answers },
-      candidate_names: snapshot.candidates.map((candidate) => candidate.additionName),
-      candidate_count: snapshot.candidates.length,
+      candidate_names: candidateStorageEntries.map((candidate) => candidate.additionName),
+      candidate_count: candidateStorageEntries.length,
     },
     result: {
-      addition_code: snapshot.topCandidate?.additionCode ?? "",
+      addition_id: topCandidateReference.additionId,
+      addition_branch_id: topCandidateReference.additionBranchId,
+      addition_code: topCandidateReference.additionCode,
       addition_name: snapshot.displayAdditionName,
-      primary_addition_name: snapshot.topCandidate?.additionFamilyName ?? snapshot.topCandidate?.additionName ?? "",
-      candidate_count: snapshot.candidates.length,
-      candidate_names: snapshot.candidates.map((candidate) => candidate.additionName),
+      primary_addition_code: topCandidateReference.additionFamilyCode,
+      primary_addition_name: topCandidateReference.additionFamilyName,
+      candidate_count: candidateStorageEntries.length,
+      candidate_names: candidateStorageEntries.map((candidate) => candidate.additionName),
       post_check: snapshot.postCheckSummary,
       post_check_status: snapshot.postCheckStatus,
       reason: snapshot.rationale,
@@ -1968,6 +1038,9 @@ function buildJudgementSnapshot() {
   const organization = getOrganizationById(state.judgement.organizationId);
   const service = getServiceById(state.judgement.serviceId);
   const staff = getStaffById(state.judgement.staffId);
+  const selectableOrganizations = getSelectableOrganizationsForJudgement(state.judgement.clientId);
+  const selectableServices = getSelectableServicesForJudgement(state.judgement.clientId, state.judgement.organizationId);
+  const hasJudgementScope = selectableOrganizations.length > 0 && selectableServices.length > 0;
   const candidates = getJudgementCandidates();
   const currentQuestion = getVisibleQuestions().find((question) => !state.judgement.answers[question.key]);
   const topCandidate = candidates[0] ?? null;
@@ -1976,6 +1049,7 @@ function buildJudgementSnapshot() {
   const hasAnyCandidate = candidates.length > 0;
   const canSave = Boolean(
     !state.judgement.loadingContext
+    && hasJudgementScope
     && client
     && organization
     && service
@@ -1998,6 +1072,9 @@ function buildJudgementSnapshot() {
   if (state.judgement.loadingContext) {
     saveSummary = "利用状況読込中";
     blockReason = "利用状況の読込完了後に保存できます";
+  } else if (!hasJudgementScope) {
+    saveSummary = "判定対象なし";
+    blockReason = "相談支援は判定対象外です。判定対象の機関・サービスを選んでください";
   } else if (!client || !organization || !service || !staff) {
     saveSummary = "文脈不足";
     blockReason = "利用者・機関・サービス・相談員を選んでください";
@@ -2016,9 +1093,9 @@ function buildJudgementSnapshot() {
   }
 
   const finalStatus = candidates.length === 1 && !postCheckResult.requiresReview ? "自動確定" : "要確認";
-  const displayAdditionName = topCandidate
-    ? (candidates.length === 1 ? topCandidate.additionName : `${topCandidate.additionName} ほか${candidates.length - 1}件`)
-    : "";
+  const topCandidateReference = getJudgementCandidateReference(topCandidate);
+  const candidateStorageEntries = buildJudgementCandidateStorageEntries(candidates, topCandidate);
+  const displayAdditionName = buildJudgementDisplayAdditionName(candidateStorageEntries, topCandidateReference);
   const rationale = buildJudgementRationale({
     candidates,
     currentQuestion,
@@ -2045,6 +1122,8 @@ function buildJudgementSnapshot() {
     candidates,
     currentQuestion,
     topCandidate,
+    topCandidateReference,
+    candidateStorageEntries,
     matchedEnrollment,
     clientEnrollmentId: normalizeNumericId(matchedEnrollment?.clientEnrollmentId ?? matchedEnrollment?.enrollmentId ?? ""),
     serviceGroupId: normalizeNumericId(matchedEnrollment?.serviceGroupId ?? ""),
@@ -2185,6 +1264,7 @@ function evaluateJudgementPostChecks({ candidates, currentQuestion, topCandidate
     candidate: topCandidate,
     currentOrganizationId: organization?.organizationId ?? "",
     currentOrganizationGroup: getOrganizationGroupLabel(organization),
+    currentServiceId: state.judgement.serviceId ?? "",
   }));
   const visibleEvaluations = evaluations.filter((item) => item.message);
   const warnings = evaluations.filter((item) => item.level === "review");
@@ -2216,7 +1296,8 @@ function evaluatePostCheckRule(rule, context) {
   }
 
   const candidateHistory = getJudgementHistoryRecordsForCandidate(context.candidate);
-  const filteredHistory = filterHistoryRecordsForRule(candidateHistory, rule);
+  const serviceScopedHistory = filterHistoryRecordsToCurrentService(candidateHistory, context.currentServiceId);
+  const filteredHistory = filterHistoryRecordsForRule(serviceScopedHistory, rule);
 
   if (rule.code === "monthly_limit_per_client") {
     const existingCount = filteredHistory.length;
@@ -2331,7 +1412,7 @@ function evaluatePostCheckRule(rule, context) {
       return { level: "skip", message: "" };
     }
 
-    const actionHistory = candidateHistory.filter((record) => (
+    const actionHistory = serviceScopedHistory.filter((record) => (
       requiredActions.length === 0
       || requiredActions.includes(String(record.actionType ?? "").trim())
     ));
@@ -2355,8 +1436,8 @@ function evaluatePostCheckRule(rule, context) {
       ? rule.additionCodes.map((item) => String(item ?? "").trim()).filter(Boolean)
       : [];
     const countedHistory = targetCodes.length > 0
-      ? candidateHistory.filter((record) => targetCodes.includes(String(record.additionCode ?? "").trim()))
-      : candidateHistory;
+      ? serviceScopedHistory.filter((record) => targetCodes.includes(String(record.additionCode ?? "").trim()))
+      : serviceScopedHistory;
     const projectedCount = countedHistory.length + 1;
 
     if (projectedCount < Number(rule.minimum ?? 0)) {
@@ -2374,7 +1455,7 @@ function evaluatePostCheckRule(rule, context) {
 
   if (rule.code === "monthly_distinct_organization_limit_per_client") {
     const organizationIds = new Set(
-      candidateHistory
+      serviceScopedHistory
         .map((item) => String(item.organizationId ?? ""))
         .filter(Boolean),
     );
@@ -2408,7 +1489,11 @@ function evaluatePostCheckRule(rule, context) {
       return { level: "skip", message: "" };
     }
 
-    const conflictingRecords = state.judgement.historyRecords.filter((record) => (
+    const serviceScopedAllHistory = filterHistoryRecordsToCurrentService(
+      state.judgement.historyRecords,
+      context.currentServiceId,
+    );
+    const conflictingRecords = serviceScopedAllHistory.filter((record) => (
       exclusiveCodes.includes(String(record.additionCode ?? "").trim())
       && (
         recordActionTypes.length === 0
@@ -2462,6 +1547,17 @@ function getJudgementHistoryRecordsForCandidate(candidate) {
     return normalizedRecordName === candidateName
       || (familyName && normalizedRecordName === familyName);
   });
+}
+
+function filterHistoryRecordsToCurrentService(records, currentServiceId) {
+  const serviceId = String(currentServiceId ?? "").trim();
+  if (!serviceId) {
+    return Array.isArray(records) ? [...records] : [];
+  }
+
+  return (Array.isArray(records) ? records : []).filter((record) => (
+    String(record.serviceId ?? "").trim() === serviceId
+  ));
 }
 
 function filterHistoryRecordsForRule(records, rule) {
@@ -2556,6 +1652,10 @@ function normalizeNumericId(value) {
 
 function saveJudgementEvaluationToSample(snapshot) {
   const recordId = `local-${Date.now()}`;
+  const topCandidateReference = getJudgementCandidateReference(snapshot.topCandidate);
+  const candidateStorageEntries = Array.isArray(snapshot.candidateStorageEntries)
+    ? snapshot.candidateStorageEntries
+    : buildJudgementCandidateStorageEntries(snapshot.candidates, snapshot.topCandidate);
   const record = {
     recordId,
     targetMonth: state.judgement.targetMonth,
@@ -2570,8 +1670,17 @@ function saveJudgementEvaluationToSample(snapshot) {
     staffId: snapshot.staff.staffId,
     staffName: snapshot.staff.staffName,
     actionType: state.judgement.answers.actionType || "",
-    additionCode: snapshot.topCandidate?.additionCode ?? "",
+    additionId: topCandidateReference.additionId,
+    additionBranchId: topCandidateReference.additionBranchId,
+    additionCode: topCandidateReference.additionCode,
+    additionFamilyCode: topCandidateReference.additionFamilyCode,
+    additionFamilyName: topCandidateReference.additionFamilyName,
     additionName: snapshot.displayAdditionName,
+    resultStorageMode: topCandidateReference.resultStorageMode,
+    candidateStorageMode: candidateStorageEntries.length > 0 ? "db" : "none",
+    candidateCount: candidateStorageEntries.length,
+    candidateNamesSummary: buildJudgementCandidateNamesSummary(candidateStorageEntries),
+    candidateDetails: buildJudgementCandidateDetails(candidateStorageEntries),
     finalStatus: snapshot.finalStatus,
     postCheckStatus: snapshot.postCheckStatus,
     postCheckSummary: snapshot.postCheckSummary,
@@ -2605,6 +1714,100 @@ function normalizePerformedAtForStorage(value) {
   }
 
   return "";
+}
+
+function buildJudgementDisplayAdditionName(candidateStorageEntries, topCandidateReference) {
+  if (!topCandidateReference || !topCandidateReference.additionName) {
+    return "";
+  }
+
+  const entries = Array.isArray(candidateStorageEntries) ? candidateStorageEntries : [];
+  if (entries.length <= 1) {
+    return topCandidateReference.additionName;
+  }
+
+  return `${topCandidateReference.additionName} ほか${entries.length - 1}件`;
+}
+
+function getJudgementCandidateReference(candidate) {
+  if (!candidate) {
+    return {
+      additionId: null,
+      additionBranchId: null,
+      additionCode: "",
+      additionFamilyCode: "",
+      additionName: "",
+      additionFamilyName: "",
+      resultStorageMode: "json",
+    };
+  }
+
+  const additionId = normalizeNumericId(candidate.additionId ?? "");
+  const additionBranchId = normalizeNumericId(candidate.additionBranchId ?? "");
+  const additionCode = String(candidate.additionCode ?? "").trim();
+  const additionFamilyCode = String(candidate.additionFamilyCode ?? additionCode).trim() || additionCode;
+  const additionName = String(candidate.additionName ?? additionCode).trim() || additionCode;
+  const additionFamilyName = String(candidate.additionFamilyName ?? additionName).trim() || additionName;
+
+  return {
+    additionId,
+    additionBranchId,
+    additionCode,
+    additionFamilyCode,
+    additionName,
+    additionFamilyName,
+    resultStorageMode: additionBranchId !== null ? "branch" : (additionId !== null ? "family" : "json"),
+  };
+}
+
+function buildJudgementCandidateNamesSummary(candidates) {
+  return (Array.isArray(candidates) ? candidates : [])
+    .map((candidate) => String(candidate?.additionName ?? "").trim())
+    .filter(Boolean)
+    .join(" / ");
+}
+
+function buildJudgementCandidateDetails(candidates) {
+  return (Array.isArray(candidates) ? candidates : []).map((candidate, index) => {
+    return {
+      additionCode: String(candidate?.additionCode ?? "").trim(),
+      additionName: String(candidate?.additionName ?? "").trim(),
+      candidateStatus: candidate.candidateStatus || "matched",
+      matchedGroupCount: Number(candidate.matchedGroupCount ?? candidate.matched_group_count ?? 0) || 0,
+      displayOrder: Number(candidate.displayOrder ?? candidate.priority ?? index + 1) || (index + 1),
+    };
+  });
+}
+
+function buildJudgementCandidateStorageEntries(candidates, topCandidate, factsOverride = null) {
+  const facts = factsOverride ?? getJudgementFacts(true);
+  return (Array.isArray(candidates) ? candidates : []).map((candidate, index) => {
+    const reference = getJudgementCandidateReference(candidate);
+    return {
+      additionId: reference.additionId,
+      additionBranchId: reference.additionBranchId,
+      additionCode: reference.additionCode,
+      additionName: reference.additionName,
+      additionFamilyCode: reference.additionFamilyCode,
+      additionFamilyName: reference.additionFamilyName,
+      candidateStatus: isSameJudgementCandidate(candidate, topCandidate)
+        ? ((Array.isArray(candidates) ? candidates.length : 0) === 1 ? "selected" : "leading_candidate")
+        : "candidate",
+      matchedGroupCount: countMatchedConditionGroupsForCandidate(candidate, facts),
+      displayOrder: (index + 1) * 10,
+      detailJson: {
+        addition_code: reference.additionCode,
+        addition_family_code: reference.additionFamilyCode,
+        addition_name: reference.additionName,
+        addition_family_name: reference.additionFamilyName,
+        reason: candidate.reason ?? "",
+        rule_status: candidate.ruleStatus ?? "",
+        confirmed_rules: Array.isArray(candidate.confirmedRules) ? candidate.confirmedRules : [],
+        provisional_rules: Array.isArray(candidate.provisionalRules) ? candidate.provisionalRules : [],
+        post_check: candidate.postCheck ?? "",
+      },
+    };
+  });
 }
 
 async function deactivateOrganizationService(organizationServiceId) {
@@ -2801,7 +2004,7 @@ function renderJudgement() {
   renderSelectOptions(dom.judgement.organization, organizations, state.judgement.organizationId, (item) => ({
     value: item.organizationId,
     label: item.organizationName,
-  }));
+  }), "判定対象機関なし");
 
   const services = getSelectableServicesForJudgement(state.judgement.clientId, state.judgement.organizationId);
 
@@ -2812,7 +2015,7 @@ function renderJudgement() {
   renderSelectOptions(dom.judgement.service, services, state.judgement.serviceId, (item) => ({
     value: item.serviceId,
     label: item.serviceName,
-  }));
+  }), "判定対象サービスなし");
 
   const organization = getOrganizationById(state.judgement.organizationId);
   const service = getServiceById(state.judgement.serviceId);
@@ -2840,6 +2043,24 @@ function renderJudgement() {
     dom.judgement.resultMain.textContent = "読込中";
     dom.judgement.resultCheck.textContent = "-";
     dom.judgement.resultNext.textContent = "利用状況の反映待ち";
+    renderJudgementSave(buildJudgementSnapshot());
+    return;
+  }
+
+  if (organizations.length === 0 || services.length === 0) {
+    dom.judgement.status.textContent = "判定対象なし";
+    dom.judgement.questionLabel.textContent = "加算判定の対象サービスがありません";
+    dom.judgement.questionMeta.textContent = "相談支援は判定対象外";
+    dom.judgement.questionHelper.textContent = hasEnrollmentContext
+      ? "この利用者の利用状況には、加算判定の対象になる機関・サービスがありません。利用状況か機関サービス登録を見直してください。"
+      : "この利用者について選べる加算判定対象サービスがありません。相談支援は判定画面から除外しています。";
+    dom.judgement.options.innerHTML = '<div class="empty-state">判定対象サービスなし</div>';
+    dom.judgement.prevButton.disabled = state.judgement.history.length === 0;
+    renderCandidateList([]);
+    renderJudgementAnswerTags(client, organization, service, selectedStaff);
+    dom.judgement.resultMain.textContent = "対象なし";
+    dom.judgement.resultCheck.textContent = "-";
+    dom.judgement.resultNext.textContent = "判定対象の機関・サービスを見直してください";
     renderJudgementSave(buildJudgementSnapshot());
     return;
   }
@@ -2875,11 +2096,11 @@ function renderJudgement() {
 }
 
 function renderJudgementOptions(question) {
-  const options = question.getOptions ? question.getOptions(state.judgement.answers) : question.options;
+  const options = getQuestionDisplayOptions(question);
   dom.judgement.options.innerHTML = options.map((option) => `
     <button type="button" class="option-card" data-question-key="${question.key}" data-option-value="${option.value}">
-      <span class="option-title">${escapeHtml(option.value)}</span>
-      <span class="option-note">${escapeHtml(option.note)}</span>
+      <span class="option-title">${escapeHtml(option.label ?? option.value)}</span>
+      <span class="option-note">${escapeHtml(option.note ?? "")}</span>
     </button>
   `).join("");
 
@@ -3090,7 +2311,11 @@ function renderReportDetails(records) {
     dom.report.detailClient.textContent = "-";
     dom.report.detailPerformedAt.textContent = "-";
     dom.report.detailAddition.textContent = "-";
+    dom.report.detailIdentity.textContent = "-";
     dom.report.detailEvaluatedAt.textContent = "-";
+    dom.report.detailPostCheck.textContent = "-";
+    dom.report.detailCandidates.textContent = "-";
+    dom.report.detailCandidates.classList.remove("detail-text-block");
     dom.report.detailRationale.textContent = "-";
     dom.report.detailNote.textContent = "-";
     return;
@@ -3098,9 +2323,13 @@ function renderReportDetails(records) {
 
   dom.report.detailClient.textContent = `${selectedRecord.clientName} / ${selectedRecord.targetType}`;
   dom.report.detailPerformedAt.textContent = selectedRecord.performedAt || "-";
-  dom.report.detailAddition.textContent = `${selectedRecord.additionName} (${selectedRecord.finalStatus})`;
+  dom.report.detailAddition.textContent = `${selectedRecord.additionName} (${selectedRecord.finalStatus}${selectedRecord.candidateCount > 1 ? ` / ${selectedRecord.candidateCount}候補` : ""})`;
+  dom.report.detailIdentity.textContent = formatReportIdentity(selectedRecord);
   dom.report.detailEvaluatedAt.textContent = selectedRecord.evaluatedAt || "-";
   dom.report.detailPostCheck.textContent = selectedRecord.postCheckSummary || "-";
+  const candidateDetailText = formatReportCandidateDetails(selectedRecord);
+  dom.report.detailCandidates.textContent = candidateDetailText;
+  dom.report.detailCandidates.classList.toggle("detail-text-block", candidateDetailText !== "-");
   dom.report.detailRationale.textContent = selectedRecord.rationale;
   dom.report.detailNote.textContent = selectedRecord.savedNote;
 }
@@ -3478,14 +2707,15 @@ function buildServiceMetaLabel(service, serviceDecisionCategories = []) {
 }
 
 function buildSampleOrganizationServices(organizationId) {
-  const organization = data.organizations.find((item) => item.organizationId === organizationId);
+  const prototypeData = getPrototypeDataSource();
+  const organization = prototypeData.organizations.find((item) => item.organizationId === organizationId);
   if (!organization) {
     return [];
   }
 
   return (organization.serviceIds ?? [])
     .map((serviceId) => {
-      const service = data.services.find((item) => item.serviceId === serviceId);
+      const service = prototypeData.services.find((item) => item.serviceId === serviceId);
       if (!service) {
         return null;
       }
@@ -3519,12 +2749,13 @@ function deactivateSampleOrganizationService(organizationServiceId) {
 }
 
 function buildSampleClientEnrollments(clientId) {
-  return data.enrollments
+  const prototypeData = getPrototypeDataSource();
+  return prototypeData.enrollments
     .filter((item) => item.clientId === clientId)
     .map((item) => {
-      const client = data.clients.find((target) => target.clientId === item.clientId);
-      const organization = data.organizations.find((target) => target.organizationId === item.organizationId);
-      const service = data.services.find((target) => target.serviceId === item.serviceId);
+      const client = prototypeData.clients.find((target) => target.clientId === item.clientId);
+      const organization = prototypeData.organizations.find((target) => target.organizationId === item.organizationId);
+      const service = prototypeData.services.find((target) => target.serviceId === item.serviceId);
 
       if (!client || !organization || !service) {
         return null;
@@ -3570,6 +2801,30 @@ function matchesServiceTargetScope(serviceTargetScope, clientTargetType) {
   return serviceTargetScope === "児者" || serviceTargetScope === clientTargetType;
 }
 
+function isJudgementEligibleService(service) {
+  if (!service) {
+    return false;
+  }
+
+  return String(service.serviceCategory ?? "").trim() !== "相談支援";
+}
+
+function filterJudgementEligibleServicesForClient(client, services) {
+  return Array.from(
+    new Map(
+      services
+        .filter((service) => service
+          && isJudgementEligibleService(service)
+          && (
+            !client?.targetType
+            || !service.targetScope
+            || matchesServiceTargetScope(service.targetScope, client.targetType)
+          ))
+        .map((service) => [service.serviceId, service])
+    ).values()
+  );
+}
+
 function getFilteredClientsForJudgement() {
   const quickSearch = normalizeText(state.quickSearch);
   const clients = getJudgementClients();
@@ -3583,7 +2838,7 @@ function getClientEnrollments(clientId) {
   if (canUseApiJudgementContext() && state.dataSource.judgement === "api" && state.judgement.contextClientId === String(clientId)) {
     return state.judgement.enrollments;
   }
-  return data.enrollments.filter((item) => item.clientId === clientId);
+  return getPrototypeDataSource().enrollments.filter((item) => item.clientId === clientId);
 }
 
 function hasClientEnrollmentContext(clientId) {
@@ -3592,36 +2847,58 @@ function hasClientEnrollmentContext(clientId) {
 
 function getSelectableOrganizationsForJudgement(clientId) {
   const enrollments = getClientEnrollments(clientId);
+  const client = getClientById(clientId);
   if (enrollments.length > 0) {
     const organizationIds = Array.from(new Set(enrollments.map((item) => item.organizationId)));
-    return organizationIds.map(getOrganizationById).filter(Boolean);
+    return organizationIds
+      .map(getOrganizationById)
+      .filter(Boolean)
+      .filter((organization) => {
+        const serviceIds = enrollments
+          .filter((item) => item.organizationId === organization.organizationId)
+          .map((item) => item.serviceId);
+        const services = filterJudgementEligibleServicesForClient(
+          client,
+          serviceIds.map(getServiceById),
+        );
+        return services.length > 0;
+      });
   }
-  return getMasterOrganizations();
+
+  return getMasterOrganizations().filter((organization) => {
+    const organizationServices = getOrganizationServicesForOrganization(organization.organizationId);
+    if (organizationServices.length > 0) {
+      const services = filterJudgementEligibleServicesForClient(
+        client,
+        organizationServices.map((item) => getServiceById(item.serviceId)),
+      );
+      return services.length > 0;
+    }
+
+    return String(organization.organizationType ?? "").trim() !== "相談支援事業所";
+  });
 }
 
 function getSelectableServicesForJudgement(clientId, organizationId) {
-  const enrollments = getClientEnrollments(clientId);
-  if (enrollments.length > 0) {
-    const serviceIds = enrollments
-      .filter((item) => item.organizationId === organizationId)
-      .map((item) => item.serviceId);
-    return Array.from(new Set(serviceIds)).map(getServiceById).filter(Boolean);
+  const normalizedOrganizationId = String(organizationId ?? "");
+  if (!normalizedOrganizationId) {
+    return [];
   }
 
+  const enrollments = getClientEnrollments(clientId);
   const client = getClientById(clientId);
-  const organizationServices = getOrganizationServicesForOrganization(organizationId);
+  if (enrollments.length > 0) {
+    const serviceIds = enrollments
+      .filter((item) => item.organizationId === normalizedOrganizationId)
+      .map((item) => item.serviceId);
+    return filterJudgementEligibleServicesForClient(client, serviceIds.map(getServiceById));
+  }
+
+  const organizationServices = getOrganizationServicesForOrganization(normalizedOrganizationId);
   if (organizationServices.length > 0) {
-    const organizationScopedServices = Array.from(
-      new Map(
-        organizationServices
-          .map((item) => getServiceById(item.serviceId))
-          .filter((service) => service && (
-            !client?.targetType
-            || !service.targetScope
-            || matchesServiceTargetScope(service.targetScope, client.targetType)
-          ))
-          .map((service) => [service.serviceId, service])
-      ).values()
+    const organizationScopedServices = filterJudgementEligibleServicesForClient(
+      client,
+      organizationServices.map((item) => getServiceById(item.serviceId)),
     );
 
     if (organizationScopedServices.length > 0) {
@@ -3629,11 +2906,7 @@ function getSelectableServicesForJudgement(clientId, organizationId) {
     }
   }
 
-  return getMasterServices().filter((service) => (
-    !client?.targetType
-    || !service.targetScope
-    || matchesServiceTargetScope(service.targetScope, client.targetType)
-  ));
+  return filterJudgementEligibleServicesForClient(client, getMasterServices());
 }
 
 function getServiceDecisionCategories(service, organization = null) {
@@ -3697,7 +2970,7 @@ function getJudgementCandidatesExcludingAnswers(answerKeys) {
 
 function evaluateCandidates({ includeAnswers, ignoredAnswerKeys = [] }) {
   const facts = getJudgementFacts(includeAnswers, ignoredAnswerKeys);
-  return data.additions
+  return getActiveCandidateDefinitions()
     .filter((addition) => candidateMatches(addition, facts))
     .sort((left, right) => left.priority - right.priority)
     .map((addition) => ({ ...addition, reason: buildCandidateReason(addition, facts) }));
@@ -3715,7 +2988,9 @@ function getJudgementFacts(includeAnswers, ignoredAnswerKeys = []) {
         placeType: "",
         actionType: "",
         hospitalAdmissionContext: "",
+        requiredInfoReceived: "",
         dischargeFacilityStaffOnlyInfo: "",
+        dischargeInpatientPeriodCount: "",
         initialAdditionPlanned: "",
         careManagerStart: "",
         employmentStart: "",
@@ -3739,10 +3014,19 @@ function getJudgementFacts(includeAnswers, ignoredAnswerKeys = []) {
 }
 
 function candidateMatches(candidate, facts) {
+  if (hasCatalogConditionGroups(candidate)) {
+    return matchesConditionGroups(candidate.conditionGroups, facts);
+  }
+
+  return matchesLegacyCandidateDefinition(candidate, facts);
+}
+
+function matchesLegacyCandidateDefinition(candidate, facts) {
   return matchesTargetType(candidate.targetTypes, facts.targetType)
     && matchesCondition(candidate.organizationGroups, facts.organizationGroup)
     && matchesOptionalCondition(candidate.organizationTypes, facts.organizationType)
     && matchesRequiredAnswers(candidate.requiredAnswers, facts.answers)
+    && matchesConditionalRequiredAnswers(candidate.conditionalRequiredAnswers, facts)
     && matchesDecisionCategoryRules(
       facts.serviceDecisionCategories,
       candidate.serviceDecisionInclude,
@@ -3788,6 +3072,32 @@ function matchesRequiredAnswers(requiredAnswers, actualAnswers = {}) {
   });
 }
 
+
+function matchesConditionalRequiredAnswers(conditionalRules, facts) {
+  if (!Array.isArray(conditionalRules) || conditionalRules.length === 0) {
+    return true;
+  }
+
+  return conditionalRules.every((rule) => {
+    if (!conditionalRequiredAnswerRuleApplies(rule, facts)) {
+      return true;
+    }
+    return matchesRequiredAnswers(rule.requiredAnswers, facts.answers);
+  });
+}
+
+function conditionalRequiredAnswerRuleApplies(rule, facts) {
+  if (!rule || typeof rule !== "object") {
+    return false;
+  }
+
+  return matchesOptionalCondition(rule.whenOrganizationGroups, facts.organizationGroup)
+    && matchesOptionalCondition(rule.whenOrganizationTypes, facts.organizationType)
+    && matchesOptionalCondition(rule.whenMonthTypes, facts.monthType)
+    && matchesOptionalCondition(rule.whenPlaceTypes, facts.placeType)
+    && matchesOptionalCondition(rule.whenActionTypes, facts.actionType);
+}
+
 function matchesConditionList(allowed, actualValues) {
   if (!Array.isArray(actualValues) || actualValues.length === 0) {
     return true;
@@ -3816,7 +3126,122 @@ function matchesDecisionCategoryRules(actualValues, includeValues = [], excludeV
   return normalizedActualValues.some((actual) => normalizedIncludeValues.includes(actual));
 }
 
+function hasCatalogConditionGroups(candidate) {
+  return Array.isArray(candidate?.conditionGroups) && candidate.conditionGroups.length > 0;
+}
+
+function matchesConditionGroups(conditionGroups, facts, ignoredFieldKey = "") {
+  if (!Array.isArray(conditionGroups) || conditionGroups.length === 0) {
+    return true;
+  }
+
+  return conditionGroups.some((group) => {
+    const conditions = Array.isArray(group?.conditions) ? group.conditions : [];
+    if (conditions.length === 0) {
+      return true;
+    }
+    return conditions.every((condition) => matchesCatalogCondition(condition, facts, ignoredFieldKey));
+  });
+}
+
+function matchesCatalogCondition(condition, facts, ignoredFieldKey = "") {
+  const fieldKey = String(condition?.fieldKey ?? "").trim();
+  const operatorCode = String(condition?.operatorCode ?? "").trim();
+  const expectedValue = Array.isArray(condition?.expectedValue) ? condition.expectedValue.map((item) => String(item ?? "").trim()) : [];
+
+  if (!fieldKey || !operatorCode) {
+    return true;
+  }
+
+  if (ignoredFieldKey && fieldKey === ignoredFieldKey) {
+    return true;
+  }
+
+  const actualValue = getFactValueForCatalogCondition(fieldKey, facts);
+
+  if (operatorCode === "one_of") {
+    if (Array.isArray(actualValue)) {
+      if (actualValue.length === 0) {
+        return true;
+      }
+      return actualValue.some((item) => expectedValue.includes(String(item ?? "").trim()));
+    }
+
+    const normalizedActualValue = String(actualValue ?? "").trim();
+    if (!normalizedActualValue) {
+      return true;
+    }
+    return expectedValue.includes(normalizedActualValue);
+  }
+
+  if (operatorCode === "includes_any") {
+    const normalizedActualValues = Array.isArray(actualValue) ? actualValue.map((item) => String(item ?? "").trim()).filter(Boolean) : [];
+    if (normalizedActualValues.length === 0) {
+      return expectedValue.length === 0;
+    }
+    return normalizedActualValues.some((item) => expectedValue.includes(item));
+  }
+
+  if (operatorCode === "excludes_all") {
+    const normalizedActualValues = Array.isArray(actualValue) ? actualValue.map((item) => String(item ?? "").trim()).filter(Boolean) : [];
+    if (normalizedActualValues.length === 0) {
+      return true;
+    }
+    return normalizedActualValues.every((item) => !expectedValue.includes(item));
+  }
+
+  return true;
+}
+
+function getFactValueForCatalogCondition(fieldKey, facts) {
+  const normalizedFieldKey = String(fieldKey ?? "").trim();
+  switch (normalizedFieldKey) {
+    case "targetType":
+      return facts.targetType;
+    case "organizationGroup":
+      return facts.organizationGroup;
+    case "organizationType":
+      return facts.organizationType;
+    case "serviceDecisionCategories":
+      return Array.isArray(facts.serviceDecisionCategories) ? facts.serviceDecisionCategories : [];
+    case "monthType":
+      return facts.monthType;
+    case "placeType":
+      return facts.placeType;
+    case "actionType":
+      return facts.actionType;
+    default:
+      return facts.answers?.[normalizedFieldKey] ?? "";
+  }
+}
+
+function getMatchedConditionGroup(candidate, facts) {
+  if (!hasCatalogConditionGroups(candidate)) {
+    return null;
+  }
+
+  const groups = Array.isArray(candidate.conditionGroups) ? candidate.conditionGroups : [];
+  return groups.find((group) => matchesConditionGroups([group], facts)) ?? null;
+}
+
+function countMatchedConditionGroupsForCandidate(candidate, facts) {
+  if (!hasCatalogConditionGroups(candidate)) {
+    return 0;
+  }
+
+  const groups = Array.isArray(candidate.conditionGroups) ? candidate.conditionGroups : [];
+  return groups.filter((group) => matchesConditionGroups([group], facts)).length;
+}
+
 function buildCandidateReason(candidate, facts) {
+  if (hasCatalogConditionGroups(candidate)) {
+    return buildCandidateReasonFromCatalog(candidate, facts);
+  }
+
+  return buildCandidateReasonFromLegacy(candidate, facts);
+}
+
+function buildCandidateReasonFromLegacy(candidate, facts) {
   const reasons = [];
   if (facts.targetType && matchesTargetType(candidate.targetTypes, facts.targetType)) {
     reasons.push(`${facts.targetType}対象`);
@@ -3846,18 +3271,67 @@ function buildCandidateReason(candidate, facts) {
   return reasons.length > 0 ? `${reasons.join(" / ")} で残っています` : "利用者・機関・サービス条件で残っています";
 }
 
+function buildCandidateReasonFromCatalog(candidate, facts) {
+  const group = getMatchedConditionGroup(candidate, facts);
+  if (!group) {
+    return "利用者・機関・サービス条件で残っています";
+  }
+
+  const reasons = [];
+  const conditions = Array.isArray(group.conditions) ? group.conditions : [];
+  let hasServiceDecisionReason = false;
+
+  conditions.forEach((condition) => {
+    const fieldKey = String(condition?.fieldKey ?? "").trim();
+    if (!fieldKey) {
+      return;
+    }
+
+    if (fieldKey === "targetType" && facts.targetType) {
+      reasons.push(`${facts.targetType}対象`);
+      return;
+    }
+
+    if (fieldKey === "organizationGroup" && facts.organizationGroup) {
+      reasons.push(facts.organizationGroup);
+      return;
+    }
+
+    if (fieldKey === "organizationType" && facts.organizationType) {
+      reasons.push(facts.organizationType);
+      return;
+    }
+
+    if (fieldKey === "serviceDecisionCategories" && facts.serviceDecisionCategories.length > 0 && !hasServiceDecisionReason) {
+      reasons.push(facts.serviceDecisionCategories.join(" / "));
+      hasServiceDecisionReason = true;
+      return;
+    }
+
+    if (fieldKey === "monthType" && facts.monthType) {
+      reasons.push(facts.monthType);
+      return;
+    }
+
+    if (fieldKey === "placeType" && facts.placeType) {
+      reasons.push(facts.placeType);
+      return;
+    }
+
+    if (fieldKey === "actionType" && facts.actionType) {
+      reasons.push(facts.actionType);
+    }
+  });
+
+  return reasons.length > 0 ? `${reasons.join(" / ")} で残っています` : "利用者・機関・サービス条件で残っています";
+}
+
 function getVisibleQuestions() {
   const candidates = getJudgementCandidates();
-  return questionDefinitions
+  return getActiveQuestionDefinitions()
     .map((question, index) => ({ question, index }))
     .filter(({ question }) => {
-      if (typeof question.visibleWhen !== "function") {
-        return true;
-      }
-      return Boolean(question.visibleWhen({
-        answers: state.judgement.answers,
-        candidates,
-      }));
+      return isQuestionVisible(question, candidates);
     })
     .sort((left, right) => {
       const leftOrder = Number.isFinite(left.question.order) ? left.question.order : left.index;
@@ -3877,11 +3351,159 @@ function candidateRequiresAnswer(candidate, answerKey) {
   return rules.some((rule) => String(rule?.answerKey ?? "").trim() === normalizedAnswerKey);
 }
 
+function getRuleCatalogSectionItems(section) {
+  return ruleRuntimeAdapter.getRuleCatalogSectionItems(section);
+}
+
+function setRuleCatalogSection(section, source, items) {
+  return ruleRuntimeAdapter.setRuleCatalogSection(section, source, items);
+}
+
+function getRuleCatalogRuntimeSection(section) {
+  return ruleRuntimeAdapter.getRuleCatalogRuntimeSection(section);
+}
+
+function getActiveCandidateDefinitions() {
+  return ruleRuntimeAdapter.getActiveCandidateDefinitions();
+}
+
+function getKnownCandidateDefinitionsForLookup() {
+  return ruleRuntimeAdapter.getKnownCandidateDefinitionsForLookup();
+}
+
+function findAdditionReferenceByCode(code) {
+  return ruleRuntimeAdapter.findAdditionReferenceByCode(code);
+}
+
+function getActiveQuestionDefinitions() {
+  return ruleRuntimeAdapter.getActiveQuestionDefinitions();
+}
+
+function getPrototypeDataSource() {
+  return ruleRuntimeAdapter.getPrototypeDataSource();
+}
+
+function isQuestionVisible(question, candidates) {
+  const visibilityMode = String(question.visibilityMode ?? "always").trim();
+  if (visibilityMode === "always" || !visibilityMode) {
+    return true;
+  }
+
+  if (visibilityMode === "answer_rules") {
+    return evaluateQuestionRules(question.visibilityRules, state.judgement.answers);
+  }
+
+  if (visibilityMode === "candidate_requirement") {
+    return isCandidateRequirementQuestionVisible(question);
+  }
+
+  return true;
+}
+
+function isCandidateRequirementQuestionVisible(question) {
+  const visibilityConfig = question.visibilityConfig ?? {};
+  const answerKey = String(visibilityConfig.answerKey ?? question.key ?? "").trim();
+  if (!answerKey) {
+    return true;
+  }
+
+  const candidates = getJudgementCandidatesExcludingAnswers([answerKey]);
+  const facts = getJudgementFacts(true, [answerKey]);
+  const required = candidates.some((candidate) => (
+    candidateRequiresFactAnswer(candidate, answerKey, facts)
+    || candidateRequiresAnswer(candidate, answerKey)
+  ));
+
+  if (!required) {
+    return false;
+  }
+
+  if (Boolean(visibilityConfig.singleCandidateOnly)) {
+    return candidates.length === 1;
+  }
+
+  return true;
+}
+
+function getQuestionDisplayOptions(question) {
+  const options = Array.isArray(question?.options) ? question.options : [];
+  return options.filter((option) => isQuestionOptionVisible(option));
+}
+
+function isQuestionOptionVisible(option) {
+  if (!Array.isArray(option?.optionRules) || option.optionRules.length === 0) {
+    return true;
+  }
+  return evaluateQuestionRules(option.optionRules, state.judgement.answers);
+}
+
+function evaluateQuestionRules(rules, answers) {
+  if (!Array.isArray(rules) || rules.length === 0) {
+    return true;
+  }
+
+  return rules.every((rule) => {
+    const dependsOnFieldKey = String(rule?.dependsOnFieldKey ?? "").trim();
+    const matchValues = Array.isArray(rule?.matchValues) ? rule.matchValues.map((item) => String(item ?? "").trim()) : [];
+    if (!dependsOnFieldKey) {
+      return true;
+    }
+
+    const actualValue = String(answers?.[dependsOnFieldKey] ?? "").trim();
+    if (!actualValue) {
+      return false;
+    }
+
+    if (matchValues.length === 0) {
+      return true;
+    }
+
+    return matchValues.includes(actualValue);
+  });
+}
+
 function shouldShowCandidateFactQuestion(answerKey) {
+  const facts = getJudgementFacts(true, [answerKey]);
   const candidates = getJudgementCandidatesExcludingAnswers([answerKey]);
   return candidates.some((candidate) => (
-    String(candidate?.requiredAnswers?.[answerKey] ?? "").trim() !== ""
+    candidateRequiresFactAnswer(candidate, answerKey, facts)
   ));
+}
+
+function candidateRequiresFactAnswer(candidate, answerKey, facts) {
+  const normalizedAnswerKey = String(answerKey ?? "").trim();
+  if (!normalizedAnswerKey) {
+    return false;
+  }
+
+  if (hasCatalogConditionGroups(candidate)) {
+    return candidateRequiresFactAnswerFromCatalogConditions(candidate, normalizedAnswerKey, facts);
+  }
+
+  if (String(candidate?.requiredAnswers?.[normalizedAnswerKey] ?? "").trim() !== "") {
+    return true;
+  }
+
+  const conditionalRules = Array.isArray(candidate?.conditionalRequiredAnswers)
+    ? candidate.conditionalRequiredAnswers
+    : [];
+
+  return conditionalRules.some((rule) => (
+    conditionalRequiredAnswerRuleApplies(rule, facts)
+    && String(rule?.requiredAnswers?.[normalizedAnswerKey] ?? "").trim() !== ""
+  ));
+}
+
+function candidateRequiresFactAnswerFromCatalogConditions(candidate, answerKey, facts) {
+  const groups = Array.isArray(candidate?.conditionGroups) ? candidate.conditionGroups : [];
+  return groups.some((group) => {
+    const conditions = Array.isArray(group?.conditions) ? group.conditions : [];
+    const targetConditions = conditions.filter((condition) => String(condition?.fieldKey ?? "").trim() === answerKey);
+    if (targetConditions.length === 0) {
+      return false;
+    }
+    return conditions.every((condition) => matchesCatalogCondition(condition, facts, answerKey));
+  });
 }
 
 function pruneHiddenJudgementAnswers() {
@@ -3921,7 +3543,9 @@ function resetJudgementAnswers() {
     placeType: "",
     actionType: "",
     hospitalAdmissionContext: "",
+    requiredInfoReceived: "",
     dischargeFacilityStaffOnlyInfo: "",
+    dischargeInpatientPeriodCount: "",
     initialAdditionPlanned: "",
     careManagerStart: "",
     employmentStart: "",
@@ -3970,7 +3594,7 @@ function getFilteredReportRecords() {
 }
 
 function buildSampleReportRecords() {
-  return data.reportRecords.map(enrichSampleReportRecord);
+  return getPrototypeDataSource().reportRecords.map(enrichSampleReportRecord);
 }
 
 function getSampleJudgementHistoryRecords(clientId, targetMonth) {
@@ -3988,14 +3612,7 @@ function enrichSampleReportRecord(record) {
   const organization = getOrganizationById(record.organizationId);
   const service = getServiceById(record.serviceId);
   const staff = getStaffById(record.staffId);
-  const addition = data.additions.find((item) => item.additionCode === record.additionCode);
-  const legacyAdditionNames = {
-    mededu: "医療・保育・教育機関等連携加算",
-    intensive: "集中支援加算",
-    edu_support: "保・教支援",
-    home_collab: "居宅連携",
-    home_work_collab: "居宅連携（就労）",
-  };
+  const additionReference = findAdditionReferenceByCode(record.additionCode);
   return {
     ...record,
     clientName: client?.clientName ?? "-",
@@ -4003,7 +3620,9 @@ function enrichSampleReportRecord(record) {
     organizationName: organization?.organizationName ?? "-",
     serviceName: service?.serviceName ?? "-",
     staffName: staff?.staffName ?? "-",
-    additionName: record.additionName || addition?.additionName || legacyAdditionNames[record.additionCode] || "-",
+    additionFamilyCode: record.additionFamilyCode || additionReference?.familyCode || "",
+    additionFamilyName: record.additionFamilyName || additionReference?.familyName || "",
+    additionName: record.additionName || additionReference?.branchName || additionReference?.familyName || "-",
   };
 }
 
@@ -4117,16 +3736,30 @@ function canUseApiJudgementContext() {
   );
 }
 
+function canUseApiQuestionCatalog() {
+  return Boolean(
+    state.dataSource.apiBaseUrl
+    && state.dataSource.configReady
+  );
+}
+
+function canUseApiAdditionCatalog() {
+  return Boolean(
+    state.dataSource.apiBaseUrl
+    && state.dataSource.configReady
+  );
+}
+
 function getMasterClients() {
-  return state.dataSource.clients === "api" ? state.masters.clients : data.clients;
+  return state.dataSource.clients === "api" ? state.masters.clients : getPrototypeDataSource().clients;
 }
 
 function getMasterOrganizations() {
-  return state.dataSource.organizations === "api" ? state.masters.organizations : data.organizations;
+  return state.dataSource.organizations === "api" ? state.masters.organizations : getPrototypeDataSource().organizations;
 }
 
 function getMasterServices() {
-  return state.dataSource.services === "api" ? state.masters.services : data.services;
+  return state.dataSource.services === "api" ? state.masters.services : getPrototypeDataSource().services;
 }
 
 function getJudgementClients() {
@@ -4134,7 +3767,7 @@ function getJudgementClients() {
 }
 
 function getJudgementStaffs() {
-  return state.dataSource.staffs === "api" ? state.masters.staffs : data.staff;
+  return state.dataSource.staffs === "api" ? state.masters.staffs : getPrototypeDataSource().staff;
 }
 
 function syncJudgementStaffSelection() {
@@ -4280,6 +3913,58 @@ function normalizeApiOrganization(item) {
   };
 }
 
+function getPrototypeCatalog() {
+  return ruleRuntimeAdapter.getPrototypeCatalog();
+}
+
+function getPrototypeCatalogQuestions() {
+  return ruleRuntimeAdapter.getPrototypeCatalogQuestions();
+}
+
+function buildJudgementCandidatePayload(snapshot) {
+  const candidateStorageEntries = Array.isArray(snapshot.candidateStorageEntries)
+    ? snapshot.candidateStorageEntries
+    : buildJudgementCandidateStorageEntries(snapshot.candidates, snapshot.topCandidate);
+
+  return candidateStorageEntries.map((candidate) => ({
+    addition_id: candidate.additionId,
+    addition_branch_id: candidate.additionBranchId,
+    addition_code: candidate.additionCode,
+    addition_name: candidate.additionName,
+    addition_family_name: candidate.additionFamilyName,
+    candidate_status: candidate.candidateStatus,
+    matched_group_count: candidate.matchedGroupCount,
+    display_order: candidate.displayOrder,
+    detail_json: candidate.detailJson,
+  }));
+}
+
+function isSameJudgementCandidate(left, right) {
+  if (!left || !right) {
+    return false;
+  }
+
+  const leftBranchId = normalizeNumericId(left.additionBranchId ?? "");
+  const rightBranchId = normalizeNumericId(right.additionBranchId ?? "");
+  if (leftBranchId !== null && rightBranchId !== null) {
+    return leftBranchId === rightBranchId;
+  }
+
+  const leftCode = String(left.additionCode ?? "").trim();
+  const rightCode = String(right.additionCode ?? "").trim();
+  return leftCode !== "" && leftCode === rightCode;
+}
+
+function getPrototypeCatalogAdditions() {
+  return ruleRuntimeAdapter.getPrototypeCatalogAdditions();
+}
+
+function flattenApiAdditionCatalogBranches(families) {
+  return (Array.isArray(families) ? families : []).flatMap((family) => (
+    Array.isArray(family?.branches) ? family.branches : []
+  ));
+}
+
 function normalizeApiService(item) {
   return {
     serviceId: String(item.service_definition_id ?? ""),
@@ -4362,6 +4047,25 @@ function normalizeApiReportRecord(item) {
     organizationName: item.organization_name ?? "",
     serviceNames: item.service_name ?? "",
   });
+  const additionReference = findAdditionReferenceByCode(item.addition_code ?? "");
+  const additionId = normalizeNumericId(item.addition_id ?? "");
+  const additionBranchId = normalizeNumericId(item.addition_branch_id ?? "");
+  const rawCandidateCount = Number(item.candidate_count ?? 0) || 0;
+  const candidateCount = rawCandidateCount > 0
+    ? rawCandidateCount
+    : ((additionBranchId !== null || additionId !== null) ? 1 : 0);
+  const additionName = String(item.addition_name ?? "").trim()
+    || additionReference?.branchName
+    || additionReference?.familyName
+    || "-";
+  const candidateNamesSummary = String(item.candidate_names_summary ?? "").trim()
+    || (candidateCount === 1 ? additionName : "");
+  const candidateDetails = normalizeReportCandidateDetails(item.candidate_details_json ?? item.candidateDetails ?? []);
+  const resultStorageMode = String(item.result_storage_mode ?? "").trim()
+    || (additionBranchId !== null ? "branch" : (additionId !== null ? "family" : "json"));
+  const candidateStorageMode = String(item.candidate_storage_mode ?? "").trim()
+    || (candidateDetails.length > 0 ? "db" : (candidateCount > 0 ? "fallback" : "none"));
+
   return {
     recordId: String(item.evaluation_case_id ?? ""),
     targetMonth: item.target_month ?? "",
@@ -4378,8 +4082,17 @@ function normalizeApiReportRecord(item) {
     staffId: String(item.staff_id ?? ""),
     staffName: item.staff_name ?? "-",
     actionType: item.action_type ?? "",
-    additionCode: item.addition_code ?? "",
-    additionName: item.addition_name ?? "-",
+    additionId,
+    additionBranchId,
+    additionCode: String(item.addition_code ?? "").trim() || additionReference?.branchCode || "",
+    additionFamilyCode: String(item.addition_family_code ?? "").trim() || additionReference?.familyCode || "",
+    additionFamilyName: String(item.addition_family_name ?? "").trim() || additionReference?.familyName || "",
+    additionName,
+    resultStorageMode,
+    candidateStorageMode,
+    candidateCount,
+    candidateNamesSummary,
+    candidateDetails,
     finalStatus: item.final_status ?? "-",
     postCheckStatus: item.post_check_status ?? "",
     postCheckSummary: item.post_check ?? "-",
@@ -4387,6 +4100,102 @@ function normalizeApiReportRecord(item) {
     rationale: item.message ?? "-",
     savedNote: item.final_note_text ?? "-",
   };
+}
+
+function normalizeReportCandidateDetails(value) {
+  let rawValue = value;
+  if (typeof rawValue === "string") {
+    const trimmedValue = rawValue.trim();
+    if (!trimmedValue) {
+      return [];
+    }
+
+    try {
+      rawValue = JSON.parse(trimmedValue);
+    } catch (error) {
+      return [];
+    }
+  }
+
+  if (!Array.isArray(rawValue)) {
+    return [];
+  }
+
+  return rawValue
+    .map((item, index) => ({
+      additionCode: String(item?.additionCode ?? item?.addition_code ?? "").trim(),
+      additionName: String(item?.additionName ?? item?.addition_name ?? "").trim(),
+      candidateStatus: String(item?.candidateStatus ?? item?.candidate_status ?? "").trim(),
+      matchedGroupCount: Number(item?.matchedGroupCount ?? item?.matched_group_count ?? 0) || 0,
+      displayOrder: Number(item?.displayOrder ?? item?.display_order ?? index + 1) || (index + 1),
+    }))
+    .filter((item) => item.additionName);
+}
+
+function formatReportCandidateDetails(record) {
+  const candidateDetails = Array.isArray(record?.candidateDetails) ? record.candidateDetails : [];
+  if (candidateDetails.length > 0) {
+    return candidateDetails
+      .sort((left, right) => left.displayOrder - right.displayOrder)
+      .map((candidate, index) => {
+        const detailSuffix = candidate.matchedGroupCount > 0
+          ? ` / 条件一致 ${candidate.matchedGroupCount}組`
+          : "";
+        return `${index + 1}. ${candidate.additionName}${detailSuffix}`;
+      })
+      .join("\n");
+  }
+
+  const candidateNamesSummary = String(record?.candidateNamesSummary ?? "").trim();
+  if (candidateNamesSummary) {
+    return candidateNamesSummary;
+  }
+
+  return "-";
+}
+
+function formatReportIdentity(record) {
+  const parts = [];
+  const recordId = String(record?.recordId ?? "").trim();
+  const familyName = String(record?.additionFamilyName ?? "").trim();
+  const familyCode = String(record?.additionFamilyCode ?? "").trim();
+  const branchCode = String(record?.additionCode ?? "").trim();
+  const branchId = record?.additionBranchId;
+  const resultStorageMode = String(record?.resultStorageMode ?? "").trim();
+  const candidateStorageMode = String(record?.candidateStorageMode ?? "").trim();
+
+  if (recordId) {
+    parts.push(`記録ID: ${recordId}`);
+  }
+
+  if (familyName || familyCode) {
+    parts.push(`family: ${familyName || "-"}${familyCode ? ` (${familyCode})` : ""}`);
+  }
+
+  if (branchCode || branchId !== null) {
+    parts.push(`branch: ${branchCode || "-"}${branchId !== null ? ` (#${branchId})` : ""}`);
+  }
+
+  if (resultStorageMode) {
+    const resultStorageLabel = {
+      branch: "branch保存",
+      family: "family保存",
+      json: "json保存",
+    }[resultStorageMode] ?? resultStorageMode;
+    parts.push(`結果: ${resultStorageLabel}`);
+  }
+
+  if (candidateStorageMode) {
+    const candidateStorageLabel = {
+      db: "候補DB保存",
+      json: "候補json保存",
+      fallback: "候補fallback",
+      none: "候補なし",
+    }[candidateStorageMode] ?? candidateStorageMode;
+    parts.push(`候補: ${candidateStorageLabel}`);
+  }
+
+  return parts.join(" / ") || "-";
 }
 
 function formatPostCheckStatusLabel(value) {
@@ -4405,7 +4214,7 @@ function updateApiDataStatusPill() {
     return;
   }
 
-  const apiCount = ["clients", "organizations", "services", "staffs", "judgement", "report", "relations"]
+  const apiCount = ["clients", "organizations", "services", "staffs", "questions", "additions", "judgement", "report", "relations"]
     .filter((key) => state.dataSource[key] === "api")
     .length;
 
@@ -4414,7 +4223,7 @@ function updateApiDataStatusPill() {
     label = "データ: 試作用 / API設定待ち";
   } else if (state.dataSource.apiBaseUrl && state.dataSource.configReady && apiCount === 0) {
     label = state.dataSource.note ? "データ: 試作用 / APIエラー" : "データ: API接続準備中";
-  } else if (apiCount === 7) {
+  } else if (apiCount === 9) {
     label = "データ: API接続";
   } else if (apiCount > 0) {
     label = "データ: 一部API / 一部試作用";
@@ -4422,6 +4231,40 @@ function updateApiDataStatusPill() {
 
   dom.apiDataStatus.textContent = label;
   dom.apiDataStatus.title = state.dataSource.note || label;
+  updateRuleRuntimeStatusPill();
+}
+
+function updateRuleRuntimeStatusPill() {
+  if (!dom.ruleRuntimeStatus) {
+    return;
+  }
+
+  const questionRuntime = getRuleCatalogRuntimeSection("questions");
+  const additionRuntime = getRuleCatalogRuntimeSection("additions");
+  const questionSource = questionRuntime.source;
+  const additionSource = additionRuntime.source;
+  let label = "判定catalog: prototype";
+
+  if (questionSource === "api" && additionSource === "api") {
+    label = "判定catalog: DB正本";
+  } else if (questionSource === "api" || additionSource === "api") {
+    label = "判定catalog: 一部DB / 一部prototype";
+  } else if (state.dataSource.apiBaseUrl && !state.dataSource.configReady) {
+    label = "判定catalog: API設定待ち";
+  } else if (state.dataSource.apiBaseUrl && state.dataSource.configReady) {
+    label = "判定catalog: prototype fallback";
+  }
+
+  const titleParts = [
+    `設問=${questionSource === "api" ? "DB正本" : "prototype"}`,
+    `加算=${additionSource === "api" ? "DB正本" : "prototype"}`,
+  ];
+  if (state.dataSource.note) {
+    titleParts.push(state.dataSource.note);
+  }
+
+  dom.ruleRuntimeStatus.textContent = label;
+  dom.ruleRuntimeStatus.title = titleParts.join(" / ");
 }
 
 function deriveResolvedOrganizationType(organization, service = null) {
@@ -4458,13 +4301,14 @@ function deriveResolvedOrganizationType(organization, service = null) {
     return "病院";
   }
 
-  if (sourceTexts.includes("更生施設")) {
+  if (sourceTexts.includes("更生施設") || sourceTexts.includes("更生保護施設")) {
     return "更生施設";
   }
 
   if (
     sourceTexts.includes("児童自立支援施設")
     || sourceTexts.includes("児童養護施設")
+    || sourceTexts.includes("児童心理治療施設")
     || sourceTexts.includes("乳児院")
     || sourceTexts.includes("児童施設")
   ) {
@@ -4476,6 +4320,7 @@ function deriveResolvedOrganizationType(organization, service = null) {
     || sourceTexts.includes("刑務所")
     || sourceTexts.includes("拘置所")
     || sourceTexts.includes("少年院")
+    || sourceTexts.includes("少年鑑別所")
   ) {
     return "刑事施設";
   }
@@ -4496,7 +4341,14 @@ function deriveResolvedOrganizationType(organization, service = null) {
     return "ケアマネ事業所";
   }
 
-  if (sourceTexts.includes("保育") || sourceTexts.includes("保育所") || sourceTexts.includes("保育園") || sourceTexts.includes("幼稚園")) {
+  if (
+    sourceTexts.includes("保育")
+    || sourceTexts.includes("保育所")
+    || sourceTexts.includes("保育園")
+    || sourceTexts.includes("幼稚園")
+    || sourceTexts.includes("認定こども園")
+    || sourceTexts.includes("こども園")
+  ) {
     return "保育";
   }
 
@@ -4554,17 +4406,17 @@ function escapeHtml(value) {
 }
 
 function getClientById(clientId) {
-  return getJudgementClients().find((item) => item.clientId === clientId) ?? data.clients.find((item) => item.clientId === clientId);
+  return getJudgementClients().find((item) => item.clientId === clientId) ?? getPrototypeDataSource().clients.find((item) => item.clientId === clientId);
 }
 
 function getOrganizationById(organizationId) {
-  return getMasterOrganizations().find((item) => item.organizationId === organizationId) ?? data.organizations.find((item) => item.organizationId === organizationId);
+  return getMasterOrganizations().find((item) => item.organizationId === organizationId) ?? getPrototypeDataSource().organizations.find((item) => item.organizationId === organizationId);
 }
 
 function getServiceById(serviceId) {
-  return getMasterServices().find((item) => item.serviceId === serviceId) ?? data.services.find((item) => item.serviceId === serviceId);
+  return getMasterServices().find((item) => item.serviceId === serviceId) ?? getPrototypeDataSource().services.find((item) => item.serviceId === serviceId);
 }
 
 function getStaffById(staffId) {
-  return getJudgementStaffs().find((item) => item.staffId === staffId) ?? data.staff.find((item) => item.staffId === staffId);
+  return getJudgementStaffs().find((item) => item.staffId === staffId) ?? getPrototypeDataSource().staff.find((item) => item.staffId === staffId);
 }

@@ -44,6 +44,7 @@ final class EvaluationRepository
 
         $clientEnrollmentId = $this->nullableInt($payload['client_enrollment_id'] ?? null);
         $serviceGroupId = $this->nullableInt($payload['service_group_id'] ?? null);
+        $candidateItems = is_array($payload['candidates'] ?? null) ? $payload['candidates'] : [];
         $answers = is_array($payload['answers'] ?? null) ? $payload['answers'] : [];
         $requestJson = is_array($payload['request'] ?? null) ? $payload['request'] : [];
         $resultJson = is_array($payload['result'] ?? null) ? $payload['result'] : [];
@@ -61,10 +62,15 @@ final class EvaluationRepository
             $this->assertServiceGroupExists($serviceGroupId);
         }
 
-        $additionId = $this->findAdditionIdByNameOrCode(
+        $additionResolution = $this->findAdditionResolution(
+            $this->nullableInt($resultJson['addition_id'] ?? null),
+            $this->nullableInt($resultJson['addition_branch_id'] ?? null),
             isset($resultJson['addition_code']) ? (string) $resultJson['addition_code'] : '',
-            $additionName
+            $additionName,
+            isset($resultJson['primary_addition_name']) ? (string) $resultJson['primary_addition_name'] : ''
         );
+        $additionId = $additionResolution['addition_id'];
+        $additionBranchId = $additionResolution['addition_branch_id'];
 
         $evaluatedAt = date('Y-m-d H:i:s');
 
@@ -116,6 +122,8 @@ final class EvaluationRepository
 
             $evaluationCaseId = (int) $this->pdo->lastInsertId();
 
+            $this->insertEvaluationCandidates($evaluationCaseId, $candidateItems);
+
             $answerStatement = $this->pdo->prepare(<<<SQL
                 INSERT INTO evaluation_answer (
                   evaluation_case_id,
@@ -155,7 +163,7 @@ final class EvaluationRepository
                   :evaluation_case_id,
                   :final_status,
                   :addition_id,
-                  NULL,
+                  :addition_branch_id,
                   :message,
                   :result_json
                 )
@@ -163,6 +171,7 @@ final class EvaluationRepository
             $resultStatement->bindValue(':evaluation_case_id', $evaluationCaseId, PDO::PARAM_INT);
             $resultStatement->bindValue(':final_status', $finalStatus, PDO::PARAM_STR);
             $resultStatement->bindValue(':addition_id', $additionId, $additionId === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
+            $resultStatement->bindValue(':addition_branch_id', $additionBranchId, $additionBranchId === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
             $resultStatement->bindValue(':message', $message, PDO::PARAM_STR);
             $resultStatement->bindValue(':result_json', $this->encodeJson($resultJson), PDO::PARAM_STR);
             $resultStatement->execute();
@@ -191,6 +200,8 @@ final class EvaluationRepository
                 'performed_at' => $performedAt,
                 'evaluated_at' => $evaluatedAt,
                 'final_status' => $finalStatus,
+                'addition_id' => $additionId,
+                'addition_branch_id' => $additionBranchId,
                 'addition_name' => $additionName,
                 'final_note_text' => $finalNoteText,
             ];
@@ -199,6 +210,69 @@ final class EvaluationRepository
                 $this->pdo->rollBack();
             }
             throw $throwable;
+        }
+    }
+
+    private function insertEvaluationCandidates(int $evaluationCaseId, array $candidateItems): void
+    {
+        if ($candidateItems === []) {
+            return;
+        }
+
+        $statement = $this->pdo->prepare(<<<SQL
+            INSERT INTO evaluation_candidate (
+              evaluation_case_id,
+              addition_branch_id,
+              candidate_status,
+              matched_group_count,
+              display_order,
+              detail_json
+            ) VALUES (
+              :evaluation_case_id,
+              :addition_branch_id,
+              :candidate_status,
+              :matched_group_count,
+              :display_order,
+              :detail_json
+            )
+        SQL);
+
+        foreach ($candidateItems as $candidateItem) {
+            if (!is_array($candidateItem)) {
+                continue;
+            }
+
+            $resolution = $this->findAdditionResolution(
+                $this->nullableInt($candidateItem['addition_id'] ?? null),
+                $this->nullableInt($candidateItem['addition_branch_id'] ?? null),
+                isset($candidateItem['addition_code']) ? (string) $candidateItem['addition_code'] : '',
+                isset($candidateItem['addition_name']) ? (string) $candidateItem['addition_name'] : '',
+                isset($candidateItem['addition_family_name']) ? (string) $candidateItem['addition_family_name'] : ''
+            );
+
+            $additionBranchId = $resolution['addition_branch_id'];
+            if ($additionBranchId === null) {
+                continue;
+            }
+
+            $candidateStatus = trim((string) ($candidateItem['candidate_status'] ?? 'candidate'));
+            if ($candidateStatus === '') {
+                $candidateStatus = 'candidate';
+            }
+
+            $matchedGroupCount = max(0, (int) ($candidateItem['matched_group_count'] ?? 0));
+            $displayOrder = max(0, (int) ($candidateItem['display_order'] ?? 9999));
+            $detailJson = is_array($candidateItem['detail_json'] ?? null)
+                ? $this->encodeJson($candidateItem['detail_json'])
+                : null;
+
+            $statement->bindValue(':evaluation_case_id', $evaluationCaseId, PDO::PARAM_INT);
+            $statement->bindValue(':addition_branch_id', $additionBranchId, PDO::PARAM_INT);
+            $statement->bindValue(':candidate_status', $candidateStatus, PDO::PARAM_STR);
+            $statement->bindValue(':matched_group_count', $matchedGroupCount, PDO::PARAM_INT);
+            $statement->bindValue(':display_order', $displayOrder, PDO::PARAM_INT);
+            $statement->bindValue(':detail_json', $detailJson, $detailJson === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
+            $statement->execute();
         }
     }
 
@@ -264,10 +338,101 @@ final class EvaluationRepository
         }
     }
 
-    private function findAdditionIdByNameOrCode(string $additionCode, string $additionName): ?int
+    private function findAdditionResolution(
+        ?int $additionIdHint,
+        ?int $additionBranchIdHint,
+        string $branchCode,
+        string $additionName,
+        string $primaryAdditionName
+    ): array
     {
-        if ($additionCode === '' && $additionName === '') {
-            return null;
+        if (
+            $additionIdHint === null
+            && $additionBranchIdHint === null
+            && $branchCode === ''
+            && $additionName === ''
+            && $primaryAdditionName === ''
+        ) {
+            return [
+                'addition_id' => null,
+                'addition_branch_id' => null,
+            ];
+        }
+
+        if ($additionBranchIdHint !== null) {
+            $branchByIdStatement = $this->pdo->prepare(<<<SQL
+                SELECT
+                  a.addition_id,
+                  ab.addition_branch_id
+                FROM addition_branch AS ab
+                INNER JOIN addition AS a
+                  ON a.addition_id = ab.addition_id
+                 AND a.is_active = 1
+                WHERE ab.addition_branch_id = :addition_branch_id
+                  AND ab.is_active = 1
+                LIMIT 1
+            SQL);
+            $branchByIdStatement->bindValue(':addition_branch_id', $additionBranchIdHint, PDO::PARAM_INT);
+            $branchByIdStatement->execute();
+
+            $branchByIdRow = $branchByIdStatement->fetch(PDO::FETCH_ASSOC);
+            if (is_array($branchByIdRow)) {
+                return [
+                    'addition_id' => isset($branchByIdRow['addition_id']) ? (int) $branchByIdRow['addition_id'] : null,
+                    'addition_branch_id' => isset($branchByIdRow['addition_branch_id']) ? (int) $branchByIdRow['addition_branch_id'] : null,
+                ];
+            }
+        }
+
+        if ($branchCode !== '' || $additionName !== '') {
+            $branchStatement = $this->pdo->prepare(<<<SQL
+                SELECT
+                  a.addition_id,
+                  ab.addition_branch_id
+                FROM addition_branch AS ab
+                INNER JOIN addition AS a
+                  ON a.addition_id = ab.addition_id
+                 AND a.is_active = 1
+                WHERE ab.is_active = 1
+                  AND (
+                    (:branch_code <> '' AND ab.branch_code = :branch_code_match)
+                    OR (:branch_name <> '' AND ab.branch_name = :branch_name)
+                  )
+                ORDER BY ab.addition_branch_id ASC
+                LIMIT 1
+            SQL);
+            $branchStatement->bindValue(':branch_code', $branchCode, PDO::PARAM_STR);
+            $branchStatement->bindValue(':branch_code_match', $branchCode, PDO::PARAM_STR);
+            $branchStatement->bindValue(':branch_name', $additionName, PDO::PARAM_STR);
+            $branchStatement->execute();
+
+            $branchRow = $branchStatement->fetch(PDO::FETCH_ASSOC);
+            if (is_array($branchRow)) {
+                return [
+                    'addition_id' => isset($branchRow['addition_id']) ? (int) $branchRow['addition_id'] : null,
+                    'addition_branch_id' => isset($branchRow['addition_branch_id']) ? (int) $branchRow['addition_branch_id'] : null,
+                ];
+            }
+        }
+
+        if ($additionIdHint !== null) {
+            $additionByIdStatement = $this->pdo->prepare(<<<SQL
+                SELECT addition_id
+                FROM addition
+                WHERE addition_id = :addition_id
+                  AND is_active = 1
+                LIMIT 1
+            SQL);
+            $additionByIdStatement->bindValue(':addition_id', $additionIdHint, PDO::PARAM_INT);
+            $additionByIdStatement->execute();
+
+            $additionById = $additionByIdStatement->fetchColumn();
+            if ($additionById !== false) {
+                return [
+                    'addition_id' => (int) $additionById,
+                    'addition_branch_id' => null,
+                ];
+            }
         }
 
         $statement = $this->pdo->prepare(<<<SQL
@@ -277,17 +442,23 @@ final class EvaluationRepository
               AND (
                 (:addition_code <> '' AND addition_code = :addition_code_match)
                 OR (:addition_name <> '' AND addition_name = :addition_name)
+                OR (:primary_addition_name <> '' AND addition_name = :primary_addition_name_match)
               )
             ORDER BY addition_id ASC
             LIMIT 1
         SQL);
-        $statement->bindValue(':addition_code', $additionCode, PDO::PARAM_STR);
-        $statement->bindValue(':addition_code_match', $additionCode, PDO::PARAM_STR);
+        $statement->bindValue(':addition_code', $branchCode, PDO::PARAM_STR);
+        $statement->bindValue(':addition_code_match', $branchCode, PDO::PARAM_STR);
         $statement->bindValue(':addition_name', $additionName, PDO::PARAM_STR);
+        $statement->bindValue(':primary_addition_name', $primaryAdditionName, PDO::PARAM_STR);
+        $statement->bindValue(':primary_addition_name_match', $primaryAdditionName, PDO::PARAM_STR);
         $statement->execute();
 
         $value = $statement->fetchColumn();
-        return $value === false ? null : (int) $value;
+        return [
+            'addition_id' => $value === false ? null : (int) $value,
+            'addition_branch_id' => null,
+        ];
     }
 
     private function nullableInt($value): ?int

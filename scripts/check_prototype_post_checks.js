@@ -2,21 +2,24 @@ const fs = require("fs");
 const path = require("path");
 const vm = require("vm");
 
-const appJsPath = path.resolve(__dirname, "../app/frontend/app.js");
-const source = fs.readFileSync(appJsPath, "utf8");
+const sourceAssetPath = path.resolve(__dirname, "../runtime/prototype/prototype-rule-source.js");
+const frontendCatalogAssetPath = path.resolve(__dirname, "../app/frontend/prototype-rule-catalog.js");
+const source = fs.readFileSync(sourceAssetPath, "utf8");
+const frontendCatalogAsset = fs.readFileSync(frontendCatalogAssetPath, "utf8");
+const context = {};
+vm.createContext(context);
+vm.runInContext(source, context, { timeout: 1000 });
+vm.runInContext(frontendCatalogAsset, context, { timeout: 1000 });
+const prototypeData = context.__KASAN_PROTOTYPE_RULE_SOURCE__?.data;
 
-const additionsMatch = source.match(/additions:\s*(\[[\s\S]*?\])\s*,\s*reportRecords:/);
-const organizationsMatch = source.match(/organizations:\s*(\[[\s\S]*?\])\s*,\s*services:/);
-const reportRecordsMatch = source.match(/reportRecords:\s*(\[[\s\S]*?\])\s*,\s*};/);
-
-if (!additionsMatch || !organizationsMatch || !reportRecordsMatch) {
-  console.error("Could not extract prototype additions, organizations, or sample report records from app.js");
+if (!prototypeData || !Array.isArray(prototypeData.additions) || !Array.isArray(prototypeData.organizations) || !Array.isArray(prototypeData.reportRecords)) {
+  console.error("Could not extract prototype additions, organizations, or sample report records from prototype-rule-source.js");
   process.exit(1);
 }
 
-const additions = vm.runInNewContext(`(${additionsMatch[1]})`);
-const organizations = vm.runInNewContext(`(${organizationsMatch[1]})`);
-const reportRecords = vm.runInNewContext(`(${reportRecordsMatch[1]})`);
+const additions = prototypeData.additions;
+const organizations = prototypeData.organizations;
+const reportRecords = prototypeData.reportRecords;
 
 function getAddition(code) {
   const addition = additions.find((item) => item.additionCode === code);
@@ -38,7 +41,8 @@ function getCandidateHistory(addition, clientId, targetMonth) {
 }
 
 function evaluateRule(rule, context) {
-  const filteredHistory = filterHistoryForRule(context.history || [], rule);
+  const serviceScopedHistory = filterHistoryToCurrentService(context.history || [], context.currentServiceId);
+  const filteredHistory = filterHistoryForRule(serviceScopedHistory, rule);
 
   if (rule.code === "monthly_limit_per_client") {
     const existingCount = filteredHistory.length;
@@ -110,7 +114,7 @@ function evaluateRule(rule, context) {
       return { level: "skip", message: "" };
     }
 
-    const history = context.history.filter((record) => (
+    const history = serviceScopedHistory.filter((record) => (
       requiredActions.length === 0 || requiredActions.includes(record.actionType || "")
     ));
     const projectedCount = history.length + 1;
@@ -124,8 +128,8 @@ function evaluateRule(rule, context) {
       ? rule.additionCodes.map((item) => String(item ?? "").trim()).filter(Boolean)
       : [];
     const countedHistory = targetCodes.length > 0
-      ? context.history.filter((record) => targetCodes.includes(String(record.additionCode ?? "").trim()))
-      : context.history;
+      ? serviceScopedHistory.filter((record) => targetCodes.includes(String(record.additionCode ?? "").trim()))
+      : serviceScopedHistory;
     const projectedCount = countedHistory.length + 1;
     return projectedCount < Number(rule.minimum ?? 0)
       ? { level: "review", message: `${rule.label}。今回を含めて${projectedCount}回です。` }
@@ -134,7 +138,7 @@ function evaluateRule(rule, context) {
 
   if (rule.code === "monthly_distinct_organization_limit_per_client") {
     const organizationIds = new Set(
-      context.history.map((record) => String(record.organizationId ?? "")).filter(Boolean),
+      serviceScopedHistory.map((record) => String(record.organizationId ?? "")).filter(Boolean),
     );
     organizationIds.add(String(context.currentOrganizationId ?? ""));
     const projectedCount = organizationIds.size;
@@ -150,10 +154,15 @@ function evaluateRule(rule, context) {
     const recordActionTypes = Array.isArray(rule.recordActionTypes)
       ? rule.recordActionTypes.map((item) => String(item ?? "").trim()).filter(Boolean)
       : [];
-    const conflictingRecords = reportRecords.filter((record) => (
-      record.clientId === context.clientId
-      && record.targetMonth === context.targetMonth
-      && exclusiveCodes.includes(String(record.additionCode ?? "").trim())
+    const serviceScopedReportRecords = filterHistoryToCurrentService(
+      reportRecords.filter((record) => (
+        record.clientId === context.clientId
+        && record.targetMonth === context.targetMonth
+      )),
+      context.currentServiceId,
+    );
+    const conflictingRecords = serviceScopedReportRecords.filter((record) => (
+      exclusiveCodes.includes(String(record.additionCode ?? "").trim())
       && (
         recordActionTypes.length === 0
         || recordActionTypes.includes(String(record.actionType ?? "").trim())
@@ -188,6 +197,17 @@ function filterHistoryForRule(history, rule) {
   return filtered;
 }
 
+function filterHistoryToCurrentService(history, currentServiceId) {
+  const serviceId = String(currentServiceId ?? "").trim();
+  if (!serviceId) {
+    return Array.isArray(history) ? [...history] : [];
+  }
+
+  return (Array.isArray(history) ? history : []).filter((record) => (
+    String(record.serviceId ?? "").trim() === serviceId
+  ));
+}
+
 function resolveRecordOrganizationGroup(record) {
   const explicitGroup = String(record.organizationGroup ?? "").trim();
   if (explicitGroup) {
@@ -209,6 +229,7 @@ function evaluatePostChecks(additionCode, input) {
     currentActionType: input.actionType,
     currentOrganizationId: input.organizationId,
     currentOrganizationGroup: input.organizationGroup,
+    currentServiceId: input.serviceId,
   }));
 }
 
@@ -219,10 +240,23 @@ const cases = [
       clientId: "1001",
       targetMonth: "2026-03",
       organizationId: "21",
+      serviceId: "301",
       organizationGroup: "病院・訪看・薬局グループ",
       actionType: "情報共有",
     }).some((item) => item.level === "review"),
     expected: true,
+  },
+  {
+    name: "mededu group limit ignores same-group history from a different service",
+    actual: evaluateRule(
+      getAddition("mededu_info").postCheckRules[0],
+      {
+        currentOrganizationGroup: "病院・訪看・薬局グループ",
+        currentServiceId: "202",
+        history: [{ recordId: "x1", additionCode: "mededu_info", organizationGroup: "病院・訪看・薬局グループ", actionType: "情報共有", serviceId: "301" }],
+      },
+    ).level,
+    expected: "ok",
   },
   {
     name: "mededu group limit still allows a different organization group",
@@ -297,6 +331,7 @@ const cases = [
       clientId: "1002",
       targetMonth: "2026-03",
       organizationId: "22",
+      serviceId: "203",
       actionType: "訪問",
     }).some((item) => item.level === "review"),
     expected: false,
@@ -542,6 +577,7 @@ const cases = [
       clientId: "1003",
       targetMonth: "2026-01",
       organizationId: "21",
+      serviceId: "301",
       actionType: "情報共有",
     }).some((item) => item.message.includes("同月1回まで") && item.level === "review"),
     expected: true,
@@ -552,6 +588,7 @@ const cases = [
       clientId: "1003",
       targetMonth: "2026-01",
       organizationId: "21",
+      serviceId: "301",
       actionType: "情報共有",
     }).some((item) => item.message.includes("Iとの併算定不可") && item.level === "review"),
     expected: true,
@@ -567,22 +604,46 @@ const cases = [
     expected: "ok",
   },
   {
+    name: "hospital info I monthly limit ignores same-branch history from a different service",
+    actual: evaluateRule(
+      getAddition("hospital_info_i").postCheckRules[0],
+      {
+        currentServiceId: "202",
+        history: [{ recordId: "x1", additionCode: "hospital_info_i", actionType: "情報共有", serviceId: "301" }],
+      },
+    ).level,
+    expected: "ok",
+  },
+  {
     name: "conference monthly once becomes review when one history already exists",
     actual: evaluatePostChecks("conference", {
       clientId: "1003",
       targetMonth: "2026-03",
       organizationId: "10",
+      serviceId: "201",
       organizationGroup: "福祉サービス等提供機関",
       actionType: "担当者会議開催",
     }).some((item) => item.message.includes("同月1回まで") && item.level === "review"),
     expected: true,
   },
   {
+    name: "conference monthly once ignores history from a different service",
+    actual: evaluateRule(
+      getAddition("conference").postCheckRules[0],
+      {
+        currentServiceId: "201",
+        history: [{ recordId: "x1", additionCode: "conference", actionType: "担当者会議開催", serviceId: "301" }],
+      },
+    ).level,
+    expected: "ok",
+  },
+  {
     name: "conference detects incompatible legacy mededu interview history in same month",
     actual: evaluatePostChecks("conference", {
-      clientId: "1002",
+      clientId: "1001",
       targetMonth: "2026-03",
       organizationId: "11",
+      serviceId: "202",
       organizationGroup: "福祉サービス等提供機関",
       actionType: "担当者会議開催",
     }).some((item) => item.message.includes("医保教（面談・会議）との併算定不可") && item.level === "review"),
@@ -594,6 +655,7 @@ const cases = [
       clientId: "1003",
       targetMonth: "2026-03",
       organizationId: "10",
+      serviceId: "201",
       organizationGroup: "福祉サービス等提供機関",
       actionType: "面談",
       answers: { initialAdditionPlanned: "初回加算なし" },
@@ -601,11 +663,52 @@ const cases = [
     expected: true,
   },
   {
+    name: "mededu interview monthly once becomes review when same-service history already exists",
+    actual: evaluatePostChecks("mededu_interview", {
+      clientId: "1001",
+      targetMonth: "2026-03",
+      organizationId: "11",
+      serviceId: "202",
+      organizationGroup: "福祉サービス等提供機関",
+      actionType: "面談",
+      answers: { initialAdditionPlanned: "初回加算なし" },
+    }).some((item) => item.message.includes("同月1回まで") && item.level === "review"),
+    expected: true,
+  },
+  {
+    name: "mededu interview monthly once ignores same-branch history from a different service",
+    actual: evaluateRule(
+      getAddition("mededu_interview").postCheckRules.find((rule) => rule.code === "monthly_limit_per_client"),
+      {
+        currentServiceId: "202",
+        history: [{ recordId: "x1", additionCode: "mededu_interview", actionType: "面談", serviceId: "301" }],
+      },
+    ).level,
+    expected: "ok",
+  },
+  {
+    name: "mededu interview exclusive rule ignores conference history from a different service",
+    actual: evaluateRule(
+      {
+        code: "exclusive_with_addition_codes",
+        additionCodes: ["conference"],
+        label: "担当者会議加算との併算定不可",
+      },
+      {
+        clientId: "1003",
+        targetMonth: "2026-03",
+        currentServiceId: "301",
+      },
+    ).level,
+    expected: "ok",
+  },
+  {
     name: "mededu interview becomes review when initial addition is also planned",
     actual: evaluatePostChecks("mededu_interview", {
-      clientId: "1003",
+      clientId: "1001",
       targetMonth: "2026-02",
-      organizationId: "10",
+      organizationId: "11",
+      serviceId: "202",
       organizationGroup: "福祉サービス等提供機関",
       actionType: "面談",
       answers: { initialAdditionPlanned: "初回加算あり" },
@@ -615,9 +718,10 @@ const cases = [
   {
     name: "mededu interview becomes review when info is only from discharge facility staff",
     actual: evaluatePostChecks("mededu_interview", {
-      clientId: "1003",
+      clientId: "1001",
       targetMonth: "2026-02",
-      organizationId: "10",
+      organizationId: "11",
+      serviceId: "202",
       organizationGroup: "福祉サービス等提供機関",
       actionType: "面談",
       answers: { dischargeFacilityStaffOnlyInfo: "施設職員のみ", initialAdditionPlanned: "初回加算なし" },
@@ -627,14 +731,26 @@ const cases = [
   {
     name: "mededu meeting becomes review when info is only from discharge facility staff",
     actual: evaluatePostChecks("mededu_meeting", {
-      clientId: "1003",
+      clientId: "1001",
       targetMonth: "2026-02",
-      organizationId: "10",
+      organizationId: "11",
+      serviceId: "202",
       organizationGroup: "福祉サービス等提供機関",
       actionType: "会議",
       answers: { dischargeFacilityStaffOnlyInfo: "施設職員のみ", initialAdditionPlanned: "初回加算なし" },
     }).some((item) => item.message.includes("退院・退所する施設の職員のみからの情報なら不可") && item.level === "review"),
     expected: true,
+  },
+  {
+    name: "mededu meeting monthly once becomes review when same-service history already exists",
+    actual: evaluateRule(
+      getAddition("mededu_meeting").postCheckRules.find((rule) => rule.code === "monthly_limit_per_client"),
+      {
+        currentServiceId: "301",
+        history: [{ recordId: "x1", additionCode: "mededu_meeting", actionType: "会議", serviceId: "301" }],
+      },
+    ).level,
+    expected: "review",
   },
   {
     name: "mededu meeting stays ok for initial addition rule when initial addition is not planned",
@@ -647,14 +763,52 @@ const cases = [
     expected: "ok",
   },
   {
+    name: "discharge becomes review when same inpatient period is already 4th or unknown",
+    actual: evaluatePostChecks("discharge", {
+      clientId: "1001",
+      targetMonth: "2026-02",
+      organizationId: "21",
+      serviceId: "301",
+      organizationGroup: "病院・訪看・薬局グループ",
+      actionType: "退院前面談",
+      answers: {
+        serviceUseStartMonth: "開始月である",
+        dischargeInpatientPeriodCount: "4回目以上・不明",
+        initialAdditionPlanned: "初回加算なし",
+      },
+    }).some((item) => item.message.includes("同一の入所・入院期間中は3回まで") && item.level === "review"),
+    expected: true,
+  },
+  {
+    name: "discharge stays ok when inpatient period count is within three times",
+    actual: evaluatePostChecks("discharge", {
+      clientId: "1001",
+      targetMonth: "2026-02",
+      organizationId: "21",
+      serviceId: "301",
+      organizationGroup: "病院・訪看・薬局グループ",
+      actionType: "退院前面談",
+      answers: {
+        serviceUseStartMonth: "開始月である",
+        dischargeInpatientPeriodCount: "3回目",
+        initialAdditionPlanned: "初回加算なし",
+      },
+    }).some((item) => item.message.includes("同一の入所・入院期間中は3回まで") && item.level === "review"),
+    expected: false,
+  },
+  {
     name: "discharge becomes review when initial addition is also planned",
     actual: evaluatePostChecks("discharge", {
       clientId: "1001",
       targetMonth: "2026-02",
       organizationId: "21",
+      serviceId: "301",
       organizationGroup: "病院・訪看・薬局グループ",
       actionType: "退院前面談",
-      answers: { initialAdditionPlanned: "初回加算あり" },
+      answers: {
+        dischargeInpatientPeriodCount: "1回目",
+        initialAdditionPlanned: "初回加算あり",
+      },
     }).some((item) => item.message.includes("初回加算算定時は不可") && item.level === "review"),
     expected: true,
   },
@@ -664,10 +818,12 @@ const cases = [
       clientId: "1001",
       targetMonth: "2026-02",
       organizationId: "21",
+      serviceId: "301",
       organizationGroup: "病院・訪看・薬局グループ",
       actionType: "退院前面談",
       answers: {
         serviceUseStartMonth: "開始月である",
+        dischargeInpatientPeriodCount: "1回目",
         dischargeFacilityStaffOnlyInfo: "施設職員のみ",
         initialAdditionPlanned: "初回加算なし",
       },
@@ -680,6 +836,7 @@ const cases = [
       clientId: "1001",
       targetMonth: "2026-03",
       organizationId: "10",
+      serviceId: "301",
       organizationGroup: "福祉サービス等提供機関",
       actionType: "担当者会議開催",
     }).some((item) => item.message.includes("医保教（面談・会議）との併算定不可") && item.level === "review"),
@@ -690,13 +847,14 @@ const cases = [
     actual: evaluateRule(
       {
         code: "exclusive_with_addition_codes",
-        additionCodes: ["mededu"],
+        additionCodes: ["mededu", "mededu_interview", "mededu_meeting"],
         recordActionTypes: ["面談", "会議"],
         label: "併算定不可",
       },
       {
-        clientId: "1002",
+        clientId: "1001",
         targetMonth: "2026-03",
+        currentServiceId: "202",
       },
     ).level,
     expected: "review",
@@ -713,6 +871,7 @@ const cases = [
       {
         clientId: "1001",
         targetMonth: "2026-03",
+        currentServiceId: "301",
       },
     ).level,
     expected: "ok",

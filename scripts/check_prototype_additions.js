@@ -2,16 +2,17 @@ const fs = require("fs");
 const path = require("path");
 const vm = require("vm");
 
-const appJsPath = path.resolve(__dirname, "../app/frontend/app.js");
-const source = fs.readFileSync(appJsPath, "utf8");
-const additionsMatch = source.match(/additions:\s*(\[[\s\S]*?\])\s*,\s*reportRecords:/);
+const sourceAssetPath = path.resolve(__dirname, "../runtime/prototype/prototype-rule-source.js");
+const source = fs.readFileSync(sourceAssetPath, "utf8");
+const context = {};
+vm.createContext(context);
+vm.runInContext(source, context, { timeout: 1000 });
+const additions = context.__KASAN_PROTOTYPE_RULE_SOURCE__?.data?.additions;
 
-if (!additionsMatch) {
-  console.error("Could not extract prototype additions from app.js");
+if (!Array.isArray(additions)) {
+  console.error("Could not extract prototype additions from prototype-rule-source.js");
   process.exit(1);
 }
-
-const additions = vm.runInNewContext(`(${additionsMatch[1]})`);
 
 function matchesTargetType(allowed, actual) {
   if (!actual) {
@@ -48,6 +49,32 @@ function matchesRequiredAnswers(requiredAnswers, actualAnswers = {}) {
   });
 }
 
+
+function matchesConditionalRequiredAnswers(conditionalRules, facts) {
+  if (!Array.isArray(conditionalRules) || conditionalRules.length === 0) {
+    return true;
+  }
+
+  return conditionalRules.every((rule) => {
+    if (!conditionalRequiredAnswerRuleApplies(rule, facts)) {
+      return true;
+    }
+    return matchesRequiredAnswers(rule.requiredAnswers, facts.answers);
+  });
+}
+
+function conditionalRequiredAnswerRuleApplies(rule, facts) {
+  if (!rule || typeof rule !== "object") {
+    return false;
+  }
+
+  return matchesOptionalCondition(rule.whenOrganizationGroups, facts.organizationGroup)
+    && matchesOptionalCondition(rule.whenOrganizationTypes, facts.organizationType)
+    && matchesOptionalCondition(rule.whenMonthTypes, facts.monthType)
+    && matchesOptionalCondition(rule.whenPlaceTypes, facts.placeType)
+    && matchesOptionalCondition(rule.whenActionTypes, facts.actionType);
+}
+
 function matchesConditionList(allowed, actualValues) {
   if (!Array.isArray(actualValues) || actualValues.length === 0) {
     return true;
@@ -66,6 +93,7 @@ function candidateMatches(candidate, facts) {
     && matchesCondition(candidate.organizationGroups, facts.organizationGroup)
     && matchesOptionalCondition(candidate.organizationTypes, facts.organizationType)
     && matchesRequiredAnswers(candidate.requiredAnswers, facts.answers)
+    && matchesConditionalRequiredAnswers(candidate.conditionalRequiredAnswers, facts)
     && matchesDecisionCategoryRules(
       facts.serviceDecisionCategories,
       candidate.serviceDecisionInclude,
@@ -113,6 +141,11 @@ const discharge = getAddition("discharge");
 
 const cases = [
   {
+    name: "no addition definition includes 相談支援 in serviceDecisionInclude",
+    actual: additions.every((item) => !Array.isArray(item.serviceDecisionInclude) || !item.serviceDecisionInclude.includes("相談支援")),
+    expected: true,
+  },
+  {
     name: "mededu tsuuin remains for hospital-group companion visit",
     actual: candidateMatches(mededuTsuuin, {
       targetType: "児",
@@ -143,7 +176,7 @@ const cases = [
     actual: candidateMatches(mededuTsuuin, {
       targetType: "者",
       organizationGroup: "福祉サービス等提供機関",
-      serviceDecisionCategories: ["相談支援"],
+      serviceDecisionCategories: ["障害福祉以外の福祉サービス"],
       monthType: "モニタリング月",
       placeType: "外出先",
       actionType: "通院同行",
@@ -201,6 +234,19 @@ const cases = [
     expected: true,
   },
   {
+    name: "mededu info does not remain for 相談支援 context",
+    actual: candidateMatches(mededuInfo, {
+      targetType: "児",
+      organizationGroup: "福祉サービス等提供機関",
+      organizationType: "相談支援事業所",
+      serviceDecisionCategories: ["相談支援"],
+      monthType: "モニタリング月",
+      placeType: "自事業所内",
+      actionType: "情報共有",
+    }),
+    expected: false,
+  },
+  {
     name: "mededu interview remains for welfare-service interview",
     actual: candidateMatches(mededuInterview, {
       targetType: "児",
@@ -209,8 +255,47 @@ const cases = [
       monthType: "モニタリング月",
       placeType: "外出先",
       actionType: "面談",
+      answers: { requiredInfoReceived: "受けた" },
     }),
     expected: true,
+  },
+  {
+    name: "mededu interview does not remain when required information was not received",
+    actual: candidateMatches(mededuInterview, {
+      targetType: "児",
+      organizationGroup: "福祉サービス等提供機関",
+      serviceDecisionCategories: ["障害福祉以外の福祉サービス"],
+      monthType: "モニタリング月",
+      placeType: "外出先",
+      actionType: "面談",
+      answers: { requiredInfoReceived: "受けていない" },
+    }),
+    expected: false,
+  },
+  {
+    name: "mededu interview does not remain for adult welfare-service interview",
+    actual: candidateMatches(mededuInterview, {
+      targetType: "者",
+      organizationGroup: "福祉サービス等提供機関",
+      serviceDecisionCategories: ["障害福祉以外の福祉サービス"],
+      monthType: "モニタリング月",
+      placeType: "外出先",
+      actionType: "面談",
+    }),
+    expected: false,
+  },
+  {
+    name: "mededu interview does not remain for 相談支援 context",
+    actual: candidateMatches(mededuInterview, {
+      targetType: "児",
+      organizationGroup: "福祉サービス等提供機関",
+      organizationType: "相談支援事業所",
+      serviceDecisionCategories: ["相談支援"],
+      monthType: "モニタリング月",
+      placeType: "外出先",
+      actionType: "面談",
+    }),
+    expected: false,
   },
   {
     name: "mededu interview does not remain for hospital group",
@@ -228,14 +313,40 @@ const cases = [
   {
     name: "mededu meeting remains for welfare-service meeting",
     actual: candidateMatches(mededuMeeting, {
+      targetType: "児",
+      organizationGroup: "福祉サービス等提供機関",
+      serviceDecisionCategories: ["障害福祉以外の福祉サービス"],
+      monthType: "計画作成月",
+      placeType: "自事業所内",
+      actionType: "会議",
+      answers: { requiredInfoReceived: "受けた" },
+    }),
+    expected: true,
+  },
+  {
+    name: "mededu meeting does not remain for adult welfare-service meeting",
+    actual: candidateMatches(mededuMeeting, {
       targetType: "者",
       organizationGroup: "福祉サービス等提供機関",
+      serviceDecisionCategories: ["障害福祉以外の福祉サービス"],
+      monthType: "計画作成月",
+      placeType: "自事業所内",
+      actionType: "会議",
+    }),
+    expected: false,
+  },
+  {
+    name: "mededu meeting does not remain for 相談支援 context",
+    actual: candidateMatches(mededuMeeting, {
+      targetType: "者",
+      organizationGroup: "福祉サービス等提供機関",
+      organizationType: "相談支援事業所",
       serviceDecisionCategories: ["相談支援"],
       monthType: "計画作成月",
       placeType: "自事業所内",
       actionType: "会議",
     }),
-    expected: true,
+    expected: false,
   },
   {
     name: "mededu meeting does not remain for hospital group",
@@ -389,7 +500,7 @@ const cases = [
     actual: candidateMatches(intensiveInfo, {
       targetType: "者",
       organizationGroup: "福祉サービス等提供機関",
-      serviceDecisionCategories: ["相談支援"],
+      serviceDecisionCategories: ["障害福祉以外の福祉サービス"],
       monthType: "それ以外",
       placeType: "自事業所内",
       actionType: "情報共有",
@@ -456,7 +567,7 @@ const cases = [
     actual: candidateMatches(intensiveInfo, {
       targetType: "者",
       organizationGroup: "福祉サービス等提供機関",
-      serviceDecisionCategories: ["相談支援"],
+      serviceDecisionCategories: ["障害福祉以外の福祉サービス"],
       monthType: "モニタリング月",
       placeType: "自事業所内",
       actionType: "情報共有",
@@ -509,6 +620,20 @@ const cases = [
       organizationGroup: "病院・訪看・薬局グループ",
       organizationType: "病院",
       serviceDecisionCategories: ["医療関連"],
+      answers: { hospitalAdmissionContext: "入院に当たっている" },
+      monthType: "それ以外",
+      placeType: "外出先",
+      actionType: "情報共有",
+    }),
+    expected: true,
+  },
+  {
+    name: "hospital info I remains for hospital visit in welfare-service context when tied to admission",
+    actual: candidateMatches(hospitalInfoI, {
+      targetType: "共通",
+      organizationGroup: "病院・訪看・薬局グループ",
+      organizationType: "病院",
+      serviceDecisionCategories: ["障害福祉サービス"],
       answers: { hospitalAdmissionContext: "入院に当たっている" },
       monthType: "それ以外",
       placeType: "外出先",
@@ -598,7 +723,7 @@ const cases = [
     expected: true,
   },
   {
-    name: "edu info remains for child school info sharing with 障害福祉サービス context",
+    name: "edu info does not remain for child school info sharing with 障害福祉サービス context",
     actual: candidateMatches(eduInfo, {
       targetType: "児",
       organizationGroup: "福祉サービス等提供機関",
@@ -608,15 +733,15 @@ const cases = [
       placeType: "自事業所内",
       actionType: "情報共有",
     }),
-    expected: true,
+    expected: false,
   },
   {
-    name: "edu info remains for child school info sharing with 相談支援 context",
+    name: "edu info remains for child school info sharing with welfare-service context",
     actual: candidateMatches(eduInfo, {
       targetType: "児",
       organizationGroup: "福祉サービス等提供機関",
       organizationType: "学校",
-      serviceDecisionCategories: ["相談支援"],
+      serviceDecisionCategories: ["障害福祉以外の福祉サービス"],
       monthType: "計画作成月",
       placeType: "自事業所内",
       actionType: "情報共有",
@@ -642,7 +767,7 @@ const cases = [
       targetType: "児",
       organizationGroup: "福祉サービス等提供機関",
       organizationType: "児童施設",
-      serviceDecisionCategories: ["障害福祉サービス"],
+      serviceDecisionCategories: ["障害福祉以外の福祉サービス"],
       monthType: "モニタリング月",
       placeType: "自事業所内",
       actionType: "情報共有",
@@ -676,7 +801,7 @@ const cases = [
     expected: true,
   },
   {
-    name: "edu visit remains for child school interview with 障害福祉サービス context",
+    name: "edu visit does not remain for child school interview with 障害福祉サービス context",
     actual: candidateMatches(eduVisit, {
       targetType: "児",
       organizationGroup: "福祉サービス等提供機関",
@@ -686,7 +811,7 @@ const cases = [
       placeType: "外出先",
       actionType: "面談",
     }),
-    expected: true,
+    expected: false,
   },
   {
     name: "edu visit does not remain outside それ以外 month",
@@ -707,7 +832,7 @@ const cases = [
       targetType: "児",
       organizationGroup: "福祉サービス等提供機関",
       organizationType: "児童施設",
-      serviceDecisionCategories: ["障害福祉サービス"],
+      serviceDecisionCategories: ["障害福祉以外の福祉サービス"],
       monthType: "それ以外",
       placeType: "外出先",
       actionType: "面談",
@@ -728,12 +853,12 @@ const cases = [
     expected: true,
   },
   {
-    name: "edu meeting remains for child school meeting with 相談支援 context",
+    name: "edu meeting remains for child school meeting with welfare-service context",
     actual: candidateMatches(eduMeeting, {
       targetType: "児",
       organizationGroup: "福祉サービス等提供機関",
       organizationType: "学校",
-      serviceDecisionCategories: ["相談支援"],
+      serviceDecisionCategories: ["障害福祉以外の福祉サービス"],
       monthType: "それ以外",
       placeType: "自事業所内",
       actionType: "会議",
@@ -759,12 +884,96 @@ const cases = [
       targetType: "児",
       organizationGroup: "福祉サービス等提供機関",
       organizationType: "児童施設",
-      serviceDecisionCategories: ["相談支援"],
+      serviceDecisionCategories: ["障害福祉以外の福祉サービス"],
       monthType: "それ以外",
       placeType: "自事業所内",
       actionType: "会議",
     }),
     expected: true,
+  },
+  {
+    name: "edu info remains for child company info sharing when new employment is present",
+    actual: candidateMatches(eduInfo, {
+      targetType: "児",
+      organizationGroup: "福祉サービス等提供機関",
+      organizationType: "企業",
+      serviceDecisionCategories: ["障害福祉以外の福祉サービス"],
+      monthType: "計画作成月",
+      placeType: "自事業所内",
+      actionType: "情報共有",
+      answers: { employmentStart: "新規雇用あり" },
+    }),
+    expected: true,
+  },
+  {
+    name: "edu info does not remain for child company info sharing without new employment",
+    actual: candidateMatches(eduInfo, {
+      targetType: "児",
+      organizationGroup: "福祉サービス等提供機関",
+      organizationType: "企業",
+      serviceDecisionCategories: ["障害福祉以外の福祉サービス"],
+      monthType: "計画作成月",
+      placeType: "自事業所内",
+      actionType: "情報共有",
+      answers: { employmentStart: "新規雇用なし" },
+    }),
+    expected: false,
+  },
+  {
+    name: "edu visit remains for child company interview in それ以外 when new employment is present",
+    actual: candidateMatches(eduVisit, {
+      targetType: "児",
+      organizationGroup: "福祉サービス等提供機関",
+      organizationType: "企業",
+      serviceDecisionCategories: ["障害福祉以外の福祉サービス"],
+      monthType: "それ以外",
+      placeType: "外出先",
+      actionType: "面談",
+      answers: { employmentStart: "新規雇用あり" },
+    }),
+    expected: true,
+  },
+  {
+    name: "edu visit does not remain for child company interview without new employment",
+    actual: candidateMatches(eduVisit, {
+      targetType: "児",
+      organizationGroup: "福祉サービス等提供機関",
+      organizationType: "企業",
+      serviceDecisionCategories: ["障害福祉以外の福祉サービス"],
+      monthType: "それ以外",
+      placeType: "外出先",
+      actionType: "面談",
+      answers: { employmentStart: "新規雇用なし" },
+    }),
+    expected: false,
+  },
+  {
+    name: "edu meeting remains for child employment support center meeting in それ以外 when new employment is present",
+    actual: candidateMatches(eduMeeting, {
+      targetType: "児",
+      organizationGroup: "福祉サービス等提供機関",
+      organizationType: "障害者就業・生活支援センター",
+      serviceDecisionCategories: ["障害福祉以外の福祉サービス"],
+      monthType: "それ以外",
+      placeType: "自事業所内",
+      actionType: "会議",
+      answers: { employmentStart: "新規雇用あり" },
+    }),
+    expected: true,
+  },
+  {
+    name: "edu meeting does not remain for child employment support center meeting without new employment",
+    actual: candidateMatches(eduMeeting, {
+      targetType: "児",
+      organizationGroup: "福祉サービス等提供機関",
+      organizationType: "障害者就業・生活支援センター",
+      serviceDecisionCategories: ["障害福祉以外の福祉サービス"],
+      monthType: "それ以外",
+      placeType: "自事業所内",
+      actionType: "会議",
+      answers: { employmentStart: "新規雇用なし" },
+    }),
+    expected: false,
   },
   {
     name: "home info remains for adult care-manager info sharing",
@@ -1023,7 +1232,7 @@ const cases = [
     expected: false,
   },
   {
-    name: "discharge remains for hospital + outside + pre-discharge meeting",
+    name: "discharge remains for hospital + outside + interview",
     actual: candidateMatches(discharge, {
       targetType: "共通",
       organizationGroup: "病院・訪看・薬局グループ",
@@ -1031,13 +1240,41 @@ const cases = [
       serviceDecisionCategories: ["医療関連"],
       monthType: "それ以外",
       placeType: "外出先",
-      actionType: "退院前面談",
-      answers: { serviceUseStartMonth: "開始月である" },
+      actionType: "面談",
+      answers: { serviceUseStartMonth: "開始月である", requiredInfoReceived: "受けた" },
     }),
     expected: true,
   },
   {
-    name: "discharge remains for welfare-group discharge facility + outside + pre-discharge meeting",
+    name: "discharge remains for hospital + in-office + interview because place is not restricted",
+    actual: candidateMatches(discharge, {
+      targetType: "共通",
+      organizationGroup: "病院・訪看・薬局グループ",
+      organizationType: "病院",
+      serviceDecisionCategories: ["医療関連"],
+      monthType: "それ以外",
+      placeType: "自事業所内",
+      actionType: "面談",
+      answers: { serviceUseStartMonth: "開始月である", requiredInfoReceived: "受けた" },
+    }),
+    expected: true,
+  },
+  {
+    name: "hospital info II does not remain for consultation context even when tied to admission",
+    actual: candidateMatches(hospitalInfoII, {
+      targetType: "共通",
+      organizationGroup: "病院・訪看・薬局グループ",
+      organizationType: "病院",
+      serviceDecisionCategories: ["相談支援"],
+      answers: { hospitalAdmissionContext: "入院に当たっている" },
+      monthType: "モニタリング月",
+      placeType: "自事業所内",
+      actionType: "情報共有",
+    }),
+    expected: false,
+  },
+  {
+    name: "discharge remains for welfare-group discharge facility + outside + interview",
     actual: candidateMatches(discharge, {
       targetType: "共通",
       organizationGroup: "福祉サービス等提供機関",
@@ -1045,10 +1282,52 @@ const cases = [
       serviceDecisionCategories: ["障害福祉サービス"],
       monthType: "それ以外",
       placeType: "外出先",
-      actionType: "退院前面談",
-      answers: { serviceUseStartMonth: "開始月である" },
+      actionType: "面談",
+      answers: { serviceUseStartMonth: "開始月である", requiredInfoReceived: "受けた" },
     }),
     expected: true,
+  },
+  {
+    name: "discharge does not remain in consultation context",
+    actual: candidateMatches(discharge, {
+      targetType: "共通",
+      organizationGroup: "病院・訪看・薬局グループ",
+      organizationType: "病院",
+      serviceDecisionCategories: ["相談支援"],
+      monthType: "それ以外",
+      placeType: "外出先",
+      actionType: "面談",
+      answers: { serviceUseStartMonth: "開始月である", requiredInfoReceived: "受けた" },
+    }),
+    expected: false,
+  },
+  {
+    name: "discharge does not remain when required information was not received",
+    actual: candidateMatches(discharge, {
+      targetType: "共通",
+      organizationGroup: "病院・訪看・薬局グループ",
+      organizationType: "病院",
+      serviceDecisionCategories: ["医療関連"],
+      monthType: "それ以外",
+      placeType: "外出先",
+      actionType: "面談",
+      answers: { serviceUseStartMonth: "開始月である", requiredInfoReceived: "受けていない" },
+    }),
+    expected: false,
+  },
+  {
+    name: "discharge does not remain in モニタリング月",
+    actual: candidateMatches(discharge, {
+      targetType: "共通",
+      organizationGroup: "病院・訪看・薬局グループ",
+      organizationType: "病院",
+      serviceDecisionCategories: ["医療関連"],
+      monthType: "モニタリング月",
+      placeType: "外出先",
+      actionType: "面談",
+      answers: { serviceUseStartMonth: "開始月である", requiredInfoReceived: "受けた" },
+    }),
+    expected: false,
   },
   {
     name: "discharge does not remain when it is not the service-start month",
@@ -1059,8 +1338,8 @@ const cases = [
       serviceDecisionCategories: ["医療関連"],
       monthType: "それ以外",
       placeType: "外出先",
-      actionType: "退院前面談",
-      answers: { serviceUseStartMonth: "開始月ではない" },
+      actionType: "面談",
+      answers: { serviceUseStartMonth: "開始月ではない", requiredInfoReceived: "受けた" },
     }),
     expected: false,
   },
@@ -1073,7 +1352,7 @@ const cases = [
       serviceDecisionCategories: ["医療関連"],
       monthType: "それ以外",
       placeType: "外出先",
-      actionType: "退院前面談",
+      actionType: "面談",
     }),
     expected: false,
   },
@@ -1086,7 +1365,7 @@ const cases = [
       serviceDecisionCategories: ["医療関連"],
       monthType: "それ以外",
       placeType: "外出先",
-      actionType: "退院前面談",
+      actionType: "面談",
       answers: { serviceUseStartMonth: "開始月である" },
     }),
     expected: false,
@@ -1106,3 +1385,4 @@ if (failures.length > 0) {
 }
 
 console.log(`\nAll ${cases.length} prototype addition checks passed.`);
+

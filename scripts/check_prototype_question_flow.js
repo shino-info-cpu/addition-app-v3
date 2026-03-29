@@ -3,6 +3,12 @@ const path = require("path");
 const vm = require("vm");
 
 const appJsPath = path.resolve(__dirname, "../app/frontend/app.js");
+const frontendSampleDataAssetPath = path.resolve(__dirname, "../app/frontend/prototype-sample-data.js");
+const frontendCatalogAssetPath = path.resolve(__dirname, "../app/frontend/prototype-rule-catalog.js");
+const frontendRuntimeAdapterAssetPath = path.resolve(__dirname, "../app/frontend/rule-runtime-adapter.js");
+const frontendSampleDataAsset = fs.readFileSync(frontendSampleDataAssetPath, "utf8");
+const frontendCatalogAsset = fs.readFileSync(frontendCatalogAssetPath, "utf8");
+const frontendRuntimeAdapterAsset = fs.readFileSync(frontendRuntimeAdapterAssetPath, "utf8");
 const source = fs.readFileSync(appJsPath, "utf8");
 
 function createElement() {
@@ -49,6 +55,9 @@ const context = {
 };
 
 vm.createContext(context);
+vm.runInContext(frontendSampleDataAsset, context);
+vm.runInContext(frontendCatalogAsset, context);
+vm.runInContext(frontendRuntimeAdapterAsset, context);
 vm.runInContext(source, context);
 
 const cases = vm.runInContext(`
@@ -95,13 +104,19 @@ const cases = vm.runInContext(`
   state.judgement.historyRecords = getSampleJudgementHistoryRecords("1001", "2026-03");
   state.judgement.answers = { monthType: "モニタリング月", placeType: "外出先", actionType: "" };
   const hospitalActionQuestion = getVisibleQuestions().find((question) => question.key === "actionType");
-  const hospitalActionOptions = hospitalActionQuestion.getOptions(state.judgement.answers).map((item) => item.value);
+  const hospitalActionOptions = getQuestionDisplayOptions(hospitalActionQuestion).map((item) => item.value);
   state.judgement.answers.actionType = "情報共有";
   const hospitalAdmissionQuestion = buildJudgementSnapshot();
   state.judgement.answers.hospitalAdmissionContext = "入院に当たっている";
   const hospitalAnswered = buildJudgementSnapshot();
   state.judgement.answers.hospitalAdmissionContext = "入院に当たっていない";
   const hospitalAdmissionNo = buildJudgementSnapshot();
+  state.judgement.serviceId = "202";
+  state.judgement.answers = { monthType: "計画作成月", placeType: "外出先", actionType: "情報共有" };
+  const hospitalWelfareAdmissionQuestion = buildJudgementSnapshot();
+  state.judgement.answers.hospitalAdmissionContext = "入院に当たっている";
+  const hospitalWelfareAnswered = buildJudgementSnapshot();
+  state.judgement.serviceId = "301";
   state.judgement.answers = { monthType: "それ以外", placeType: "自事業所内", actionType: "情報共有" };
   const hospitalIntensiveAdmissionQuestion = buildJudgementSnapshot();
   state.judgement.answers.hospitalAdmissionContext = "入院に当たっていない";
@@ -121,8 +136,8 @@ const cases = vm.runInContext(`
   state.judgement.serviceId = "303";
   state.judgement.answers = { monthType: "それ以外", placeType: "自事業所内", actionType: "情報共有" };
   const pharmacyIntensiveInfo = buildJudgementSnapshot();
-  state.masters.organizations = data.organizations;
-  state.masters.services = data.services;
+  state.masters.organizations = getPrototypeDataSource().organizations;
+  state.masters.services = getPrototypeDataSource().services;
   state.judgement.organizationId = "21";
   state.judgement.serviceId = "301";
   state.judgement.answers = { monthType: "それ以外", placeType: "外出先", actionType: "通院同行" };
@@ -130,13 +145,27 @@ const cases = vm.runInContext(`
   state.judgement.answers = { monthType: "モニタリング月", placeType: "外出先", actionType: "通院同行" };
   const hospitalTsuuinAnswered = buildJudgementSnapshot();
 
-  state.judgement.clientId = "1003";
-  state.judgement.organizationId = "10";
-  state.judgement.serviceId = "201";
+  state.masters.clients = [
+    { clientId: "c-mededu", clientName: "医保教確認", clientNameKana: "いほきょうかくにん", targetType: "児" },
+  ];
+  state.masters.organizations = [
+    { organizationId: "o-mededu", organizationName: "しののめ福祉連携先", organizationType: "福祉サービス提供機関", organizationGroup: "福祉サービス等提供機関", serviceIds: ["s-mededu"] },
+  ];
+  state.masters.services = [
+    { serviceId: "s-mededu", serviceName: "福祉連携", serviceCategory: "福祉", targetScope: "児者", groupName: "福祉群" },
+  ];
+  state.dataSource.clients = "api";
+  state.dataSource.organizations = "api";
+  state.dataSource.services = "api";
+  state.judgement.clientId = "c-mededu";
+  state.judgement.organizationId = "o-mededu";
+  state.judgement.serviceId = "s-mededu";
   state.judgement.staffId = "501";
   state.judgement.targetMonth = "2026-02";
-  state.judgement.historyRecords = getSampleJudgementHistoryRecords("1003", "2026-02");
+  state.judgement.historyRecords = [];
   state.judgement.answers = { monthType: "計画作成月", placeType: "外出先", actionType: "面談" };
+  const mededuInfoQuestion = buildJudgementSnapshot();
+  state.judgement.answers.requiredInfoReceived = "受けた";
   const mededuFacilityQuestion = buildJudgementSnapshot();
   state.judgement.answers.dischargeFacilityStaffOnlyInfo = "施設職員以外も含む";
   const mededuInitialQuestion = buildJudgementSnapshot();
@@ -148,10 +177,49 @@ const cases = vm.runInContext(`
     monthType: "計画作成月",
     placeType: "外出先",
     actionType: "面談",
+    requiredInfoReceived: "受けた",
     dischargeFacilityStaffOnlyInfo: "施設職員のみ",
     initialAdditionPlanned: "初回加算なし",
   };
   const mededuFacilityOnly = buildJudgementSnapshot();
+  state.masters.organizations = [
+    { organizationId: "o-consult-mededu", organizationName: "しののめ相談支援室", organizationType: "相談支援事業所", organizationGroup: "福祉サービス等提供機関", serviceIds: ["s-consult-mededu"] },
+  ];
+  state.masters.services = [
+    { serviceId: "s-consult-mededu", serviceName: "計画相談", serviceCategory: "相談支援", targetScope: "児者", groupName: "初回群" },
+  ];
+  state.judgement.organizationId = "o-consult-mededu";
+  state.judgement.serviceId = "s-consult-mededu";
+  state.judgement.answers = { monthType: "計画作成月", placeType: "外出先", actionType: "面談" };
+  const mededuInterviewConsultationContext = buildJudgementSnapshot();
+  state.judgement.answers = { monthType: "計画作成月", placeType: "自事業所内", actionType: "会議" };
+  const mededuMeetingConsultationContext = buildJudgementSnapshot();
+
+  state.masters.organizations = [
+    { organizationId: "o-mededu", organizationName: "しののめ福祉連携先", organizationType: "福祉サービス提供機関", organizationGroup: "福祉サービス等提供機関", serviceIds: ["s-mededu"] },
+  ];
+  state.masters.services = [
+    { serviceId: "s-mededu", serviceName: "福祉連携", serviceCategory: "福祉", targetScope: "児者", groupName: "福祉群" },
+  ];
+  state.judgement.organizationId = "o-mededu";
+  state.judgement.serviceId = "s-mededu";
+  state.judgement.targetMonth = "2026-03";
+  state.judgement.historyRecords = [
+    { recordId: "hm1", clientId: "c-mededu", targetMonth: "2026-03", organizationId: "o-mededu", serviceId: "s-mededu", additionCode: "mededu_interview", additionName: "医療・保育・教育機関等連携加算（面談）", actionType: "面談" },
+  ];
+  state.judgement.answers = {
+    monthType: "計画作成月",
+    placeType: "外出先",
+    actionType: "面談",
+    requiredInfoReceived: "受けた",
+    dischargeFacilityStaffOnlyInfo: "施設職員以外も含む",
+    initialAdditionPlanned: "初回加算なし",
+  };
+  const mededuInterviewSameServiceLimit = buildJudgementSnapshot();
+  state.judgement.historyRecords = [
+    { recordId: "hm1", clientId: "c-mededu", targetMonth: "2026-03", organizationId: "o-mededu", serviceId: "s-other", additionCode: "mededu_interview", additionName: "医療・保育・教育機関等連携加算（面談）", actionType: "面談" },
+  ];
+  const mededuInterviewOtherServiceLimit = buildJudgementSnapshot();
 
   state.judgement.clientId = "1001";
   state.judgement.organizationId = "21";
@@ -159,14 +227,52 @@ const cases = vm.runInContext(`
   state.judgement.staffId = "501";
   state.judgement.targetMonth = "2026-02";
   state.judgement.historyRecords = getSampleJudgementHistoryRecords("1001", "2026-02");
-  state.judgement.answers = { monthType: "それ以外", placeType: "外出先", actionType: "退院前面談" };
+  state.judgement.answers = { monthType: "それ以外", placeType: "外出先", actionType: "面談" };
+  const dischargeInfoQuestion = buildJudgementSnapshot();
+  state.judgement.answers.requiredInfoReceived = "受けた";
   const dischargeStartMonthQuestion = buildJudgementSnapshot();
   state.judgement.answers.serviceUseStartMonth = "開始月である";
-  const dischargeStartMonthYes = buildJudgementSnapshot();
+  const dischargePeriodCountQuestion = buildJudgementSnapshot();
+  state.judgement.answers.dischargeInpatientPeriodCount = "2回目";
+  const dischargePeriodCountOk = buildJudgementSnapshot();
   state.judgement.answers.initialAdditionPlanned = "初回加算なし";
   const dischargeReadyToSave = buildJudgementSnapshot();
-  state.judgement.answers = { monthType: "それ以外", placeType: "外出先", actionType: "退院前面談", serviceUseStartMonth: "開始月ではない" };
+  state.judgement.serviceId = "201";
+  state.judgement.answers = { monthType: "それ以外", placeType: "外出先", actionType: "面談" };
+  const dischargeConsultationDropped = buildJudgementSnapshot();
+  state.judgement.serviceId = "301";
+  state.judgement.answers = { monthType: "それ以外", placeType: "外出先", actionType: "面談", serviceUseStartMonth: "開始月ではない" };
   const dischargeStartMonthNo = buildJudgementSnapshot();
+
+  state.dataSource.clients = "sample";
+  state.dataSource.organizations = "sample";
+  state.dataSource.services = "sample";
+  state.judgement.clientId = "1003";
+  state.judgement.organizationId = "10";
+  state.judgement.serviceId = "201";
+  const consultationOnlyOrganizations = getSelectableOrganizationsForJudgement("1003").map((item) => item.organizationId);
+  const consultationOnlyServices = getSelectableServicesForJudgement("1003", "10").map((item) => item.serviceId);
+  const consultationOnlySnapshot = buildJudgementSnapshot();
+
+  state.masters.clients = [
+    { clientId: "c-filter", clientName: "判定対象確認", clientNameKana: "はんていたいしょうかくにん", targetType: "児" },
+  ];
+  state.masters.organizations = [
+    { organizationId: "o-consult", organizationName: "しののめ相談支援室", organizationType: "相談支援事業所", organizationGroup: "福祉サービス等提供機関" },
+    { organizationId: "o-school-filter", organizationName: "しののめ小学校", organizationType: "学校", organizationGroup: "福祉サービス等提供機関" },
+  ];
+  state.masters.services = [
+    { serviceId: "s-consult", serviceName: "計画相談", serviceCategory: "相談支援", targetScope: "児者", groupName: "初回群" },
+    { serviceId: "s-school-filter", serviceName: "学校連携", serviceCategory: "福祉", targetScope: "児者", groupName: "学校群" },
+  ];
+  state.relations.organizationServicesByOrganizationId = {
+    "o-consult": [],
+    "o-school-filter": [],
+  };
+  state.dataSource.clients = "api";
+  state.dataSource.organizations = "api";
+  state.dataSource.services = "api";
+  const filteredOrganizationsWithoutRelations = getSelectableOrganizationsForJudgement("c-filter").map((item) => item.organizationId);
 
   state.masters.clients = [
     { clientId: "c-school", clientName: "児童A", clientNameKana: "じどうえー", targetType: "児" },
@@ -190,6 +296,17 @@ const cases = vm.runInContext(`
   const schoolInterviewAnswered = buildJudgementSnapshot();
   state.judgement.answers = { monthType: "それ以外", placeType: "自事業所内", actionType: "会議" };
   const schoolMeetingAnswered = buildJudgementSnapshot();
+  state.masters.organizations = [
+    { organizationId: "o-school", organizationName: "しののめ小学校", organizationType: "学校", organizationGroup: "福祉サービス等提供機関", serviceIds: ["s-school"] },
+    { organizationId: "o-edu-work", organizationName: "しののめ企業", organizationType: "企業", organizationGroup: "福祉サービス等提供機関", serviceIds: ["s-school"] },
+  ];
+  state.judgement.organizationId = "o-edu-work";
+  state.judgement.answers = { monthType: "計画作成月", placeType: "自事業所内", actionType: "情報共有" };
+  const eduWorkInfoNeedsEmploymentStart = buildJudgementSnapshot();
+  state.judgement.answers.employmentStart = "新規雇用あり";
+  const eduWorkInfoStartYes = buildJudgementSnapshot();
+  state.judgement.answers.employmentStart = "新規雇用なし";
+  const eduWorkInfoStartNo = buildJudgementSnapshot();
 
   state.masters.clients = [
     { clientId: "c-care", clientName: "利用者B", clientNameKana: "りようしゃびー", targetType: "者" },
@@ -320,6 +437,16 @@ const cases = vm.runInContext(`
       expected: true,
     },
     {
+      name: "hospital info still asks admission-context question in welfare-service context",
+      actual: hospitalWelfareAdmissionQuestion.currentQuestion ? hospitalWelfareAdmissionQuestion.currentQuestion.key : "",
+      expected: "hospitalAdmissionContext",
+    },
+    {
+      name: "hospital info I remains reachable in welfare-service context when admission context is confirmed",
+      actual: hospitalWelfareAnswered.candidates.some((item) => item.additionCode === "hospital_info_i"),
+      expected: true,
+    },
+    {
       name: "hospital info drops when information sharing is not tied to admission",
       actual: hospitalAdmissionNo.candidates.some((item) => item.additionCode === "hospital_info_i"),
       expected: false,
@@ -355,7 +482,12 @@ const cases = vm.runInContext(`
       expected: true,
     },
     {
-      name: "mededu interview asks discharge-facility-source question before save",
+      name: "mededu interview asks required-info question before save",
+      actual: mededuInfoQuestion.currentQuestion ? mededuInfoQuestion.currentQuestion.key : "",
+      expected: "requiredInfoReceived",
+    },
+    {
+      name: "mededu interview asks discharge-facility-source question after required info is confirmed",
       actual: mededuFacilityQuestion.currentQuestion ? mededuFacilityQuestion.currentQuestion.key : "",
       expected: "dischargeFacilityStaffOnlyInfo",
     },
@@ -385,13 +517,43 @@ const cases = vm.runInContext(`
       expected: "要確認で保存 (後段チェック要確認)",
     },
     {
-      name: "discharge asks service-start-month question before save",
+      name: "mededu interview does not remain for consultation-service context in question flow",
+      actual: mededuInterviewConsultationContext.candidates.some((item) => item.additionCode === "mededu_interview"),
+      expected: false,
+    },
+    {
+      name: "mededu meeting does not remain for consultation-service context in question flow",
+      actual: mededuMeetingConsultationContext.candidates.some((item) => item.additionCode === "mededu_meeting"),
+      expected: false,
+    },
+    {
+      name: "mededu interview becomes review when same-service monthly history already exists",
+      actual: mededuInterviewSameServiceLimit.saveSummary,
+      expected: "要確認で保存 (後段チェック要確認)",
+    },
+    {
+      name: "mededu interview can auto-save when only other-service monthly history exists",
+      actual: mededuInterviewOtherServiceLimit.saveSummary,
+      expected: "自動確定で保存",
+    },
+    {
+      name: "discharge asks required-info question first",
+      actual: dischargeInfoQuestion.currentQuestion ? dischargeInfoQuestion.currentQuestion.key : "",
+      expected: "requiredInfoReceived",
+    },
+    {
+      name: "discharge then asks service-start-month question as the last candidate fact",
       actual: dischargeStartMonthQuestion.currentQuestion ? dischargeStartMonthQuestion.currentQuestion.key : "",
       expected: "serviceUseStartMonth",
     },
     {
-      name: "discharge then asks initial-addition question when start month is confirmed",
-      actual: dischargeStartMonthYes.currentQuestion ? dischargeStartMonthYes.currentQuestion.key : "",
+      name: "discharge then asks inpatient-period count question when start month is confirmed",
+      actual: dischargePeriodCountQuestion.currentQuestion ? dischargePeriodCountQuestion.currentQuestion.key : "",
+      expected: "dischargeInpatientPeriodCount",
+    },
+    {
+      name: "discharge then asks initial-addition question when inpatient-period count is confirmed",
+      actual: dischargePeriodCountOk.currentQuestion ? dischargePeriodCountOk.currentQuestion.key : "",
       expected: "initialAdditionPlanned",
     },
     {
@@ -400,8 +562,33 @@ const cases = vm.runInContext(`
       expected: "自動確定で保存",
     },
     {
+      name: "discharge drops in consultation context",
+      actual: dischargeConsultationDropped.candidates.some((item) => item.additionCode === "discharge"),
+      expected: false,
+    },
+    {
       name: "discharge drops when it is not the service-start month",
       actual: dischargeStartMonthNo.candidates.some((item) => item.additionCode === "discharge"),
+      expected: false,
+    },
+    {
+      name: "consultation-only enrollment is hidden from judgement organization choices",
+      actual: consultationOnlyOrganizations.length,
+      expected: 0,
+    },
+    {
+      name: "consultation-only enrollment is hidden from judgement service choices",
+      actual: consultationOnlyServices.length,
+      expected: 0,
+    },
+    {
+      name: "consultation-only judgement context becomes no-scope state",
+      actual: consultationOnlySnapshot.saveSummary,
+      expected: "判定対象なし",
+    },
+    {
+      name: "consultation office without registered judgement services is hidden from fallback organization choices",
+      actual: filteredOrganizationsWithoutRelations.includes("o-consult"),
       expected: false,
     },
     {
@@ -413,6 +600,21 @@ const cases = vm.runInContext(`
       name: "edu meeting remains reachable after choosing school meeting facts",
       actual: schoolMeetingAnswered.candidates.some((item) => item.additionCode === "edu_meeting"),
       expected: true,
+    },
+    {
+      name: "edu info asks employment-start question before save for child company context",
+      actual: eduWorkInfoNeedsEmploymentStart.currentQuestion ? eduWorkInfoNeedsEmploymentStart.currentQuestion.key : "",
+      expected: "employmentStart",
+    },
+    {
+      name: "edu info remains when child company employment start is confirmed",
+      actual: eduWorkInfoStartYes.candidates.some((item) => item.additionCode === "edu_info"),
+      expected: true,
+    },
+    {
+      name: "edu info drops when child company employment start is denied",
+      actual: eduWorkInfoStartNo.candidates.some((item) => item.additionCode === "edu_info"),
+      expected: false,
     },
     {
       name: "home visit remains reachable after choosing care-manager interview facts",
@@ -481,3 +683,4 @@ if (failures.length > 0) {
 }
 
 console.log(`\nAll ${cases.length} prototype question-flow checks passed.`);
+

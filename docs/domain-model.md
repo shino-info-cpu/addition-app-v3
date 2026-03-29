@@ -36,6 +36,7 @@ These are maintained by the person responsible for制度 and application behavio
 | `question_definition` | 設問定義。補足説明、具体例、参照表示設定を持てる |
 | `question_option` | 設問選択肢。選択肢ごとの説明、具体例、注意点を持てる |
 | `question_visibility_rule` | 設問表示制御 |
+| `question_option_rule` | 選択肢表示制御。前回答に応じた動的選択肢を持てる |
 | `addition_branch_condition` | 候補条件 |
 | `addition_branch_constraint` | 制約ルール |
 | `addition_branch_warning` | 警告ルール |
@@ -148,6 +149,7 @@ Codes or IDs should be secondary display only.
 Questions and options should be able to carry short help text, detailed help, examples, and non-examples.
 That allows the admin side to reduce confusion without changing application code.
 The admin side should also control whether the guidance is always visible, collapsed by default, or hidden.
+Question visibility and option filtering should also be data-backed, so `visibleWhen` や `getOptions` を増やし続けない。
 
 ### List Layouts Are Data, Too
 

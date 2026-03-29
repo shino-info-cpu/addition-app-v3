@@ -3,6 +3,12 @@ const path = require("path");
 const vm = require("vm");
 
 const appJsPath = path.resolve(__dirname, "../app/frontend/app.js");
+const frontendSampleDataAssetPath = path.resolve(__dirname, "../app/frontend/prototype-sample-data.js");
+const frontendCatalogAssetPath = path.resolve(__dirname, "../app/frontend/prototype-rule-catalog.js");
+const frontendRuntimeAdapterAssetPath = path.resolve(__dirname, "../app/frontend/rule-runtime-adapter.js");
+const frontendSampleDataAsset = fs.readFileSync(frontendSampleDataAssetPath, "utf8");
+const frontendCatalogAsset = fs.readFileSync(frontendCatalogAssetPath, "utf8");
+const frontendRuntimeAdapterAsset = fs.readFileSync(frontendRuntimeAdapterAssetPath, "utf8");
 const source = fs.readFileSync(appJsPath, "utf8");
 
 function createElement() {
@@ -49,6 +55,9 @@ const context = {
 };
 
 vm.createContext(context);
+vm.runInContext(frontendSampleDataAsset, context);
+vm.runInContext(frontendCatalogAsset, context);
+vm.runInContext(frontendRuntimeAdapterAsset, context);
 vm.runInContext(source, context);
 
 const cases = vm.runInContext(`
@@ -117,13 +126,28 @@ const cases = vm.runInContext(`
       expected: "更生施設",
     },
     {
+      name: "rehabilitation protection facility is inferred as discharge-target rehabilitation facility",
+      actual: deriveResolvedOrganizationType({ organizationType: "", organizationName: "しののめ更生保護施設", serviceNames: "" }),
+      expected: "更生施設",
+    },
+    {
       name: "child welfare facility is inferred as discharge-target child facility",
       actual: deriveResolvedOrganizationType({ organizationType: "", organizationName: "しののめ児童養護施設", serviceNames: "" }),
       expected: "児童施設",
     },
     {
+      name: "child psychology treatment facility is inferred as discharge-target child facility",
+      actual: deriveResolvedOrganizationType({ organizationType: "", organizationName: "しののめ児童心理治療施設", serviceNames: "" }),
+      expected: "児童施設",
+    },
+    {
       name: "penal facility is inferred as discharge-target penal facility",
       actual: deriveResolvedOrganizationType({ organizationType: "", organizationName: "しののめ少年院", serviceNames: "" }),
+      expected: "刑事施設",
+    },
+    {
+      name: "juvenile classification home is inferred as discharge-target penal facility",
+      actual: deriveResolvedOrganizationType({ organizationType: "", organizationName: "しののめ少年鑑別所", serviceNames: "" }),
       expected: "刑事施設",
     },
     {
@@ -134,6 +158,16 @@ const cases = vm.runInContext(`
     {
       name: "nursery is inferred from service names",
       actual: deriveResolvedOrganizationType({ organizationType: "", organizationName: "A", serviceNames: "保育" }),
+      expected: "保育",
+    },
+    {
+      name: "certified child center is inferred as nursery from organization name",
+      actual: deriveResolvedOrganizationType({ organizationType: "", organizationName: "しののめ認定こども園", serviceNames: "" }),
+      expected: "保育",
+    },
+    {
+      name: "child center wording is inferred as nursery from organization name",
+      actual: deriveResolvedOrganizationType({ organizationType: "", organizationName: "しののめこども園", serviceNames: "" }),
       expected: "保育",
     },
     {
@@ -152,8 +186,33 @@ const cases = vm.runInContext(`
       expected: "企業",
     },
     {
+      name: "judgement facts use resolved nursery type for child center wording",
+      actual: (() => {
+        state.masters.organizations = [
+          { organizationId: "o1", organizationName: "しののめ認定こども園", organizationType: "", serviceNames: "" },
+        ];
+        state.masters.services = [
+          { serviceId: "s1", serviceName: "連携", serviceCategory: "障害福祉以外", targetScope: "児者", groupName: "-" },
+        ];
+        state.judgement.organizationId = "o1";
+        state.judgement.serviceId = "s1";
+        return getJudgementFacts(false).organizationType;
+      })(),
+      expected: "保育",
+    },
+    {
       name: "judgement facts use resolved organization type",
-      actual: getJudgementFacts(false).organizationType,
+      actual: (() => {
+        state.masters.organizations = [
+          { organizationId: "o1", organizationName: "仮病院", organizationType: "", serviceNames: "病院" },
+        ];
+        state.masters.services = [
+          { serviceId: "s1", serviceName: "病院", serviceCategory: "障害福祉以外", targetScope: "児者", groupName: "-" },
+        ];
+        state.judgement.organizationId = "o1";
+        state.judgement.serviceId = "s1";
+        return getJudgementFacts(false).organizationType;
+      })(),
       expected: "病院",
     },
   ];

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>加算アプリ v3 試作</title>
-  <link rel="stylesheet" href="./styles.css?v=20260319c">
+  <link rel="stylesheet" href="./styles.css?v=20260328k">
 </head>
 <body>
   <div class="app-shell">
@@ -19,6 +19,7 @@
       <div class="topbar-tools">
         <div class="context-pill">対象月の既定: 2026-03</div>
         <div class="context-pill" id="api-data-status">データ: 試作用</div>
+        <div class="context-pill" id="rule-runtime-status">判定catalog: prototype</div>
         <label class="quick-search">
           <span>クイック検索</span>
           <input id="quick-search-input" type="search" placeholder="利用者名 / 機関名 / 加算名">
@@ -295,12 +296,20 @@
                     <dd id="report-detail-addition">-</dd>
                   </div>
                   <div>
+                    <dt>判定識別</dt>
+                    <dd id="report-detail-identity">-</dd>
+                  </div>
+                  <div>
                     <dt>保存日時</dt>
                     <dd id="report-detail-evaluated-at">-</dd>
                   </div>
                   <div>
                     <dt>後段チェック</dt>
                     <dd id="report-detail-post-check">-</dd>
+                  </div>
+                  <div>
+                    <dt>候補一覧</dt>
+                    <dd id="report-detail-candidates">-</dd>
                   </div>
                   <div>
                     <dt>判定根拠</dt>
@@ -480,6 +489,10 @@
     </div>
   </div>
 
-  <script src="./app.js?v=20260323d"></script>
+  <script src="./prototype-sample-data.js?v=20260329f"></script>
+  <script src="./prototype-rule-catalog.js?v=20260329f"></script>
+  <script src="./rule-runtime-adapter.js?v=20260329g"></script>
+  <script src="./app.js?v=20260329g"></script>
 </body>
 </html>
+
