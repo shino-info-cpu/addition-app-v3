@@ -19,9 +19,14 @@ Master screens for `利用者`, `機関`, and `サービス` are separate featur
 - `index.html` : interactive shell prototype for layout and workflow validation
 - `styles.css` : mock styles
 - `rule-runtime-adapter.js` : sample/API の catalog runtime 切替と lookup を担う helper
+- `judgement-engine-bridge.js` : 候補評価、設問表示、候補理由生成を担う helper
+- `api-runtime-adapter.js` : API fetch、catalog load、master/report/context load orchestration を担う helper
+- `report-state-bridge.js` : 集計の view/filter state、永続化、再検索導線を担う helper
+- `judgement-report-bridge.js` : 判定保存 payload と report detail/identity 正規化を担う helper
 - `app.js` : UI adapter に寄せた判定フロー、集計、マスタ表示ロジック
 - `prototype-sample-data.js` : sample mode 用の利用者/機関/サービス/履歴データ asset
 - `prototype-rule-catalog.js` : sample mode 用の generated rule catalog asset
+- `master-data-bridge.js` : master/sample/API データ正規化、lookup、判定画面の機関/サービス選択を担う helper
 
 Open `index.html` in a browser to review the first interactive prototype without choosing a framework yet.
 

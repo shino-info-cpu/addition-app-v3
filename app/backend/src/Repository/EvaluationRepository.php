@@ -28,6 +28,8 @@ final class EvaluationRepository
         $finalStatus = trim((string) ($payload['final_status'] ?? ''));
         $additionName = trim((string) ($payload['addition_name'] ?? ''));
         $message = trim((string) ($payload['message'] ?? ''));
+        $promptText = $this->nullableText($payload['prompt_text'] ?? null);
+        $aiDraftText = $this->nullableText($payload['ai_draft_text'] ?? null);
         $finalNoteText = trim((string) ($payload['final_note_text'] ?? ''));
 
         if ($clientId <= 0 || $organizationId <= 0 || $serviceDefinitionId <= 0 || $staffId <= 0) {
@@ -184,12 +186,14 @@ final class EvaluationRepository
                   final_note_text
                 ) VALUES (
                   :evaluation_case_id,
-                  NULL,
-                  NULL,
+                  :prompt_text,
+                  :ai_draft_text,
                   :final_note_text
                 )
             SQL);
             $noteStatement->bindValue(':evaluation_case_id', $evaluationCaseId, PDO::PARAM_INT);
+            $noteStatement->bindValue(':prompt_text', $promptText, $promptText === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
+            $noteStatement->bindValue(':ai_draft_text', $aiDraftText, $aiDraftText === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
             $noteStatement->bindValue(':final_note_text', $finalNoteText, PDO::PARAM_STR);
             $noteStatement->execute();
 
@@ -203,6 +207,8 @@ final class EvaluationRepository
                 'addition_id' => $additionId,
                 'addition_branch_id' => $additionBranchId,
                 'addition_name' => $additionName,
+                'prompt_text' => $promptText,
+                'ai_draft_text' => $aiDraftText,
                 'final_note_text' => $finalNoteText,
             ];
         } catch (\Throwable $throwable) {
@@ -469,6 +475,12 @@ final class EvaluationRepository
 
         $intValue = (int) $value;
         return $intValue > 0 ? $intValue : null;
+    }
+
+    private function nullableText($value): ?string
+    {
+        $normalized = trim((string) ($value ?? ''));
+        return $normalized === '' ? null : $normalized;
     }
 
     private function normalizeDateTime($value): ?string

@@ -15,4 +15,12 @@ return [
         'password' => 'your_database_password',
         'charset' => 'utf8mb4',
     ],
+    'openai' => [
+        'enabled' => false,
+        'api_key' => 'sk-...',
+        'model' => 'gpt-5.4',
+        'reasoning_effort' => 'minimal',
+        'max_output_tokens' => 600,
+        'timeout_seconds' => 30,
+    ],
 ];

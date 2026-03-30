@@ -1,52 +1,23 @@
 const fs = require("fs");
 const path = require("path");
-const vm = require("vm");
 
-const workspaceRoot = path.resolve(__dirname, "..");
-const appJsPath = path.join(workspaceRoot, "app", "frontend", "app.js");
-const sourceAssetPath = path.join(workspaceRoot, "runtime", "prototype", "prototype-rule-source.js");
+const {
+  workspaceRoot,
+  canonicalSourcePath,
+  loadRuleMasterSourceObject,
+} = require("./lib/rule_master_source");
+
 const outputDir = path.join(workspaceRoot, "runtime", "import");
 const outputJsonPath = path.join(outputDir, "prototype_question_catalog.json");
 const outputSqlPath = path.join(outputDir, "prototype_question_seed.sql");
 const outputDbSqlPath = path.join(workspaceRoot, "db", "005_seed_prototype_questions.sql");
 
-function readPrototypeSourceFromAsset() {
-  if (!fs.existsSync(sourceAssetPath)) {
-    return null;
-  }
-
-  const source = fs.readFileSync(sourceAssetPath, "utf8");
-  const sandbox = {};
-  vm.runInNewContext(source, sandbox, { timeout: 1000 });
-  return sandbox.__KASAN_PROTOTYPE_RULE_SOURCE__ ?? sandbox.window?.__KASAN_PROTOTYPE_RULE_SOURCE__ ?? null;
-}
-
 function readQuestionDefinitions() {
-  const sourceAsset = readPrototypeSourceFromAsset();
+  const sourceAsset = loadRuleMasterSourceObject();
   if (Array.isArray(sourceAsset?.questionDefinitions)) {
     return sourceAsset.questionDefinitions;
   }
-
-  const source = fs.readFileSync(appJsPath, "utf8");
-  const match = source.match(/const questionDefinitions = (\[[\s\S]*?\]);\r?\n\r?\nconst state =/);
-  if (!match) {
-    throw new Error("app.js から questionDefinitions を抽出できませんでした。");
-  }
-
-  const literal = match[1];
-  const sandbox = {
-    shouldShowCandidateFactQuestion() {
-      return false;
-    },
-    candidateRequiresAnswer() {
-      return false;
-    },
-    getJudgementCandidatesExcludingAnswers() {
-      return [];
-    },
-  };
-  vm.runInNewContext(`result = ${literal};`, sandbox, { timeout: 1000 });
-  return sandbox.result;
+  throw new Error("rule master source から questionDefinitions を抽出できませんでした。");
 }
 
 function escapeSql(value) {
@@ -193,7 +164,7 @@ function buildQuestionCatalog(questionDefinitions) {
 
   return {
     generatedAt: new Date().toISOString(),
-    source: path.relative(workspaceRoot, appJsPath).replace(/\\/g, "/"),
+    source: path.relative(workspaceRoot, canonicalSourcePath).replace(/\\/g, "/"),
     questions: questionDefinitions.map((question, index) => {
       const visibility = buildVisibilityDefinition(question);
       const options = optionCatalog[index].options;
@@ -347,6 +318,7 @@ function main() {
     `catalog: ${path.relative(workspaceRoot, outputJsonPath)}\n` +
     `seed: ${path.relative(workspaceRoot, outputSqlPath)}\n` +
     `db-seed: ${path.relative(workspaceRoot, outputDbSqlPath)}\n` +
+    `source: ${path.relative(workspaceRoot, canonicalSourcePath)}\n` +
     `questions: ${catalog.questions.length}\n` +
     `options: ${catalog.questions.reduce((sum, question) => sum + question.options.length, 0)}\n` +
     `visibility-rules: ${catalog.questions.reduce((sum, question) => sum + question.visibilityRules.length, 0)}\n` +

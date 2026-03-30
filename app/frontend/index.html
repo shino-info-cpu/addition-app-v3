@@ -173,7 +173,15 @@
               </div>
               <span class="meta-text" id="judgement-save-summary">保存待ち</span>
             </div>
-            <p class="save-note" id="judgement-save-note">保存文を組み立て中です。</p>
+            <div class="note-toolbar">
+              <span class="inline-status" id="judgement-note-status">定型文</span>
+              <div class="note-toolbar-actions">
+                <button type="button" class="secondary-button compact-button" id="judgement-note-reset-button">定型文に戻す</button>
+                <button type="button" class="secondary-button compact-button" id="judgement-ai-draft-button">AI下書きを作成</button>
+              </div>
+            </div>
+            <textarea id="judgement-note-text" class="note-editor" rows="5" placeholder="保存文を入力"></textarea>
+            <p class="save-note" id="judgement-save-note">定型文を初期表示しています。</p>
             <div class="card-foot">
               <span class="inline-status" id="judgement-save-status">未保存</span>
               <button type="button" class="primary-button" id="judgement-save-button">判定結果を保存</button>
@@ -491,8 +499,13 @@
 
   <script src="./prototype-sample-data.js?v=20260329f"></script>
   <script src="./prototype-rule-catalog.js?v=20260329f"></script>
+  <script src="./report-state-bridge.js?v=20260330b"></script>
   <script src="./rule-runtime-adapter.js?v=20260329g"></script>
-  <script src="./app.js?v=20260329g"></script>
+  <script src="./master-data-bridge.js?v=20260329i"></script>
+  <script src="./judgement-engine-bridge.js?v=20260330d"></script>
+  <script src="./api-runtime-adapter.js?v=20260330c"></script>
+  <script src="./judgement-report-bridge.js?v=20260329h"></script>
+  <script src="./app.js?v=20260330d"></script>
 </body>
 </html>
 

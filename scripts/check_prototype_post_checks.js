@@ -1,10 +1,10 @@
 const fs = require("fs");
 const path = require("path");
 const vm = require("vm");
+const { canonicalSourcePath } = require("./lib/rule_master_source");
 
-const sourceAssetPath = path.resolve(__dirname, "../runtime/prototype/prototype-rule-source.js");
 const frontendCatalogAssetPath = path.resolve(__dirname, "../app/frontend/prototype-rule-catalog.js");
-const source = fs.readFileSync(sourceAssetPath, "utf8");
+const source = fs.readFileSync(canonicalSourcePath, "utf8");
 const frontendCatalogAsset = fs.readFileSync(frontendCatalogAssetPath, "utf8");
 const context = {};
 vm.createContext(context);
@@ -13,7 +13,7 @@ vm.runInContext(frontendCatalogAsset, context, { timeout: 1000 });
 const prototypeData = context.__KASAN_PROTOTYPE_RULE_SOURCE__?.data;
 
 if (!prototypeData || !Array.isArray(prototypeData.additions) || !Array.isArray(prototypeData.organizations) || !Array.isArray(prototypeData.reportRecords)) {
-  console.error("Could not extract prototype additions, organizations, or sample report records from prototype-rule-source.js");
+  console.error("Could not extract prototype additions, organizations, or sample report records from rule master source");
   process.exit(1);
 }
 

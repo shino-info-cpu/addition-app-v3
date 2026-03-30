@@ -1,23 +1,23 @@
-const fs = require("fs");
 const path = require("path");
-const vm = require("vm");
 
-const workspaceRoot = path.resolve(__dirname, "..");
-const outputPath = path.join(workspaceRoot, "runtime", "prototype", "prototype-rule-source.js");
+const {
+  workspaceRoot,
+  loadRuleMasterSourceObject,
+  writePrototypeCompatibilitySource,
+} = require("./lib/rule_master_source");
 
 function main() {
-  const source = fs.readFileSync(outputPath, "utf8");
-  const context = {};
-  vm.createContext(context);
-  vm.runInContext(source, context, { timeout: 1000 });
-
-  const prototypeSource = context.__KASAN_PROTOTYPE_RULE_SOURCE__;
+  const outputPath = writePrototypeCompatibilitySource();
+  const prototypeSource = loadRuleMasterSourceObject();
   if (!prototypeSource || !prototypeSource.data || !Array.isArray(prototypeSource.questionDefinitions)) {
-    throw new Error("prototype-rule-source.js の raw source が不正です。");
+    throw new Error("rule master source の raw source が不正です。");
   }
 
   process.stdout.write(
-    `source-asset: ${path.relative(workspaceRoot, outputPath)} (${prototypeSource.questionDefinitions.length} questions / ${(prototypeSource.data?.additions || []).length} additions)\n`,
+    [
+      `source-asset: ${path.relative(workspaceRoot, outputPath)} (${prototypeSource.questionDefinitions.length} questions / ${(prototypeSource.data?.additions || []).length} additions)`,
+      "source: runtime/rule-master/rule-master-source.js",
+    ].join("\n") + "\n",
   );
 }
 

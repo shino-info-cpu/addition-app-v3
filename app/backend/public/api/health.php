@@ -15,12 +15,16 @@ use App\Support\Request;
 $configFile = $appRoot . '/config/app.php';
 $checks = [
     'config' => is_file($configFile),
+    'openai' => false,
 ];
 
 $appName = '加算アプリ v3';
 
 if ($checks['config']) {
-    $appName = app_config()['app']['name'] ?? $appName;
+    $config = app_config();
+    $appName = $config['app']['name'] ?? $appName;
+    $openAiConfig = $config['openai'] ?? [];
+    $checks['openai'] = !empty($openAiConfig['enabled']) && trim((string) ($openAiConfig['api_key'] ?? '')) !== '';
 }
 
 if (Request::queryString('check') === 'db') {

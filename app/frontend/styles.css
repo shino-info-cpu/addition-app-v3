@@ -583,6 +583,40 @@ select {
   line-height: 1.7;
 }
 
+.note-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.note-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.note-editor {
+  width: 100%;
+  min-height: 132px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--text);
+  font: inherit;
+  line-height: 1.7;
+  resize: vertical;
+}
+
+.note-editor:disabled {
+  background: rgba(244, 240, 233, 0.78);
+  color: var(--muted);
+}
+
 .toolbar-card {
   padding: 16px 20px;
   margin-bottom: 18px;

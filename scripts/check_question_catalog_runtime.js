@@ -5,11 +5,21 @@ const vm = require("vm");
 const appJsPath = path.resolve(__dirname, "../app/frontend/app.js");
 const frontendSampleDataAssetPath = path.resolve(__dirname, "../app/frontend/prototype-sample-data.js");
 const frontendCatalogAssetPath = path.resolve(__dirname, "../app/frontend/prototype-rule-catalog.js");
+const frontendReportStateBridgeAssetPath = path.resolve(__dirname, "../app/frontend/report-state-bridge.js");
 const frontendRuntimeAdapterAssetPath = path.resolve(__dirname, "../app/frontend/rule-runtime-adapter.js");
+const frontendMasterDataBridgeAssetPath = path.resolve(__dirname, "../app/frontend/master-data-bridge.js");
+const frontendJudgementEngineBridgeAssetPath = path.resolve(__dirname, "../app/frontend/judgement-engine-bridge.js");
+const frontendApiRuntimeAdapterAssetPath = path.resolve(__dirname, "../app/frontend/api-runtime-adapter.js");
+const frontendJudgementReportBridgeAssetPath = path.resolve(__dirname, "../app/frontend/judgement-report-bridge.js");
 const catalogPath = path.resolve(__dirname, "../runtime/import/prototype_question_catalog.json");
 const frontendSampleDataAsset = fs.readFileSync(frontendSampleDataAssetPath, "utf8");
 const frontendCatalogAsset = fs.readFileSync(frontendCatalogAssetPath, "utf8");
+const frontendReportStateBridgeAsset = fs.readFileSync(frontendReportStateBridgeAssetPath, "utf8");
 const frontendRuntimeAdapterAsset = fs.readFileSync(frontendRuntimeAdapterAssetPath, "utf8");
+const frontendMasterDataBridgeAsset = fs.readFileSync(frontendMasterDataBridgeAssetPath, "utf8");
+const frontendJudgementEngineBridgeAsset = fs.readFileSync(frontendJudgementEngineBridgeAssetPath, "utf8");
+const frontendApiRuntimeAdapterAsset = fs.readFileSync(frontendApiRuntimeAdapterAssetPath, "utf8");
+const frontendJudgementReportBridgeAsset = fs.readFileSync(frontendJudgementReportBridgeAssetPath, "utf8");
 const source = fs.readFileSync(appJsPath, "utf8");
 const catalog = JSON.parse(fs.readFileSync(catalogPath, "utf8"));
 
@@ -59,7 +69,12 @@ const context = {
 vm.createContext(context);
 vm.runInContext(frontendSampleDataAsset, context);
 vm.runInContext(frontendCatalogAsset, context);
+vm.runInContext(frontendReportStateBridgeAsset, context);
 vm.runInContext(frontendRuntimeAdapterAsset, context);
+vm.runInContext(frontendMasterDataBridgeAsset, context);
+vm.runInContext(frontendJudgementEngineBridgeAsset, context);
+vm.runInContext(frontendApiRuntimeAdapterAsset, context);
+vm.runInContext(frontendJudgementReportBridgeAsset, context);
 vm.runInContext(source, context);
 
 const runtimeQuestions = context.__KASAN_PROTOTYPE_RULE_CATALOG__.questions;

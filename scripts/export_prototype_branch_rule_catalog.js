@@ -1,42 +1,23 @@
 const fs = require("fs");
 const path = require("path");
-const vm = require("vm");
 
-const workspaceRoot = path.resolve(__dirname, "..");
-const appJsPath = path.join(workspaceRoot, "app", "frontend", "app.js");
-const sourceAssetPath = path.join(workspaceRoot, "runtime", "prototype", "prototype-rule-source.js");
+const {
+  workspaceRoot,
+  canonicalSourcePath,
+  loadRuleMasterSourceObject,
+} = require("./lib/rule_master_source");
+
 const outputDir = path.join(workspaceRoot, "runtime", "import");
 const outputJsonPath = path.join(outputDir, "prototype_branch_rule_catalog.json");
 const outputSqlPath = path.join(outputDir, "prototype_branch_rule_seed.sql");
 const outputDbSqlPath = path.join(workspaceRoot, "db", "006_seed_prototype_branch_rules.sql");
 
-function readPrototypeSourceFromAsset() {
-  if (!fs.existsSync(sourceAssetPath)) {
-    return null;
-  }
-
-  const source = fs.readFileSync(sourceAssetPath, "utf8");
-  const sandbox = {};
-  vm.runInNewContext(source, sandbox, { timeout: 1000 });
-  return sandbox.__KASAN_PROTOTYPE_RULE_SOURCE__ ?? sandbox.window?.__KASAN_PROTOTYPE_RULE_SOURCE__ ?? null;
-}
-
 function readPrototypeData() {
-  const sourceAsset = readPrototypeSourceFromAsset();
-  if (sourceAsset?.data && typeof sourceAsset.data === "object") {
-    return sourceAsset.data;
+  const sourceAsset = loadRuleMasterSourceObject();
+  if (!sourceAsset?.data || typeof sourceAsset.data !== "object") {
+    throw new Error("rule master source から prototype data を抽出できませんでした。");
   }
-
-  const source = fs.readFileSync(appJsPath, "utf8");
-  const match = source.match(/const data = ([\s\S]*?)\r?\n\r?\nconst baseReportViews =/);
-  if (!match) {
-    throw new Error("app.js から prototype data を抽出できませんでした。");
-  }
-
-  const literal = match[1].trim().replace(/;$/, "");
-  const sandbox = {};
-  vm.runInNewContext(`result = ${literal};`, sandbox, { timeout: 1000 });
-  return sandbox.result;
+  return sourceAsset.data;
 }
 
 function escapeSql(value) {
@@ -279,7 +260,7 @@ function buildConstraints(candidate) {
 function buildCatalog(additions) {
   return {
     generatedAt: new Date().toISOString(),
-    source: path.relative(workspaceRoot, appJsPath).replace(/\\/g, "/"),
+    source: path.relative(workspaceRoot, canonicalSourcePath).replace(/\\/g, "/"),
     branches: additions.map((candidate) => ({
       branchCode: String(candidate.additionCode ?? "").trim(),
       branchName: String(candidate.additionName ?? "").trim(),
@@ -379,6 +360,7 @@ function main() {
     `catalog: ${path.relative(workspaceRoot, outputJsonPath)}\n` +
     `seed: ${path.relative(workspaceRoot, outputSqlPath)}\n` +
     `db-seed: ${path.relative(workspaceRoot, outputDbSqlPath)}\n` +
+    `source: ${path.relative(workspaceRoot, canonicalSourcePath)}\n` +
     `branches: ${catalog.branches.length}\n` +
     `conditions: ${conditionCount}\n` +
     `constraints: ${constraintCount}\n`

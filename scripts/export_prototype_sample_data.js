@@ -1,20 +1,18 @@
 const fs = require("fs");
 const path = require("path");
-const vm = require("vm");
 
-const workspaceRoot = path.resolve(__dirname, "..");
-const sourceAssetPath = path.join(workspaceRoot, "runtime", "prototype", "prototype-rule-source.js");
+const {
+  workspaceRoot,
+  canonicalSourcePath,
+  loadRuleMasterSourceObject,
+} = require("./lib/rule_master_source");
+
 const outputPath = path.join(workspaceRoot, "app", "frontend", "prototype-sample-data.js");
 
 function loadPrototypeSource() {
-  const source = fs.readFileSync(sourceAssetPath, "utf8");
-  const context = {};
-  vm.createContext(context);
-  vm.runInContext(source, context, { timeout: 1000 });
-
-  const prototypeSource = context.__KASAN_PROTOTYPE_RULE_SOURCE__ ?? context.window?.__KASAN_PROTOTYPE_RULE_SOURCE__ ?? null;
+  const prototypeSource = loadRuleMasterSourceObject();
   if (!prototypeSource || !prototypeSource.data) {
-    throw new Error("prototype-rule-source.js から raw source を取得できませんでした。");
+    throw new Error("rule master source から raw source を取得できませんでした。");
   }
 
   return prototypeSource;
@@ -50,7 +48,8 @@ function main() {
   const sampleData = pickSampleData(prototypeSource.data);
   fs.writeFileSync(outputPath, buildAsset(sampleData), "utf8");
   process.stdout.write(
-    `prototype-sample-data: ${path.relative(workspaceRoot, outputPath)} (${sampleData.clients.length} clients / ${sampleData.organizations.length} organizations / ${sampleData.services.length} services / ${sampleData.reportRecords.length} reports)\n`,
+    `prototype-sample-data: ${path.relative(workspaceRoot, outputPath)} (${sampleData.clients.length} clients / ${sampleData.organizations.length} organizations / ${sampleData.services.length} services / ${sampleData.reportRecords.length} reports)\n` +
+    `source: ${path.relative(workspaceRoot, canonicalSourcePath)}\n`,
   );
 }
 

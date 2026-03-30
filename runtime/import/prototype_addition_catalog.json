@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-03-29T01:12:27.638Z",
-  "source": "app/frontend/app.js",
+  "generatedAt": "2026-03-30T13:23:33.670Z",
+  "source": "runtime/rule-master/rule-master-source.js",
   "families": [
     {
       "additionCode": "mededu",

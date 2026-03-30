@@ -26,6 +26,14 @@ const storageKeys = {
   activeView: "kasan-v3-active-report-view",
 };
 
+const reportStateBridgeFactory = globalThis.__KASAN_REPORT_STATE_BRIDGE__;
+if (!reportStateBridgeFactory || typeof reportStateBridgeFactory.createReportStateBridge !== "function") {
+  throw new Error("report-state-bridge.js の読み込みに失敗しました。");
+}
+
+const initialReportActiveViewCode = reportStateBridgeFactory.loadStoredActiveViewCode(storageKeys, baseReportViews);
+const initialReportViews = reportStateBridgeFactory.loadStoredReportViews(storageKeys, baseReportViews);
+
 const columnCatalog = {
   targetMonth: { label: "対象月", getValue: (record) => record.targetMonth },
   performedAt: { label: "対応日時", getValue: (record) => record.performedAt || "-" },
@@ -103,9 +111,9 @@ const state = {
     lastSavedRecordId: "",
   },
   report: {
-    activeViewCode: loadActiveViewCode(),
-    views: loadReportViews(),
-    filters: { ...baseReportViews[loadActiveViewCode()].savedFilters },
+    activeViewCode: initialReportActiveViewCode,
+    views: initialReportViews,
+    filters: { ...initialReportViews[initialReportActiveViewCode].savedFilters },
     selectedRecordId: "r1",
     selectedColumnKey: "",
     records: [],
@@ -142,6 +150,88 @@ if (!ruleRuntimeAdapterFactory || typeof ruleRuntimeAdapterFactory.createRuleRun
 const ruleRuntimeAdapter = ruleRuntimeAdapterFactory.createRuleRuntimeAdapter({
   state,
   normalizeNumericId,
+});
+
+const masterDataBridgeFactory = globalThis.__KASAN_MASTER_DATA_BRIDGE__;
+if (!masterDataBridgeFactory || typeof masterDataBridgeFactory.createMasterDataBridge !== "function") {
+  throw new Error("master-data-bridge.js の読み込みに失敗しました。");
+}
+
+const masterDataBridge = masterDataBridgeFactory.createMasterDataBridge({
+  state,
+  getPrototypeDataSource,
+  canUseApiRelations,
+  canUseApiJudgementContext,
+});
+
+const judgementEngineBridgeFactory = globalThis.__KASAN_JUDGEMENT_ENGINE_BRIDGE__;
+if (!judgementEngineBridgeFactory || typeof judgementEngineBridgeFactory.createJudgementEngineBridge !== "function") {
+  throw new Error("judgement-engine-bridge.js の読み込みに失敗しました。");
+}
+
+const judgementEngineBridge = judgementEngineBridgeFactory.createJudgementEngineBridge({
+  state,
+  getClientById,
+  getOrganizationById,
+  getServiceById,
+  getOrganizationGroupLabel,
+  deriveResolvedOrganizationType,
+  getActiveCandidateDefinitions,
+  getActiveQuestionDefinitions,
+});
+
+const apiRuntimeAdapterFactory = globalThis.__KASAN_API_RUNTIME_ADAPTER__;
+if (!apiRuntimeAdapterFactory || typeof apiRuntimeAdapterFactory.createApiRuntimeAdapter !== "function") {
+  throw new Error("api-runtime-adapter.js の読み込みに失敗しました。");
+}
+
+const judgementReportBridgeFactory = globalThis.__KASAN_JUDGEMENT_REPORT_BRIDGE__;
+if (!judgementReportBridgeFactory || typeof judgementReportBridgeFactory.createJudgementReportBridge !== "function") {
+  throw new Error("judgement-report-bridge.js の読み込みに失敗しました。");
+}
+
+const judgementReportBridge = judgementReportBridgeFactory.createJudgementReportBridge({
+  normalizeNumericId,
+  deriveResolvedOrganizationType,
+  deriveOrganizationGroupFromType,
+  findAdditionReferenceByCode,
+  countMatchedConditionGroupsForCandidate,
+  getJudgementFacts,
+  isSameJudgementCandidate,
+});
+
+const apiRuntimeAdapter = apiRuntimeAdapterFactory.createApiRuntimeAdapter({
+  state,
+  apiConfig,
+  normalizeApiClient,
+  normalizeApiOrganization,
+  normalizeApiService,
+  normalizeApiStaff,
+  normalizeApiOrganizationService,
+  normalizeApiClientEnrollment,
+  normalizeApiJudgementEnrollment,
+  normalizeApiReportRecord,
+  setRuleCatalogSection,
+  flattenApiAdditionCatalogBranches,
+  buildSampleOrganizationServices,
+  buildSampleClientEnrollments,
+  buildSampleReportRecords,
+  getSampleJudgementHistoryRecords,
+  canUseApiRelations,
+  canUseApiJudgementContext,
+  canUseApiQuestionCatalog,
+  canUseApiAdditionCatalog,
+  canUseApiReport,
+  updateApiDataStatusPill,
+  syncJudgementStaffSelection,
+  ensureRelationSelections,
+  syncRelationFormSelections,
+  syncEnrollmentSelection,
+  renderMasters,
+  renderJudgement,
+  renderReport,
+  renderQuickSearchStatus,
+  buildReportApiParams,
 });
 
 state.report.records = buildSampleReportRecords();
@@ -236,6 +326,19 @@ const dom = {
   },
 };
 
+const reportStateBridge = reportStateBridgeFactory.createReportStateBridge({
+  state,
+  dom,
+  storageKeys,
+  baseReportViews,
+  normalizeText,
+  matchesQuickSearch,
+  canUseApiReport,
+  loadReportRecordsFromApi,
+  renderReport,
+  renderQuickSearchStatus,
+});
+
 initialize();
 
 function initialize() {
@@ -253,394 +356,43 @@ function initialize() {
 }
 
 async function initializeApiData() {
-  const detection = await detectApiBaseUrl();
-  if (!detection) {
-    state.dataSource.note = "API未接続";
-    updateApiDataStatusPill();
-    return;
-  }
-
-  state.dataSource.apiBaseUrl = detection.baseUrl;
-  state.dataSource.configReady = Boolean(detection.health?.checks?.config);
-  state.dataSource.note = state.dataSource.configReady ? "" : "API設定待ち";
-  updateApiDataStatusPill();
-
-  if (!state.dataSource.configReady) {
-    return;
-  }
-
-  await loadMastersFromApi();
-  await loadQuestionCatalogFromApi();
-  await loadAdditionCatalogFromApi();
-  ensureRelationSelections();
-  await Promise.all([
-    loadOrganizationServices(state.relations.selectedOrganizationId),
-    loadClientEnrollments(state.relations.selectedClientId),
-  ]);
-  if (canUseApiJudgementContext()) {
-    await loadJudgementContextFromApi(state.judgement.clientId);
-  }
-  await loadReportRecordsFromApi();
-  await loadJudgementHistoryRecords(state.judgement.clientId, state.judgement.targetMonth);
+  return apiRuntimeAdapter.initializeApiData();
 }
 
 async function detectApiBaseUrl() {
-  for (const baseUrl of apiConfig.baseCandidates) {
-    try {
-      const response = await fetchApiJson(`${baseUrl}/health.php`);
-      return { baseUrl, health: response };
-    } catch (error) {
-      continue;
-    }
-  }
-  return null;
+  return apiRuntimeAdapter.detectApiBaseUrl();
 }
 
 async function loadMastersFromApi() {
-  const endpoints = [
-    { key: "clients", path: "clients.php", normalize: normalizeApiClient },
-    { key: "organizations", path: "organizations.php", normalize: normalizeApiOrganization },
-    { key: "services", path: "services.php", normalize: normalizeApiService },
-    { key: "staffs", path: "staffs.php", normalize: normalizeApiStaff },
-  ];
-
-  const results = await Promise.allSettled(endpoints.map(async ({ key, path, normalize }) => {
-    const response = await fetchApiJson(buildApiUrl(path));
-    return { key, items: (response.items ?? []).map(normalize) };
-  }));
-
-  results.forEach((result, index) => {
-    const { key } = endpoints[index];
-    if (result.status === "fulfilled") {
-      state.masters[key] = result.value.items;
-      state.dataSource[key] = "api";
-      return;
-    }
-
-    state.masters[key] = [];
-    state.dataSource[key] = "sample";
-    state.dataSource.note = result.reason?.message ?? "一部API未接続";
-  });
-
-  if (results.every((result) => result.status === "fulfilled") && state.dataSource.report === "api") {
-    state.dataSource.note = "";
-  }
-
-  updateApiDataStatusPill();
-  syncJudgementStaffSelection();
-  ensureRelationSelections();
-  renderMasters();
-  renderJudgement();
-  renderQuickSearchStatus();
+  return apiRuntimeAdapter.loadMastersFromApi();
 }
 
 async function loadQuestionCatalogFromApi() {
-  if (!canUseApiQuestionCatalog()) {
-    setRuleCatalogSection("questions", "sample", []);
-    renderJudgement();
-    return;
-  }
-
-  try {
-    const response = await fetchApiJson(buildApiUrl("question-catalog.php"));
-    const normalizedQuestions = Array.isArray(response.questions) ? response.questions : [];
-    if (normalizedQuestions.length === 0) {
-      setRuleCatalogSection("questions", "sample", []);
-      state.dataSource.note = "設問catalog未投入";
-    } else {
-      setRuleCatalogSection("questions", "api", normalizedQuestions);
-      state.dataSource.note = "";
-    }
-  } catch (error) {
-    setRuleCatalogSection("questions", "sample", []);
-    state.dataSource.note = error.message;
-  } finally {
-    updateApiDataStatusPill();
-    renderJudgement();
-  }
+  return apiRuntimeAdapter.loadQuestionCatalogFromApi();
 }
 
 async function loadAdditionCatalogFromApi() {
-  if (!canUseApiAdditionCatalog()) {
-    setRuleCatalogSection("additions", "sample", []);
-    renderJudgement();
-    return;
-  }
-
-  try {
-    const response = await fetchApiJson(buildApiUrl("addition-catalog.php"));
-    const normalizedAdditions = flattenApiAdditionCatalogBranches(response.additions ?? []);
-    if (normalizedAdditions.length === 0) {
-      setRuleCatalogSection("additions", "sample", []);
-      state.dataSource.note = "加算catalog未投入";
-    } else {
-      setRuleCatalogSection("additions", "api", normalizedAdditions);
-      state.dataSource.note = "";
-    }
-  } catch (error) {
-    setRuleCatalogSection("additions", "sample", []);
-    state.dataSource.note = error.message;
-  } finally {
-    updateApiDataStatusPill();
-    renderJudgement();
-  }
+  return apiRuntimeAdapter.loadAdditionCatalogFromApi();
 }
 
 async function loadOrganizationServices(organizationId, { force = false } = {}) {
-  const normalizedOrganizationId = String(organizationId ?? "");
-  if (!normalizedOrganizationId) {
-    return;
-  }
-
-  if (!canUseApiRelations()) {
-    state.dataSource.relations = "sample";
-    state.relations.organizationServicesByOrganizationId[normalizedOrganizationId] = buildSampleOrganizationServices(normalizedOrganizationId);
-    syncRelationFormSelections();
-    renderMasters();
-    renderJudgement();
-    return;
-  }
-
-  if (!force && state.relations.organizationServicesByOrganizationId[normalizedOrganizationId]) {
-    syncRelationFormSelections();
-    renderMasters();
-    renderJudgement();
-    return;
-  }
-
-  const requestToken = ++state.relations.organizationServicesRequestToken;
-  state.relations.loadingOrganizationServicesForId = normalizedOrganizationId;
-  renderMasters();
-
-  try {
-    const response = await fetchApiJson(buildApiUrl("organization-services.php", { organization_id: normalizedOrganizationId }));
-    if (requestToken !== state.relations.organizationServicesRequestToken) {
-      return;
-    }
-
-    state.relations.organizationServicesByOrganizationId[normalizedOrganizationId] = (response.items ?? []).map(normalizeApiOrganizationService);
-    state.dataSource.relations = "api";
-    state.dataSource.note = "";
-    syncRelationFormSelections();
-  } catch (error) {
-    if (requestToken !== state.relations.organizationServicesRequestToken) {
-      return;
-    }
-
-    state.relations.organizationServicesByOrganizationId[normalizedOrganizationId] = [];
-    state.dataSource.relations = "sample";
-    state.dataSource.note = error.message;
-    syncRelationFormSelections();
-  } finally {
-    if (requestToken !== state.relations.organizationServicesRequestToken) {
-      return;
-    }
-
-    state.relations.loadingOrganizationServicesForId = "";
-    updateApiDataStatusPill();
-    renderMasters();
-    renderJudgement();
-  }
+  return apiRuntimeAdapter.loadOrganizationServices(organizationId, { force });
 }
 
 async function loadClientEnrollments(clientId, { force = false } = {}) {
-  const normalizedClientId = String(clientId ?? "");
-  if (!normalizedClientId) {
-    return;
-  }
-
-  if (!canUseApiRelations()) {
-    state.dataSource.relations = "sample";
-    state.relations.clientEnrollmentsByClientId[normalizedClientId] = buildSampleClientEnrollments(normalizedClientId);
-    renderMasters();
-    return;
-  }
-
-  if (!force && state.relations.clientEnrollmentsByClientId[normalizedClientId]) {
-    renderMasters();
-    return;
-  }
-
-  const requestToken = ++state.relations.clientEnrollmentsRequestToken;
-  state.relations.loadingClientEnrollmentsForId = normalizedClientId;
-  renderMasters();
-
-  try {
-    const response = await fetchApiJson(buildApiUrl("client-enrollments.php", { client_id: normalizedClientId }));
-    if (requestToken !== state.relations.clientEnrollmentsRequestToken) {
-      return;
-    }
-
-    state.relations.clientEnrollmentsByClientId[normalizedClientId] = (response.items ?? []).map(normalizeApiClientEnrollment);
-    state.dataSource.relations = "api";
-    state.dataSource.note = "";
-  } catch (error) {
-    if (requestToken !== state.relations.clientEnrollmentsRequestToken) {
-      return;
-    }
-
-    state.relations.clientEnrollmentsByClientId[normalizedClientId] = [];
-    state.dataSource.relations = "sample";
-    state.dataSource.note = error.message;
-  } finally {
-    if (requestToken !== state.relations.clientEnrollmentsRequestToken) {
-      return;
-    }
-
-    state.relations.loadingClientEnrollmentsForId = "";
-    updateApiDataStatusPill();
-    renderMasters();
-  }
+  return apiRuntimeAdapter.loadClientEnrollments(clientId, { force });
 }
 
 async function loadJudgementContextFromApi(clientId) {
-  if (!canUseApiJudgementContext() || !clientId) {
-    state.dataSource.judgement = "sample";
-    state.judgement.contextClientId = "";
-    state.judgement.enrollments = [];
-    renderJudgement();
-    renderQuickSearchStatus();
-    updateApiDataStatusPill();
-    return;
-  }
-
-  const requestToken = ++state.judgement.requestToken;
-  state.judgement.loadingContext = true;
-  state.judgement.contextClientId = String(clientId);
-  state.judgement.enrollments = [];
-  state.dataSource.judgement = "sample";
-  renderJudgement();
-  updateApiDataStatusPill();
-
-  try {
-    const response = await fetchApiJson(buildApiUrl("judgement-context.php", { client_id: String(clientId) }));
-    if (requestToken !== state.judgement.requestToken) {
-      return;
-    }
-    state.judgement.enrollments = (response.enrollments ?? []).map(normalizeApiJudgementEnrollment);
-    state.dataSource.judgement = "api";
-    state.dataSource.note = "";
-    syncJudgementStaffSelection();
-    syncEnrollmentSelection();
-  } catch (error) {
-    if (requestToken !== state.judgement.requestToken) {
-      return;
-    }
-    state.judgement.enrollments = [];
-    state.dataSource.judgement = "sample";
-    state.dataSource.note = error.message;
-    syncJudgementStaffSelection();
-    syncEnrollmentSelection();
-  } finally {
-    if (requestToken !== state.judgement.requestToken) {
-      return;
-    }
-    state.judgement.loadingContext = false;
-    updateApiDataStatusPill();
-    renderJudgement();
-    if (state.judgement.enrollments.length === 0 && state.judgement.organizationId) {
-      void loadOrganizationServices(state.judgement.organizationId);
-    }
-    renderQuickSearchStatus();
-  }
+  return apiRuntimeAdapter.loadJudgementContextFromApi(clientId);
 }
 
 async function loadReportRecordsFromApi() {
-  if (!state.dataSource.apiBaseUrl || !state.dataSource.configReady) {
-    state.dataSource.report = "sample";
-    state.report.records = buildSampleReportRecords();
-    updateApiDataStatusPill();
-    renderReport();
-    renderQuickSearchStatus();
-    return;
-  }
-
-  const requestToken = ++state.report.requestToken;
-  state.report.loading = true;
-  renderReport();
-
-  try {
-    const response = await fetchApiJson(buildApiUrl("report-records.php", buildReportApiParams()));
-    if (requestToken !== state.report.requestToken) {
-      return;
-    }
-
-    state.report.records = (response.items ?? []).map(normalizeApiReportRecord);
-    state.dataSource.report = "api";
-    state.dataSource.note = "";
-  } catch (error) {
-    if (requestToken !== state.report.requestToken) {
-      return;
-    }
-
-    state.report.records = buildSampleReportRecords();
-    state.dataSource.report = "sample";
-    state.dataSource.note = error.message;
-  } finally {
-    if (requestToken !== state.report.requestToken) {
-      return;
-    }
-
-    state.report.loading = false;
-    updateApiDataStatusPill();
-    renderReport();
-    renderQuickSearchStatus();
-  }
+  return apiRuntimeAdapter.loadReportRecordsFromApi();
 }
 
 async function loadJudgementHistoryRecords(clientId, targetMonth) {
-  const normalizedClientId = String(clientId ?? "");
-  const normalizedTargetMonth = String(targetMonth ?? "");
-
-  if (!normalizedClientId || !normalizedTargetMonth) {
-    state.judgement.historyRecords = [];
-    state.judgement.historyError = "";
-    state.judgement.historyLoading = false;
-    renderJudgement();
-    return;
-  }
-
-  if (!canUseApiReport()) {
-    state.judgement.historyRecords = getSampleJudgementHistoryRecords(normalizedClientId, normalizedTargetMonth);
-    state.judgement.historyError = "";
-    state.judgement.historyLoading = false;
-    renderJudgement();
-    return;
-  }
-
-  const requestToken = ++state.judgement.historyRequestToken;
-  state.judgement.historyLoading = true;
-  state.judgement.historyError = "";
-  renderJudgement();
-
-  try {
-    const response = await fetchApiJson(buildApiUrl("report-records.php", {
-      client_id: normalizedClientId,
-      target_month: normalizedTargetMonth,
-      limit: "500",
-    }));
-
-    if (requestToken !== state.judgement.historyRequestToken) {
-      return;
-    }
-
-    state.judgement.historyRecords = (response.items ?? []).map(normalizeApiReportRecord);
-    state.judgement.historyError = "";
-  } catch (error) {
-    if (requestToken !== state.judgement.historyRequestToken) {
-      return;
-    }
-
-    state.judgement.historyRecords = [];
-    state.judgement.historyError = error.message;
-  } finally {
-    if (requestToken !== state.judgement.historyRequestToken) {
-      return;
-    }
-
-    state.judgement.historyLoading = false;
-    renderJudgement();
-  }
+  return apiRuntimeAdapter.loadJudgementHistoryRecords(clientId, targetMonth);
 }
 
 function initializeJudgementDefaults() {
@@ -772,35 +524,15 @@ function bindReportControls() {
   }
 
   dom.report.applyFilters.addEventListener("click", () => {
-    syncReportFiltersFromInputs();
-    if (canUseApiReport()) {
-      void loadReportRecordsFromApi();
-      return;
-    }
-    renderReport();
-    renderQuickSearchStatus();
+    void reportStateBridge.applyFilters();
   });
 
   dom.report.saveFilters.addEventListener("click", () => {
-    syncReportFiltersFromInputs();
-    state.report.views[state.report.activeViewCode].savedFilters = { ...state.report.filters };
-    persistReportViews();
-    if (canUseApiReport()) {
-      void loadReportRecordsFromApi();
-      return;
-    }
-    renderReport();
+    void reportStateBridge.saveFilters();
   });
 
   dom.report.resetFilters.addEventListener("click", () => {
-    state.report.filters = { ...state.report.views[state.report.activeViewCode].savedFilters };
-    writeReportFiltersToInputs();
-    if (canUseApiReport()) {
-      void loadReportRecordsFromApi();
-      return;
-    }
-    renderReport();
-    renderQuickSearchStatus();
+    void reportStateBridge.resetFilters();
   });
 
   dom.report.columnLeft.addEventListener("click", () => moveSelectedColumn(-1));
@@ -1730,84 +1462,19 @@ function buildJudgementDisplayAdditionName(candidateStorageEntries, topCandidate
 }
 
 function getJudgementCandidateReference(candidate) {
-  if (!candidate) {
-    return {
-      additionId: null,
-      additionBranchId: null,
-      additionCode: "",
-      additionFamilyCode: "",
-      additionName: "",
-      additionFamilyName: "",
-      resultStorageMode: "json",
-    };
-  }
-
-  const additionId = normalizeNumericId(candidate.additionId ?? "");
-  const additionBranchId = normalizeNumericId(candidate.additionBranchId ?? "");
-  const additionCode = String(candidate.additionCode ?? "").trim();
-  const additionFamilyCode = String(candidate.additionFamilyCode ?? additionCode).trim() || additionCode;
-  const additionName = String(candidate.additionName ?? additionCode).trim() || additionCode;
-  const additionFamilyName = String(candidate.additionFamilyName ?? additionName).trim() || additionName;
-
-  return {
-    additionId,
-    additionBranchId,
-    additionCode,
-    additionFamilyCode,
-    additionName,
-    additionFamilyName,
-    resultStorageMode: additionBranchId !== null ? "branch" : (additionId !== null ? "family" : "json"),
-  };
+  return judgementReportBridge.getJudgementCandidateReference(candidate);
 }
 
 function buildJudgementCandidateNamesSummary(candidates) {
-  return (Array.isArray(candidates) ? candidates : [])
-    .map((candidate) => String(candidate?.additionName ?? "").trim())
-    .filter(Boolean)
-    .join(" / ");
+  return judgementReportBridge.buildJudgementCandidateNamesSummary(candidates);
 }
 
 function buildJudgementCandidateDetails(candidates) {
-  return (Array.isArray(candidates) ? candidates : []).map((candidate, index) => {
-    return {
-      additionCode: String(candidate?.additionCode ?? "").trim(),
-      additionName: String(candidate?.additionName ?? "").trim(),
-      candidateStatus: candidate.candidateStatus || "matched",
-      matchedGroupCount: Number(candidate.matchedGroupCount ?? candidate.matched_group_count ?? 0) || 0,
-      displayOrder: Number(candidate.displayOrder ?? candidate.priority ?? index + 1) || (index + 1),
-    };
-  });
+  return judgementReportBridge.buildJudgementCandidateDetails(candidates);
 }
 
 function buildJudgementCandidateStorageEntries(candidates, topCandidate, factsOverride = null) {
-  const facts = factsOverride ?? getJudgementFacts(true);
-  return (Array.isArray(candidates) ? candidates : []).map((candidate, index) => {
-    const reference = getJudgementCandidateReference(candidate);
-    return {
-      additionId: reference.additionId,
-      additionBranchId: reference.additionBranchId,
-      additionCode: reference.additionCode,
-      additionName: reference.additionName,
-      additionFamilyCode: reference.additionFamilyCode,
-      additionFamilyName: reference.additionFamilyName,
-      candidateStatus: isSameJudgementCandidate(candidate, topCandidate)
-        ? ((Array.isArray(candidates) ? candidates.length : 0) === 1 ? "selected" : "leading_candidate")
-        : "candidate",
-      matchedGroupCount: countMatchedConditionGroupsForCandidate(candidate, facts),
-      displayOrder: (index + 1) * 10,
-      detailJson: {
-        addition_code: reference.additionCode,
-        addition_family_code: reference.additionFamilyCode,
-        addition_name: reference.additionName,
-        addition_family_name: reference.additionFamilyName,
-        reason: candidate.reason ?? "",
-        rule_status: candidate.ruleStatus ?? "",
-        confirmed_rules: Array.isArray(candidate.confirmedRules) ? candidate.confirmedRules : [],
-        provisional_rules: Array.isArray(candidate.provisionalRules) ? candidate.provisionalRules : [],
-        post_check: candidate.postCheck ?? "",
-      },
-    };
-  });
+  return judgementReportBridge.buildJudgementCandidateStorageEntries(candidates, topCandidate, factsOverride);
 }
 
 async function deactivateOrganizationService(organizationServiceId) {
@@ -2247,17 +1914,7 @@ function renderReportViewButtons() {
 
   for (const button of dom.report.viewButtons.querySelectorAll(".view-button")) {
     button.addEventListener("click", () => {
-      state.report.activeViewCode = button.dataset.viewCode;
-      localStorage.setItem(storageKeys.activeView, state.report.activeViewCode);
-      state.report.selectedColumnKey = "";
-      state.report.filters = { ...state.report.views[state.report.activeViewCode].savedFilters };
-      writeReportFiltersToInputs();
-      if (canUseApiReport()) {
-        void loadReportRecordsFromApi();
-        return;
-      }
-      renderReport();
-      renderQuickSearchStatus();
+      void reportStateBridge.activateReportView(button.dataset.viewCode);
     });
   }
 }
@@ -2629,20 +2286,7 @@ function getOrganizationServicesForSelectedOrganization() {
 }
 
 function getOrganizationServicesForOrganization(organizationId) {
-  const normalizedOrganizationId = String(organizationId ?? "");
-  if (!normalizedOrganizationId) {
-    return [];
-  }
-
-  if (state.relations.organizationServicesByOrganizationId[normalizedOrganizationId]) {
-    return state.relations.organizationServicesByOrganizationId[normalizedOrganizationId];
-  }
-
-  if (canUseApiRelations()) {
-    return [];
-  }
-
-  return buildSampleOrganizationServices(normalizedOrganizationId);
+  return masterDataBridge.getOrganizationServicesForOrganization(organizationId);
 }
 
 function getOrganizationServicesForClientForm() {
@@ -2650,34 +2294,11 @@ function getOrganizationServicesForClientForm() {
 }
 
 function getClientEnrollmentRelations(clientId) {
-  const normalizedClientId = String(clientId ?? "");
-  if (!normalizedClientId) {
-    return [];
-  }
-
-  if (state.relations.clientEnrollmentsByClientId[normalizedClientId]) {
-    return state.relations.clientEnrollmentsByClientId[normalizedClientId];
-  }
-
-  if (canUseApiRelations()) {
-    return [];
-  }
-
-  return buildSampleClientEnrollments(normalizedClientId);
+  return masterDataBridge.getClientEnrollmentRelations(clientId);
 }
 
 function getAvailableServiceDefinitionsForOrganization(organizationId) {
-  if (!organizationId) {
-    return [];
-  }
-
-  const registeredServiceIds = new Set(
-    getOrganizationServicesForOrganization(organizationId).map((item) => item.serviceId),
-  );
-
-  const allServices = getMasterServices();
-  const availableServices = allServices.filter((service) => !registeredServiceIds.has(service.serviceId));
-  return availableServices.length > 0 ? availableServices : allServices;
+  return masterDataBridge.getAvailableServiceDefinitionsForOrganization(organizationId);
 }
 
 function buildServiceDisplayLabel(service) {
@@ -2707,32 +2328,7 @@ function buildServiceMetaLabel(service, serviceDecisionCategories = []) {
 }
 
 function buildSampleOrganizationServices(organizationId) {
-  const prototypeData = getPrototypeDataSource();
-  const organization = prototypeData.organizations.find((item) => item.organizationId === organizationId);
-  if (!organization) {
-    return [];
-  }
-
-  return (organization.serviceIds ?? [])
-    .map((serviceId) => {
-      const service = prototypeData.services.find((item) => item.serviceId === serviceId);
-      if (!service) {
-        return null;
-      }
-
-      return {
-        organizationServiceId: `${organization.organizationId}-${service.serviceId}`,
-        organizationId: organization.organizationId,
-        organizationName: organization.organizationName,
-        serviceId: service.serviceId,
-        serviceName: service.serviceName,
-        serviceCategory: service.serviceCategory,
-        targetScope: service.targetScope,
-        constraintGroupCode: service.groupName,
-        groupNames: service.groupName || "-",
-      };
-    })
-    .filter(Boolean);
+  return masterDataBridge.buildSampleOrganizationServices(organizationId);
 }
 
 function deactivateSampleOrganizationService(organizationServiceId) {
@@ -2749,35 +2345,7 @@ function deactivateSampleOrganizationService(organizationServiceId) {
 }
 
 function buildSampleClientEnrollments(clientId) {
-  const prototypeData = getPrototypeDataSource();
-  return prototypeData.enrollments
-    .filter((item) => item.clientId === clientId)
-    .map((item) => {
-      const client = prototypeData.clients.find((target) => target.clientId === item.clientId);
-      const organization = prototypeData.organizations.find((target) => target.organizationId === item.organizationId);
-      const service = prototypeData.services.find((target) => target.serviceId === item.serviceId);
-
-      if (!client || !organization || !service) {
-        return null;
-      }
-
-      return {
-        clientEnrollmentId: item.enrollmentId,
-        clientId: item.clientId,
-        clientName: client.clientName,
-        organizationServiceId: `${organization.organizationId}-${service.serviceId}`,
-        organizationId: organization.organizationId,
-        organizationName: organization.organizationName,
-        serviceId: service.serviceId,
-        serviceName: service.serviceName,
-        serviceCategory: service.serviceCategory,
-        serviceTargetScope: service.targetScope,
-        serviceGroupId: "",
-        groupName: service.groupName || "-",
-        note: "",
-      };
-    })
-    .filter(Boolean);
+  return masterDataBridge.buildSampleClientEnrollments(clientId);
 }
 
 function deactivateSampleClientEnrollment(clientEnrollmentId) {
@@ -2794,35 +2362,15 @@ function deactivateSampleClientEnrollment(clientEnrollmentId) {
 }
 
 function matchesServiceTargetScope(serviceTargetScope, clientTargetType) {
-  if (!serviceTargetScope || !clientTargetType) {
-    return true;
-  }
-
-  return serviceTargetScope === "児者" || serviceTargetScope === clientTargetType;
+  return masterDataBridge.matchesServiceTargetScope(serviceTargetScope, clientTargetType);
 }
 
 function isJudgementEligibleService(service) {
-  if (!service) {
-    return false;
-  }
-
-  return String(service.serviceCategory ?? "").trim() !== "相談支援";
+  return masterDataBridge.isJudgementEligibleService(service);
 }
 
 function filterJudgementEligibleServicesForClient(client, services) {
-  return Array.from(
-    new Map(
-      services
-        .filter((service) => service
-          && isJudgementEligibleService(service)
-          && (
-            !client?.targetType
-            || !service.targetScope
-            || matchesServiceTargetScope(service.targetScope, client.targetType)
-          ))
-        .map((service) => [service.serviceId, service])
-    ).values()
-  );
+  return masterDataBridge.filterJudgementEligibleServicesForClient(client, services);
 }
 
 function getFilteredClientsForJudgement() {
@@ -2835,118 +2383,23 @@ function getFilteredClientsForJudgement() {
 }
 
 function getClientEnrollments(clientId) {
-  if (canUseApiJudgementContext() && state.dataSource.judgement === "api" && state.judgement.contextClientId === String(clientId)) {
-    return state.judgement.enrollments;
-  }
-  return getPrototypeDataSource().enrollments.filter((item) => item.clientId === clientId);
+  return masterDataBridge.getClientEnrollments(clientId);
 }
 
 function hasClientEnrollmentContext(clientId) {
-  return getClientEnrollments(clientId).length > 0;
+  return masterDataBridge.hasClientEnrollmentContext(clientId);
 }
 
 function getSelectableOrganizationsForJudgement(clientId) {
-  const enrollments = getClientEnrollments(clientId);
-  const client = getClientById(clientId);
-  if (enrollments.length > 0) {
-    const organizationIds = Array.from(new Set(enrollments.map((item) => item.organizationId)));
-    return organizationIds
-      .map(getOrganizationById)
-      .filter(Boolean)
-      .filter((organization) => {
-        const serviceIds = enrollments
-          .filter((item) => item.organizationId === organization.organizationId)
-          .map((item) => item.serviceId);
-        const services = filterJudgementEligibleServicesForClient(
-          client,
-          serviceIds.map(getServiceById),
-        );
-        return services.length > 0;
-      });
-  }
-
-  return getMasterOrganizations().filter((organization) => {
-    const organizationServices = getOrganizationServicesForOrganization(organization.organizationId);
-    if (organizationServices.length > 0) {
-      const services = filterJudgementEligibleServicesForClient(
-        client,
-        organizationServices.map((item) => getServiceById(item.serviceId)),
-      );
-      return services.length > 0;
-    }
-
-    return String(organization.organizationType ?? "").trim() !== "相談支援事業所";
-  });
+  return masterDataBridge.getSelectableOrganizationsForJudgement(clientId);
 }
 
 function getSelectableServicesForJudgement(clientId, organizationId) {
-  const normalizedOrganizationId = String(organizationId ?? "");
-  if (!normalizedOrganizationId) {
-    return [];
-  }
-
-  const enrollments = getClientEnrollments(clientId);
-  const client = getClientById(clientId);
-  if (enrollments.length > 0) {
-    const serviceIds = enrollments
-      .filter((item) => item.organizationId === normalizedOrganizationId)
-      .map((item) => item.serviceId);
-    return filterJudgementEligibleServicesForClient(client, serviceIds.map(getServiceById));
-  }
-
-  const organizationServices = getOrganizationServicesForOrganization(normalizedOrganizationId);
-  if (organizationServices.length > 0) {
-    const organizationScopedServices = filterJudgementEligibleServicesForClient(
-      client,
-      organizationServices.map((item) => getServiceById(item.serviceId)),
-    );
-
-    if (organizationScopedServices.length > 0) {
-      return organizationScopedServices;
-    }
-  }
-
-  return filterJudgementEligibleServicesForClient(client, getMasterServices());
+  return masterDataBridge.getSelectableServicesForJudgement(clientId, organizationId);
 }
 
 function getServiceDecisionCategories(service, organization = null) {
-  if (!service) {
-    return [];
-  }
-
-  const categories = new Set();
-  const rawCategory = String(service.serviceCategory ?? "").trim();
-  const resolvedOrganizationType = deriveResolvedOrganizationType(organization, service);
-
-  if (rawCategory === "相談支援") {
-    categories.add("相談支援");
-  }
-
-  if (rawCategory === "障害福祉" || rawCategory === "障害福祉サービス") {
-    categories.add("障害福祉サービス");
-  }
-
-  if (rawCategory === "医療") {
-    categories.add("医療関連");
-  }
-
-  if (rawCategory === "福祉") {
-    categories.add("障害福祉以外の福祉サービス");
-  }
-
-  if (rawCategory === "障害福祉以外") {
-    if (["病院", "訪問看護", "薬局"].includes(resolvedOrganizationType)) {
-      categories.add("医療関連");
-    } else {
-      categories.add("障害福祉以外の福祉サービス");
-    }
-  }
-
-  if (categories.size === 0 && ["病院", "訪問看護", "薬局"].includes(resolvedOrganizationType)) {
-    categories.add("医療関連");
-  }
-
-  return Array.from(categories);
+  return judgementEngineBridge.getServiceDecisionCategories(service, organization);
 }
 
 function buildJudgementContextHelp(hasEnrollmentContext, baseText) {
@@ -2957,398 +2410,35 @@ function buildJudgementContextHelp(hasEnrollmentContext, baseText) {
 }
 
 function getBaseJudgementCandidates() {
-  return evaluateCandidates({ includeAnswers: false });
+  return judgementEngineBridge.getBaseJudgementCandidates();
 }
 
 function getJudgementCandidates() {
-  return evaluateCandidates({ includeAnswers: true });
+  return judgementEngineBridge.getJudgementCandidates();
 }
 
 function getJudgementCandidatesExcludingAnswers(answerKeys) {
-  return evaluateCandidates({ includeAnswers: true, ignoredAnswerKeys: answerKeys });
-}
-
-function evaluateCandidates({ includeAnswers, ignoredAnswerKeys = [] }) {
-  const facts = getJudgementFacts(includeAnswers, ignoredAnswerKeys);
-  return getActiveCandidateDefinitions()
-    .filter((addition) => candidateMatches(addition, facts))
-    .sort((left, right) => left.priority - right.priority)
-    .map((addition) => ({ ...addition, reason: buildCandidateReason(addition, facts) }));
+  return judgementEngineBridge.getJudgementCandidatesExcludingAnswers(answerKeys);
 }
 
 function getJudgementFacts(includeAnswers, ignoredAnswerKeys = []) {
-  const client = getClientById(state.judgement.clientId);
-  const organization = getOrganizationById(state.judgement.organizationId);
-  const service = getServiceById(state.judgement.serviceId);
-  const serviceDecisionCategories = getServiceDecisionCategories(service, organization);
-  const answers = includeAnswers
-    ? { ...state.judgement.answers }
-    : {
-        monthType: "",
-        placeType: "",
-        actionType: "",
-        hospitalAdmissionContext: "",
-        requiredInfoReceived: "",
-        dischargeFacilityStaffOnlyInfo: "",
-        dischargeInpatientPeriodCount: "",
-        initialAdditionPlanned: "",
-        careManagerStart: "",
-        employmentStart: "",
-        serviceUseStartMonth: "",
-      };
-
-  for (const key of ignoredAnswerKeys) {
-    answers[key] = "";
-  }
-
-  return {
-    targetType: client?.targetType ?? "",
-    organizationGroup: getOrganizationGroupLabel(organization, service),
-    organizationType: deriveResolvedOrganizationType(organization, service),
-    serviceDecisionCategories,
-    answers,
-    monthType: answers.monthType || "",
-    placeType: answers.placeType || "",
-    actionType: answers.actionType || "",
-  };
+  return judgementEngineBridge.getJudgementFacts(includeAnswers, ignoredAnswerKeys);
 }
 
 function candidateMatches(candidate, facts) {
-  if (hasCatalogConditionGroups(candidate)) {
-    return matchesConditionGroups(candidate.conditionGroups, facts);
-  }
-
-  return matchesLegacyCandidateDefinition(candidate, facts);
-}
-
-function matchesLegacyCandidateDefinition(candidate, facts) {
-  return matchesTargetType(candidate.targetTypes, facts.targetType)
-    && matchesCondition(candidate.organizationGroups, facts.organizationGroup)
-    && matchesOptionalCondition(candidate.organizationTypes, facts.organizationType)
-    && matchesRequiredAnswers(candidate.requiredAnswers, facts.answers)
-    && matchesConditionalRequiredAnswers(candidate.conditionalRequiredAnswers, facts)
-    && matchesDecisionCategoryRules(
-      facts.serviceDecisionCategories,
-      candidate.serviceDecisionInclude,
-      candidate.serviceDecisionExclude,
-    )
-    && matchesCondition(candidate.monthTypes, facts.monthType)
-    && matchesCondition(candidate.placeTypes, facts.placeType)
-    && matchesCondition(candidate.actionTypes, facts.actionType);
-}
-
-function matchesTargetType(allowed, actual) {
-  if (!actual) {
-    return true;
-  }
-  return allowed.includes("共通") || allowed.includes(actual);
-}
-
-function matchesCondition(allowed, actual) {
-  if (!actual) {
-    return true;
-  }
-  return allowed.includes(actual);
-}
-
-function matchesOptionalCondition(allowed, actual) {
-  if (!Array.isArray(allowed) || allowed.length === 0) {
-    return true;
-  }
-  return matchesCondition(allowed, actual);
-}
-
-function matchesRequiredAnswers(requiredAnswers, actualAnswers = {}) {
-  if (!requiredAnswers || typeof requiredAnswers !== "object") {
-    return true;
-  }
-
-  return Object.entries(requiredAnswers).every(([key, expectedValue]) => {
-    const actualValue = String(actualAnswers?.[key] ?? "").trim();
-    if (!actualValue) {
-      return true;
-    }
-    return actualValue === String(expectedValue ?? "").trim();
-  });
-}
-
-
-function matchesConditionalRequiredAnswers(conditionalRules, facts) {
-  if (!Array.isArray(conditionalRules) || conditionalRules.length === 0) {
-    return true;
-  }
-
-  return conditionalRules.every((rule) => {
-    if (!conditionalRequiredAnswerRuleApplies(rule, facts)) {
-      return true;
-    }
-    return matchesRequiredAnswers(rule.requiredAnswers, facts.answers);
-  });
-}
-
-function conditionalRequiredAnswerRuleApplies(rule, facts) {
-  if (!rule || typeof rule !== "object") {
-    return false;
-  }
-
-  return matchesOptionalCondition(rule.whenOrganizationGroups, facts.organizationGroup)
-    && matchesOptionalCondition(rule.whenOrganizationTypes, facts.organizationType)
-    && matchesOptionalCondition(rule.whenMonthTypes, facts.monthType)
-    && matchesOptionalCondition(rule.whenPlaceTypes, facts.placeType)
-    && matchesOptionalCondition(rule.whenActionTypes, facts.actionType);
-}
-
-function matchesConditionList(allowed, actualValues) {
-  if (!Array.isArray(actualValues) || actualValues.length === 0) {
-    return true;
-  }
-
-  return actualValues.some((actual) => allowed.includes(actual));
-}
-
-function matchesDecisionCategoryRules(actualValues, includeValues = [], excludeValues = []) {
-  const normalizedActualValues = Array.isArray(actualValues) ? actualValues : [];
-  const normalizedIncludeValues = Array.isArray(includeValues) ? includeValues : [];
-  const normalizedExcludeValues = Array.isArray(excludeValues) ? excludeValues : [];
-
-  if (normalizedActualValues.length === 0) {
-    return normalizedIncludeValues.length === 0;
-  }
-
-  if (normalizedExcludeValues.length > 0 && normalizedActualValues.some((actual) => normalizedExcludeValues.includes(actual))) {
-    return false;
-  }
-
-  if (normalizedIncludeValues.length === 0) {
-    return true;
-  }
-
-  return normalizedActualValues.some((actual) => normalizedIncludeValues.includes(actual));
-}
-
-function hasCatalogConditionGroups(candidate) {
-  return Array.isArray(candidate?.conditionGroups) && candidate.conditionGroups.length > 0;
-}
-
-function matchesConditionGroups(conditionGroups, facts, ignoredFieldKey = "") {
-  if (!Array.isArray(conditionGroups) || conditionGroups.length === 0) {
-    return true;
-  }
-
-  return conditionGroups.some((group) => {
-    const conditions = Array.isArray(group?.conditions) ? group.conditions : [];
-    if (conditions.length === 0) {
-      return true;
-    }
-    return conditions.every((condition) => matchesCatalogCondition(condition, facts, ignoredFieldKey));
-  });
-}
-
-function matchesCatalogCondition(condition, facts, ignoredFieldKey = "") {
-  const fieldKey = String(condition?.fieldKey ?? "").trim();
-  const operatorCode = String(condition?.operatorCode ?? "").trim();
-  const expectedValue = Array.isArray(condition?.expectedValue) ? condition.expectedValue.map((item) => String(item ?? "").trim()) : [];
-
-  if (!fieldKey || !operatorCode) {
-    return true;
-  }
-
-  if (ignoredFieldKey && fieldKey === ignoredFieldKey) {
-    return true;
-  }
-
-  const actualValue = getFactValueForCatalogCondition(fieldKey, facts);
-
-  if (operatorCode === "one_of") {
-    if (Array.isArray(actualValue)) {
-      if (actualValue.length === 0) {
-        return true;
-      }
-      return actualValue.some((item) => expectedValue.includes(String(item ?? "").trim()));
-    }
-
-    const normalizedActualValue = String(actualValue ?? "").trim();
-    if (!normalizedActualValue) {
-      return true;
-    }
-    return expectedValue.includes(normalizedActualValue);
-  }
-
-  if (operatorCode === "includes_any") {
-    const normalizedActualValues = Array.isArray(actualValue) ? actualValue.map((item) => String(item ?? "").trim()).filter(Boolean) : [];
-    if (normalizedActualValues.length === 0) {
-      return expectedValue.length === 0;
-    }
-    return normalizedActualValues.some((item) => expectedValue.includes(item));
-  }
-
-  if (operatorCode === "excludes_all") {
-    const normalizedActualValues = Array.isArray(actualValue) ? actualValue.map((item) => String(item ?? "").trim()).filter(Boolean) : [];
-    if (normalizedActualValues.length === 0) {
-      return true;
-    }
-    return normalizedActualValues.every((item) => !expectedValue.includes(item));
-  }
-
-  return true;
-}
-
-function getFactValueForCatalogCondition(fieldKey, facts) {
-  const normalizedFieldKey = String(fieldKey ?? "").trim();
-  switch (normalizedFieldKey) {
-    case "targetType":
-      return facts.targetType;
-    case "organizationGroup":
-      return facts.organizationGroup;
-    case "organizationType":
-      return facts.organizationType;
-    case "serviceDecisionCategories":
-      return Array.isArray(facts.serviceDecisionCategories) ? facts.serviceDecisionCategories : [];
-    case "monthType":
-      return facts.monthType;
-    case "placeType":
-      return facts.placeType;
-    case "actionType":
-      return facts.actionType;
-    default:
-      return facts.answers?.[normalizedFieldKey] ?? "";
-  }
-}
-
-function getMatchedConditionGroup(candidate, facts) {
-  if (!hasCatalogConditionGroups(candidate)) {
-    return null;
-  }
-
-  const groups = Array.isArray(candidate.conditionGroups) ? candidate.conditionGroups : [];
-  return groups.find((group) => matchesConditionGroups([group], facts)) ?? null;
+  return judgementEngineBridge.candidateMatches(candidate, facts);
 }
 
 function countMatchedConditionGroupsForCandidate(candidate, facts) {
-  if (!hasCatalogConditionGroups(candidate)) {
-    return 0;
-  }
-
-  const groups = Array.isArray(candidate.conditionGroups) ? candidate.conditionGroups : [];
-  return groups.filter((group) => matchesConditionGroups([group], facts)).length;
+  return judgementEngineBridge.countMatchedConditionGroupsForCandidate(candidate, facts);
 }
 
 function buildCandidateReason(candidate, facts) {
-  if (hasCatalogConditionGroups(candidate)) {
-    return buildCandidateReasonFromCatalog(candidate, facts);
-  }
-
-  return buildCandidateReasonFromLegacy(candidate, facts);
-}
-
-function buildCandidateReasonFromLegacy(candidate, facts) {
-  const reasons = [];
-  if (facts.targetType && matchesTargetType(candidate.targetTypes, facts.targetType)) {
-    reasons.push(`${facts.targetType}対象`);
-  }
-  if (facts.organizationGroup && matchesCondition(candidate.organizationGroups, facts.organizationGroup)) {
-    reasons.push(facts.organizationGroup);
-  }
-  if (facts.organizationType && matchesOptionalCondition(candidate.organizationTypes, facts.organizationType)) {
-    reasons.push(facts.organizationType);
-  }
-  if (facts.serviceDecisionCategories.length > 0 && matchesDecisionCategoryRules(
-    facts.serviceDecisionCategories,
-    candidate.serviceDecisionInclude,
-    candidate.serviceDecisionExclude,
-  )) {
-    reasons.push(facts.serviceDecisionCategories.join(" / "));
-  }
-  if (facts.monthType && matchesCondition(candidate.monthTypes, facts.monthType)) {
-    reasons.push(facts.monthType);
-  }
-  if (facts.placeType && matchesCondition(candidate.placeTypes, facts.placeType)) {
-    reasons.push(facts.placeType);
-  }
-  if (facts.actionType && matchesCondition(candidate.actionTypes, facts.actionType)) {
-    reasons.push(facts.actionType);
-  }
-  return reasons.length > 0 ? `${reasons.join(" / ")} で残っています` : "利用者・機関・サービス条件で残っています";
-}
-
-function buildCandidateReasonFromCatalog(candidate, facts) {
-  const group = getMatchedConditionGroup(candidate, facts);
-  if (!group) {
-    return "利用者・機関・サービス条件で残っています";
-  }
-
-  const reasons = [];
-  const conditions = Array.isArray(group.conditions) ? group.conditions : [];
-  let hasServiceDecisionReason = false;
-
-  conditions.forEach((condition) => {
-    const fieldKey = String(condition?.fieldKey ?? "").trim();
-    if (!fieldKey) {
-      return;
-    }
-
-    if (fieldKey === "targetType" && facts.targetType) {
-      reasons.push(`${facts.targetType}対象`);
-      return;
-    }
-
-    if (fieldKey === "organizationGroup" && facts.organizationGroup) {
-      reasons.push(facts.organizationGroup);
-      return;
-    }
-
-    if (fieldKey === "organizationType" && facts.organizationType) {
-      reasons.push(facts.organizationType);
-      return;
-    }
-
-    if (fieldKey === "serviceDecisionCategories" && facts.serviceDecisionCategories.length > 0 && !hasServiceDecisionReason) {
-      reasons.push(facts.serviceDecisionCategories.join(" / "));
-      hasServiceDecisionReason = true;
-      return;
-    }
-
-    if (fieldKey === "monthType" && facts.monthType) {
-      reasons.push(facts.monthType);
-      return;
-    }
-
-    if (fieldKey === "placeType" && facts.placeType) {
-      reasons.push(facts.placeType);
-      return;
-    }
-
-    if (fieldKey === "actionType" && facts.actionType) {
-      reasons.push(facts.actionType);
-    }
-  });
-
-  return reasons.length > 0 ? `${reasons.join(" / ")} で残っています` : "利用者・機関・サービス条件で残っています";
+  return judgementEngineBridge.buildCandidateReason(candidate, facts);
 }
 
 function getVisibleQuestions() {
-  const candidates = getJudgementCandidates();
-  return getActiveQuestionDefinitions()
-    .map((question, index) => ({ question, index }))
-    .filter(({ question }) => {
-      return isQuestionVisible(question, candidates);
-    })
-    .sort((left, right) => {
-      const leftOrder = Number.isFinite(left.question.order) ? left.question.order : left.index;
-      const rightOrder = Number.isFinite(right.question.order) ? right.question.order : right.index;
-      return leftOrder - rightOrder;
-    })
-    .map(({ question }) => question);
-}
-
-function candidateRequiresAnswer(candidate, answerKey) {
-  const normalizedAnswerKey = String(answerKey ?? "").trim();
-  if (!normalizedAnswerKey) {
-    return false;
-  }
-
-  const rules = Array.isArray(candidate?.postCheckRules) ? candidate.postCheckRules : [];
-  return rules.some((rule) => String(rule?.answerKey ?? "").trim() === normalizedAnswerKey);
+  return judgementEngineBridge.getVisibleQuestions();
 }
 
 function getRuleCatalogSectionItems(section) {
@@ -3384,138 +2474,19 @@ function getPrototypeDataSource() {
 }
 
 function isQuestionVisible(question, candidates) {
-  const visibilityMode = String(question.visibilityMode ?? "always").trim();
-  if (visibilityMode === "always" || !visibilityMode) {
-    return true;
-  }
-
-  if (visibilityMode === "answer_rules") {
-    return evaluateQuestionRules(question.visibilityRules, state.judgement.answers);
-  }
-
-  if (visibilityMode === "candidate_requirement") {
-    return isCandidateRequirementQuestionVisible(question);
-  }
-
-  return true;
-}
-
-function isCandidateRequirementQuestionVisible(question) {
-  const visibilityConfig = question.visibilityConfig ?? {};
-  const answerKey = String(visibilityConfig.answerKey ?? question.key ?? "").trim();
-  if (!answerKey) {
-    return true;
-  }
-
-  const candidates = getJudgementCandidatesExcludingAnswers([answerKey]);
-  const facts = getJudgementFacts(true, [answerKey]);
-  const required = candidates.some((candidate) => (
-    candidateRequiresFactAnswer(candidate, answerKey, facts)
-    || candidateRequiresAnswer(candidate, answerKey)
-  ));
-
-  if (!required) {
-    return false;
-  }
-
-  if (Boolean(visibilityConfig.singleCandidateOnly)) {
-    return candidates.length === 1;
-  }
-
-  return true;
+  return judgementEngineBridge.isQuestionVisible(question, candidates);
 }
 
 function getQuestionDisplayOptions(question) {
-  const options = Array.isArray(question?.options) ? question.options : [];
-  return options.filter((option) => isQuestionOptionVisible(option));
-}
-
-function isQuestionOptionVisible(option) {
-  if (!Array.isArray(option?.optionRules) || option.optionRules.length === 0) {
-    return true;
-  }
-  return evaluateQuestionRules(option.optionRules, state.judgement.answers);
-}
-
-function evaluateQuestionRules(rules, answers) {
-  if (!Array.isArray(rules) || rules.length === 0) {
-    return true;
-  }
-
-  return rules.every((rule) => {
-    const dependsOnFieldKey = String(rule?.dependsOnFieldKey ?? "").trim();
-    const matchValues = Array.isArray(rule?.matchValues) ? rule.matchValues.map((item) => String(item ?? "").trim()) : [];
-    if (!dependsOnFieldKey) {
-      return true;
-    }
-
-    const actualValue = String(answers?.[dependsOnFieldKey] ?? "").trim();
-    if (!actualValue) {
-      return false;
-    }
-
-    if (matchValues.length === 0) {
-      return true;
-    }
-
-    return matchValues.includes(actualValue);
-  });
+  return judgementEngineBridge.getQuestionDisplayOptions(question);
 }
 
 function shouldShowCandidateFactQuestion(answerKey) {
-  const facts = getJudgementFacts(true, [answerKey]);
-  const candidates = getJudgementCandidatesExcludingAnswers([answerKey]);
-  return candidates.some((candidate) => (
-    candidateRequiresFactAnswer(candidate, answerKey, facts)
-  ));
-}
-
-function candidateRequiresFactAnswer(candidate, answerKey, facts) {
-  const normalizedAnswerKey = String(answerKey ?? "").trim();
-  if (!normalizedAnswerKey) {
-    return false;
-  }
-
-  if (hasCatalogConditionGroups(candidate)) {
-    return candidateRequiresFactAnswerFromCatalogConditions(candidate, normalizedAnswerKey, facts);
-  }
-
-  if (String(candidate?.requiredAnswers?.[normalizedAnswerKey] ?? "").trim() !== "") {
-    return true;
-  }
-
-  const conditionalRules = Array.isArray(candidate?.conditionalRequiredAnswers)
-    ? candidate.conditionalRequiredAnswers
-    : [];
-
-  return conditionalRules.some((rule) => (
-    conditionalRequiredAnswerRuleApplies(rule, facts)
-    && String(rule?.requiredAnswers?.[normalizedAnswerKey] ?? "").trim() !== ""
-  ));
-}
-
-function candidateRequiresFactAnswerFromCatalogConditions(candidate, answerKey, facts) {
-  const groups = Array.isArray(candidate?.conditionGroups) ? candidate.conditionGroups : [];
-  return groups.some((group) => {
-    const conditions = Array.isArray(group?.conditions) ? group.conditions : [];
-    const targetConditions = conditions.filter((condition) => String(condition?.fieldKey ?? "").trim() === answerKey);
-    if (targetConditions.length === 0) {
-      return false;
-    }
-    return conditions.every((condition) => matchesCatalogCondition(condition, facts, answerKey));
-  });
+  return judgementEngineBridge.shouldShowCandidateFactQuestion(answerKey);
 }
 
 function pruneHiddenJudgementAnswers() {
-  const visibleKeys = new Set(getVisibleQuestions().map((question) => question.key));
-  for (const key of Object.keys(state.judgement.answers)) {
-    if (!visibleKeys.has(key)) {
-      state.judgement.answers[key] = "";
-    }
-  }
-  state.judgement.history = state.judgement.history.filter((key) => (
-    visibleKeys.has(key) && Boolean(state.judgement.answers[key])
-  ));
+  return judgementEngineBridge.pruneHiddenJudgementAnswers();
 }
 
 function syncEnrollmentSelection() {
@@ -3555,42 +2526,7 @@ function resetJudgementAnswers() {
 }
 
 function getFilteredReportRecords() {
-  const records = state.report.records;
-  const filters = state.report.filters;
-  return records.filter((record) => {
-    if (filters.targetMonth && record.targetMonth !== filters.targetMonth) {
-      return false;
-    }
-    if (filters.client && !normalizeText(record.clientName).includes(normalizeText(filters.client))) {
-      return false;
-    }
-    if (filters.addition && !normalizeText(record.additionName).includes(normalizeText(filters.addition))) {
-      return false;
-    }
-    if (filters.status && record.finalStatus !== filters.status) {
-      return false;
-    }
-    if (filters.postCheckStatus && (record.postCheckStatus || "") !== filters.postCheckStatus) {
-      return false;
-    }
-    if (filters.organization && !normalizeText(record.organizationName).includes(normalizeText(filters.organization))) {
-      return false;
-    }
-    if (filters.staff && !normalizeText(record.staffName).includes(normalizeText(filters.staff))) {
-      return false;
-    }
-    if (!matchesQuickSearch([
-      record.clientName,
-      record.organizationName,
-      record.additionName,
-      record.postCheckSummary,
-      record.savedNote,
-      record.rationale,
-    ], state.activeSection === "report")) {
-      return false;
-    }
-    return true;
-  });
+  return reportStateBridge.getFilteredReportRecords();
 }
 
 function buildSampleReportRecords() {
@@ -3627,88 +2563,39 @@ function enrichSampleReportRecord(record) {
 }
 
 function ensureSelectedReportRecord(records) {
-  if (records.some((record) => record.recordId === state.report.selectedRecordId)) {
-    return;
-  }
-  state.report.selectedRecordId = records[0]?.recordId ?? "";
+  return reportStateBridge.ensureSelectedReportRecord(records);
 }
 
 function syncReportFiltersFromInputs() {
-  state.report.filters = {
-    targetMonth: dom.report.filterMonth.value,
-    client: dom.report.filterClient.value.trim(),
-    addition: dom.report.filterAddition.value.trim(),
-    status: dom.report.filterStatus.value,
-    postCheckStatus: dom.report.filterPostCheckStatus.value,
-    organization: dom.report.filterOrganization.value.trim(),
-    staff: dom.report.filterStaff.value.trim(),
-  };
+  return reportStateBridge.syncReportFiltersFromInputs();
 }
 
 function writeReportFiltersToInputs() {
-  dom.report.filterMonth.value = state.report.filters.targetMonth;
-  dom.report.filterClient.value = state.report.filters.client;
-  dom.report.filterAddition.value = state.report.filters.addition;
-  dom.report.filterStatus.value = state.report.filters.status;
-  dom.report.filterPostCheckStatus.value = state.report.filters.postCheckStatus;
-  dom.report.filterOrganization.value = state.report.filters.organization;
-  dom.report.filterStaff.value = state.report.filters.staff;
+  return reportStateBridge.writeReportFiltersToInputs();
 }
 
 function moveSelectedColumn(direction) {
-  const view = state.report.views[state.report.activeViewCode];
-  const currentIndex = view.columns.indexOf(state.report.selectedColumnKey);
-  if (currentIndex < 0) {
-    return;
-  }
-  const nextIndex = currentIndex + direction;
-  if (nextIndex < 0 || nextIndex >= view.columns.length) {
-    return;
-  }
-  const nextColumns = [...view.columns];
-  const [columnKey] = nextColumns.splice(currentIndex, 1);
-  nextColumns.splice(nextIndex, 0, columnKey);
-  view.columns = nextColumns;
-  persistReportViews();
-  renderReport();
+  return reportStateBridge.moveSelectedColumn(direction);
 }
 
 function loadReportViews() {
-  try {
-    const raw = localStorage.getItem(storageKeys.reportViews);
-    if (!raw) {
-      return cloneReportViews();
-    }
-    return { ...cloneReportViews(), ...JSON.parse(raw) };
-  } catch (error) {
-    return cloneReportViews();
-  }
+  return reportStateBridgeFactory.loadStoredReportViews(storageKeys, baseReportViews);
 }
 
 function persistReportViews() {
-  localStorage.setItem(storageKeys.reportViews, JSON.stringify(state.report.views));
+  return reportStateBridge.persistReportViews();
 }
 
 function loadActiveViewCode() {
-  const viewCode = localStorage.getItem(storageKeys.activeView);
-  return viewCode && baseReportViews[viewCode] ? viewCode : "monthly_claim";
+  return reportStateBridgeFactory.loadStoredActiveViewCode(storageKeys, baseReportViews);
 }
 
 function getFilterLabel(key) {
-  const labels = {
-    targetMonth: "対象月",
-    client: "利用者",
-    addition: "加算",
-    status: "判定状態",
-    postCheckStatus: "後段状態",
-    organization: "機関",
-    staff: "相談員",
-  };
-  return labels[key] ?? key;
+  return reportStateBridge.getFilterLabel(key);
 }
 
 function cloneReportViews() {
-  return JSON.parse(JSON.stringify(baseReportViews));
+  return reportStateBridgeFactory.cloneReportViews(baseReportViews);
 }
 
 function canUseApiReport() {
@@ -3751,23 +2638,23 @@ function canUseApiAdditionCatalog() {
 }
 
 function getMasterClients() {
-  return state.dataSource.clients === "api" ? state.masters.clients : getPrototypeDataSource().clients;
+  return masterDataBridge.getMasterClients();
 }
 
 function getMasterOrganizations() {
-  return state.dataSource.organizations === "api" ? state.masters.organizations : getPrototypeDataSource().organizations;
+  return masterDataBridge.getMasterOrganizations();
 }
 
 function getMasterServices() {
-  return state.dataSource.services === "api" ? state.masters.services : getPrototypeDataSource().services;
+  return masterDataBridge.getMasterServices();
 }
 
 function getJudgementClients() {
-  return getMasterClients();
+  return masterDataBridge.getJudgementClients();
 }
 
 function getJudgementStaffs() {
-  return state.dataSource.staffs === "api" ? state.masters.staffs : getPrototypeDataSource().staff;
+  return masterDataBridge.getJudgementStaffs();
 }
 
 function syncJudgementStaffSelection() {
@@ -3787,16 +2674,7 @@ function resolveDefaultJudgementStaffId() {
 }
 
 function getOrganizationGroupLabel(organization, service = null) {
-  if (!organization) {
-    return "";
-  }
-
-  if (organization.organizationGroup && organization.organizationGroup !== "福祉サービス等提供機関") {
-    return organization.organizationGroup;
-  }
-
-  const resolvedType = deriveResolvedOrganizationType(organization, service);
-  return deriveOrganizationGroupFromType(resolvedType);
+  return masterDataBridge.getOrganizationGroupLabel(organization, service);
 }
 
 function getOrganizationServiceSummary(organization) {
@@ -3851,66 +2729,19 @@ function buildReportApiParams() {
 }
 
 function buildApiUrl(path, params = {}) {
-  const url = new URL(`${state.dataSource.apiBaseUrl}/${path}`, window.location.href);
-  Object.entries(params).forEach(([key, value]) => {
-    if (value === null || value === undefined || value === "") {
-      return;
-    }
-    url.searchParams.set(key, value);
-  });
-  return url.toString();
+  return apiRuntimeAdapter.buildApiUrl(path, params);
 }
 
 async function fetchApiJson(url, options = {}) {
-  const headers = {
-    Accept: "application/json",
-    ...(options.body ? { "Content-Type": "application/json" } : {}),
-    ...(options.headers ?? {}),
-  };
-
-  const response = await fetch(url, {
-    method: options.method ?? "GET",
-    body: options.body,
-    headers,
-  });
-
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}`);
-  }
-
-  const payload = await response.json();
-  if (payload.ok === false) {
-    throw new Error(payload.error?.message ?? "APIエラー");
-  }
-
-  return payload;
+  return apiRuntimeAdapter.fetchApiJson(url, options);
 }
 
 function normalizeApiClient(item) {
-  return {
-    clientId: String(item.client_id ?? ""),
-    clientCode: item.client_code ?? "",
-    clientName: item.client_name ?? "",
-    clientNameKana: item.client_name_kana ?? "",
-    targetType: item.target_type ?? "",
-  };
+  return masterDataBridge.normalizeApiClient(item);
 }
 
 function normalizeApiOrganization(item) {
-  const resolvedOrganizationType = deriveResolvedOrganizationType({
-    organizationType: item.organization_type ?? "",
-    organizationName: item.organization_name ?? "",
-    serviceNames: item.service_names || "",
-  });
-  return {
-    organizationId: String(item.organization_id ?? ""),
-    organizationCode: item.organization_code ?? "",
-    organizationName: item.organization_name ?? "",
-    organizationType: resolvedOrganizationType,
-    organizationGroup: deriveOrganizationGroupFromType(resolvedOrganizationType),
-    groupNames: item.group_names || "-",
-    serviceNames: item.service_names || "-",
-  };
+  return masterDataBridge.normalizeApiOrganization(item);
 }
 
 function getPrototypeCatalog() {
@@ -3922,21 +2753,7 @@ function getPrototypeCatalogQuestions() {
 }
 
 function buildJudgementCandidatePayload(snapshot) {
-  const candidateStorageEntries = Array.isArray(snapshot.candidateStorageEntries)
-    ? snapshot.candidateStorageEntries
-    : buildJudgementCandidateStorageEntries(snapshot.candidates, snapshot.topCandidate);
-
-  return candidateStorageEntries.map((candidate) => ({
-    addition_id: candidate.additionId,
-    addition_branch_id: candidate.additionBranchId,
-    addition_code: candidate.additionCode,
-    addition_name: candidate.additionName,
-    addition_family_name: candidate.additionFamilyName,
-    candidate_status: candidate.candidateStatus,
-    matched_group_count: candidate.matchedGroupCount,
-    display_order: candidate.displayOrder,
-    detail_json: candidate.detailJson,
-  }));
+  return judgementReportBridge.buildJudgementCandidatePayload(snapshot);
 }
 
 function isSameJudgementCandidate(left, right) {
@@ -3966,236 +2783,39 @@ function flattenApiAdditionCatalogBranches(families) {
 }
 
 function normalizeApiService(item) {
-  return {
-    serviceId: String(item.service_definition_id ?? ""),
-    serviceCode: item.service_code ?? "",
-    serviceName: item.service_name ?? "",
-    serviceCategory: item.service_category ?? "",
-    targetScope: item.target_scope ?? item.target_type ?? "",
-    groupName: item.constraint_group_code || "-",
-  };
+  return masterDataBridge.normalizeApiService(item);
 }
 
 function normalizeApiStaff(item) {
-  return {
-    staffId: String(item.staff_id ?? ""),
-    staffCode: item.staff_code ?? "",
-    staffName: item.staff_name ?? "",
-    email: item.email ?? "",
-    homeOrganizationId: item.home_organization_id ? String(item.home_organization_id) : "",
-    homeOrganizationName: item.home_organization_name || "-",
-  };
+  return masterDataBridge.normalizeApiStaff(item);
 }
 
 function normalizeApiOrganizationService(item) {
-  return {
-    organizationServiceId: String(item.organization_service_id ?? ""),
-    organizationId: String(item.organization_id ?? ""),
-    organizationName: item.organization_name ?? "",
-    serviceId: String(item.service_definition_id ?? ""),
-    serviceCode: item.service_code ?? "",
-    serviceName: item.service_name ?? "",
-    serviceCategory: item.service_category ?? "",
-    targetScope: item.target_scope ?? item.target_type ?? "",
-    constraintGroupCode: item.constraint_group_code ?? "",
-    groupNames: item.group_names || "-",
-  };
+  return masterDataBridge.normalizeApiOrganizationService(item);
 }
 
 function normalizeApiClientEnrollment(item) {
-  return {
-    clientEnrollmentId: String(item.client_enrollment_id ?? ""),
-    clientId: String(item.client_id ?? ""),
-    clientName: item.client_name ?? "",
-    organizationServiceId: String(item.organization_service_id ?? ""),
-    organizationId: String(item.organization_id ?? ""),
-    organizationName: item.organization_name ?? "",
-    serviceId: String(item.service_definition_id ?? ""),
-    serviceName: item.service_name ?? "",
-    serviceCategory: item.service_category ?? "",
-    serviceTargetScope: item.service_target_scope ?? item.service_target_type ?? "",
-    serviceGroupId: item.service_group_id ? String(item.service_group_id) : "",
-    groupName: item.group_name || "-",
-    note: item.note ?? "",
-  };
+  return masterDataBridge.normalizeApiClientEnrollment(item);
 }
 
 function normalizeApiJudgementEnrollment(item) {
-  const resolvedOrganizationType = deriveResolvedOrganizationType({
-    organizationType: item.organization_type ?? "",
-    organizationName: item.organization_name ?? "",
-    serviceNames: item.service_name ?? "",
-  });
-  return {
-    enrollmentId: String(item.client_enrollment_id ?? ""),
-    clientId: String(item.client_id ?? ""),
-    organizationId: String(item.organization_id ?? ""),
-    organizationName: item.organization_name ?? "",
-    organizationType: resolvedOrganizationType,
-    organizationGroup: item.organization_group || deriveOrganizationGroupFromType(resolvedOrganizationType),
-    serviceId: String(item.service_definition_id ?? ""),
-    serviceName: item.service_name ?? "",
-    serviceCategory: item.service_category ?? "",
-    serviceTargetScope: item.service_target_scope ?? item.service_target_type ?? "",
-    groupName: item.service_group_name || "-",
-  };
+  return masterDataBridge.normalizeApiJudgementEnrollment(item);
 }
 
 function normalizeApiReportRecord(item) {
-  const resolvedOrganizationType = deriveResolvedOrganizationType({
-    organizationType: item.organization_type ?? "",
-    organizationName: item.organization_name ?? "",
-    serviceNames: item.service_name ?? "",
-  });
-  const additionReference = findAdditionReferenceByCode(item.addition_code ?? "");
-  const additionId = normalizeNumericId(item.addition_id ?? "");
-  const additionBranchId = normalizeNumericId(item.addition_branch_id ?? "");
-  const rawCandidateCount = Number(item.candidate_count ?? 0) || 0;
-  const candidateCount = rawCandidateCount > 0
-    ? rawCandidateCount
-    : ((additionBranchId !== null || additionId !== null) ? 1 : 0);
-  const additionName = String(item.addition_name ?? "").trim()
-    || additionReference?.branchName
-    || additionReference?.familyName
-    || "-";
-  const candidateNamesSummary = String(item.candidate_names_summary ?? "").trim()
-    || (candidateCount === 1 ? additionName : "");
-  const candidateDetails = normalizeReportCandidateDetails(item.candidate_details_json ?? item.candidateDetails ?? []);
-  const resultStorageMode = String(item.result_storage_mode ?? "").trim()
-    || (additionBranchId !== null ? "branch" : (additionId !== null ? "family" : "json"));
-  const candidateStorageMode = String(item.candidate_storage_mode ?? "").trim()
-    || (candidateDetails.length > 0 ? "db" : (candidateCount > 0 ? "fallback" : "none"));
-
-  return {
-    recordId: String(item.evaluation_case_id ?? ""),
-    targetMonth: item.target_month ?? "",
-    performedAt: item.performed_at ?? "",
-    clientId: String(item.client_id ?? ""),
-    clientName: item.client_name ?? "-",
-    targetType: item.target_type ?? "-",
-    organizationId: String(item.organization_id ?? ""),
-    organizationName: item.organization_name ?? "-",
-    organizationType: resolvedOrganizationType,
-    organizationGroup: item.organization_group || deriveOrganizationGroupFromType(resolvedOrganizationType),
-    serviceId: String(item.service_definition_id ?? ""),
-    serviceName: item.service_name ?? "-",
-    staffId: String(item.staff_id ?? ""),
-    staffName: item.staff_name ?? "-",
-    actionType: item.action_type ?? "",
-    additionId,
-    additionBranchId,
-    additionCode: String(item.addition_code ?? "").trim() || additionReference?.branchCode || "",
-    additionFamilyCode: String(item.addition_family_code ?? "").trim() || additionReference?.familyCode || "",
-    additionFamilyName: String(item.addition_family_name ?? "").trim() || additionReference?.familyName || "",
-    additionName,
-    resultStorageMode,
-    candidateStorageMode,
-    candidateCount,
-    candidateNamesSummary,
-    candidateDetails,
-    finalStatus: item.final_status ?? "-",
-    postCheckStatus: item.post_check_status ?? "",
-    postCheckSummary: item.post_check ?? "-",
-    evaluatedAt: item.evaluated_at ?? "",
-    rationale: item.message ?? "-",
-    savedNote: item.final_note_text ?? "-",
-  };
+  return judgementReportBridge.normalizeApiReportRecord(item);
 }
 
 function normalizeReportCandidateDetails(value) {
-  let rawValue = value;
-  if (typeof rawValue === "string") {
-    const trimmedValue = rawValue.trim();
-    if (!trimmedValue) {
-      return [];
-    }
-
-    try {
-      rawValue = JSON.parse(trimmedValue);
-    } catch (error) {
-      return [];
-    }
-  }
-
-  if (!Array.isArray(rawValue)) {
-    return [];
-  }
-
-  return rawValue
-    .map((item, index) => ({
-      additionCode: String(item?.additionCode ?? item?.addition_code ?? "").trim(),
-      additionName: String(item?.additionName ?? item?.addition_name ?? "").trim(),
-      candidateStatus: String(item?.candidateStatus ?? item?.candidate_status ?? "").trim(),
-      matchedGroupCount: Number(item?.matchedGroupCount ?? item?.matched_group_count ?? 0) || 0,
-      displayOrder: Number(item?.displayOrder ?? item?.display_order ?? index + 1) || (index + 1),
-    }))
-    .filter((item) => item.additionName);
+  return judgementReportBridge.normalizeReportCandidateDetails(value);
 }
 
 function formatReportCandidateDetails(record) {
-  const candidateDetails = Array.isArray(record?.candidateDetails) ? record.candidateDetails : [];
-  if (candidateDetails.length > 0) {
-    return candidateDetails
-      .sort((left, right) => left.displayOrder - right.displayOrder)
-      .map((candidate, index) => {
-        const detailSuffix = candidate.matchedGroupCount > 0
-          ? ` / 条件一致 ${candidate.matchedGroupCount}組`
-          : "";
-        return `${index + 1}. ${candidate.additionName}${detailSuffix}`;
-      })
-      .join("\n");
-  }
-
-  const candidateNamesSummary = String(record?.candidateNamesSummary ?? "").trim();
-  if (candidateNamesSummary) {
-    return candidateNamesSummary;
-  }
-
-  return "-";
+  return judgementReportBridge.formatReportCandidateDetails(record);
 }
 
 function formatReportIdentity(record) {
-  const parts = [];
-  const recordId = String(record?.recordId ?? "").trim();
-  const familyName = String(record?.additionFamilyName ?? "").trim();
-  const familyCode = String(record?.additionFamilyCode ?? "").trim();
-  const branchCode = String(record?.additionCode ?? "").trim();
-  const branchId = record?.additionBranchId;
-  const resultStorageMode = String(record?.resultStorageMode ?? "").trim();
-  const candidateStorageMode = String(record?.candidateStorageMode ?? "").trim();
-
-  if (recordId) {
-    parts.push(`記録ID: ${recordId}`);
-  }
-
-  if (familyName || familyCode) {
-    parts.push(`family: ${familyName || "-"}${familyCode ? ` (${familyCode})` : ""}`);
-  }
-
-  if (branchCode || branchId !== null) {
-    parts.push(`branch: ${branchCode || "-"}${branchId !== null ? ` (#${branchId})` : ""}`);
-  }
-
-  if (resultStorageMode) {
-    const resultStorageLabel = {
-      branch: "branch保存",
-      family: "family保存",
-      json: "json保存",
-    }[resultStorageMode] ?? resultStorageMode;
-    parts.push(`結果: ${resultStorageLabel}`);
-  }
-
-  if (candidateStorageMode) {
-    const candidateStorageLabel = {
-      db: "候補DB保存",
-      json: "候補json保存",
-      fallback: "候補fallback",
-      none: "候補なし",
-    }[candidateStorageMode] ?? candidateStorageMode;
-    parts.push(`候補: ${candidateStorageLabel}`);
-  }
-
-  return parts.join(" / ") || "-";
+  return judgementReportBridge.formatReportIdentity(record);
 }
 
 function formatPostCheckStatusLabel(value) {
@@ -4268,109 +2888,15 @@ function updateRuleRuntimeStatusPill() {
 }
 
 function deriveResolvedOrganizationType(organization, service = null) {
-  const explicitType = String(organization?.organizationType ?? "").trim();
-  if (explicitType) {
-    return explicitType;
-  }
-
-  const sourceTexts = [
-    service?.serviceName,
-    organization?.organizationName,
-    organization?.serviceNames,
-    ...(getOrganizationServicesForOrganization(String(organization?.organizationId ?? "")).map((item) => item.serviceName)),
-  ]
-    .filter(Boolean)
-    .join(" / ");
-
-  if (sourceTexts.includes("訪問看護") || sourceTexts.includes("訪看")) {
-    return "訪問看護";
-  }
-
-  if (sourceTexts.includes("薬局")) {
-    return "薬局";
-  }
-
-  if (
-    sourceTexts.includes("病院")
-    || sourceTexts.includes("診療所")
-    || sourceTexts.includes("大学病院")
-    || sourceTexts.includes("医療センター")
-    || sourceTexts.includes("医大")
-    || sourceTexts.includes("クリニック")
-  ) {
-    return "病院";
-  }
-
-  if (sourceTexts.includes("更生施設") || sourceTexts.includes("更生保護施設")) {
-    return "更生施設";
-  }
-
-  if (
-    sourceTexts.includes("児童自立支援施設")
-    || sourceTexts.includes("児童養護施設")
-    || sourceTexts.includes("児童心理治療施設")
-    || sourceTexts.includes("乳児院")
-    || sourceTexts.includes("児童施設")
-  ) {
-    return "児童施設";
-  }
-
-  if (
-    sourceTexts.includes("刑事施設")
-    || sourceTexts.includes("刑務所")
-    || sourceTexts.includes("拘置所")
-    || sourceTexts.includes("少年院")
-    || sourceTexts.includes("少年鑑別所")
-  ) {
-    return "刑事施設";
-  }
-
-  if (
-    sourceTexts.includes("障害者支援施設")
-    || sourceTexts.includes("入所施設")
-    || sourceTexts.includes("入所支援")
-  ) {
-    return "入所施設";
-  }
-
-  if (sourceTexts.includes("就業・生活支援センター") || sourceTexts.includes("就労支援センター")) {
-    return "障害者就業・生活支援センター";
-  }
-
-  if (sourceTexts.includes("ケアマネ")) {
-    return "ケアマネ事業所";
-  }
-
-  if (
-    sourceTexts.includes("保育")
-    || sourceTexts.includes("保育所")
-    || sourceTexts.includes("保育園")
-    || sourceTexts.includes("幼稚園")
-    || sourceTexts.includes("認定こども園")
-    || sourceTexts.includes("こども園")
-  ) {
-    return "保育";
-  }
-
-  if (sourceTexts.includes("学校")) {
-    return "学校";
-  }
-
-  if (sourceTexts.includes("会社") || sourceTexts.includes("企業")) {
-    return "企業";
-  }
-
-  return "";
+  return masterDataBridge.deriveResolvedOrganizationType(organization, service);
 }
 
 function getDisplayOrganizationType(organization, service = null) {
-  return deriveResolvedOrganizationType(organization, service) || "-";
+  return masterDataBridge.getDisplayOrganizationType(organization, service);
 }
 
 function deriveOrganizationGroupFromType(organizationType) {
-  return ["病院", "訪問看護", "薬局"].includes(organizationType)
-    ? "病院・訪看・薬局グループ"
-    : "福祉サービス等提供機関";
+  return masterDataBridge.deriveOrganizationGroupFromType(organizationType);
 }
 
 function renderSelectOptions(element, items, selectedValue, mapper, emptyLabel = "選択肢なし") {
@@ -4406,17 +2932,17 @@ function escapeHtml(value) {
 }
 
 function getClientById(clientId) {
-  return getJudgementClients().find((item) => item.clientId === clientId) ?? getPrototypeDataSource().clients.find((item) => item.clientId === clientId);
+  return masterDataBridge.getClientById(clientId);
 }
 
 function getOrganizationById(organizationId) {
-  return getMasterOrganizations().find((item) => item.organizationId === organizationId) ?? getPrototypeDataSource().organizations.find((item) => item.organizationId === organizationId);
+  return masterDataBridge.getOrganizationById(organizationId);
 }
 
 function getServiceById(serviceId) {
-  return getMasterServices().find((item) => item.serviceId === serviceId) ?? getPrototypeDataSource().services.find((item) => item.serviceId === serviceId);
+  return masterDataBridge.getServiceById(serviceId);
 }
 
 function getStaffById(staffId) {
-  return getJudgementStaffs().find((item) => item.staffId === staffId) ?? getPrototypeDataSource().staff.find((item) => item.staffId === staffId);
+  return masterDataBridge.getStaffById(staffId);
 }

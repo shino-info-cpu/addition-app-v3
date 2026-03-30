@@ -1,8 +1,8 @@
 const fs = require("fs");
-const path = require("path");
 const vm = require("vm");
+const { canonicalSourcePath } = require("./lib/rule_master_source");
 
-const assetPath = path.resolve(__dirname, "../runtime/prototype/prototype-rule-source.js");
+const assetPath = canonicalSourcePath;
 const source = fs.readFileSync(assetPath, "utf8");
 const context = {
   window: {},
@@ -36,4 +36,4 @@ if (failures.length > 0) {
   process.exit(1);
 }
 
-console.log("frontend-prototype-source-asset: ok");
+console.log("rule-master-source-asset: ok");

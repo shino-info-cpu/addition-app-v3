@@ -1,16 +1,9 @@
-const fs = require("fs");
-const path = require("path");
-const vm = require("vm");
+const { loadRuleMasterSourceObject } = require("./lib/rule_master_source");
 
-const sourceAssetPath = path.resolve(__dirname, "../runtime/prototype/prototype-rule-source.js");
-const source = fs.readFileSync(sourceAssetPath, "utf8");
-const context = {};
-vm.createContext(context);
-vm.runInContext(source, context, { timeout: 1000 });
-const additions = context.__KASAN_PROTOTYPE_RULE_SOURCE__?.data?.additions;
+const additions = loadRuleMasterSourceObject()?.data?.additions;
 
 if (!Array.isArray(additions)) {
-  console.error("Could not extract prototype additions from prototype-rule-source.js");
+  console.error("Could not extract prototype additions from rule master source");
   process.exit(1);
 }
 

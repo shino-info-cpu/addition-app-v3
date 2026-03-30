@@ -1,10 +1,9 @@
 const fs = require("fs");
 const path = require("path");
-const vm = require("vm");
 const { execFileSync } = require("child_process");
+const { loadRuleMasterSourceObject } = require("./lib/rule_master_source");
 
 const workspaceRoot = path.resolve(__dirname, "..");
-const sourceAssetPath = path.join(workspaceRoot, "runtime", "prototype", "prototype-rule-source.js");
 const additionCatalogPath = path.join(workspaceRoot, "runtime", "import", "prototype_addition_catalog.json");
 const questionCatalogPath = path.join(workspaceRoot, "runtime", "import", "prototype_question_catalog.json");
 const branchRuleCatalogPath = path.join(workspaceRoot, "runtime", "import", "prototype_branch_rule_catalog.json");
@@ -18,13 +17,9 @@ function runExporter(scriptName) {
 }
 
 function readPrototypeData() {
-  const source = fs.readFileSync(sourceAssetPath, "utf8");
-  const sourceContext = {};
-  vm.createContext(sourceContext);
-  vm.runInContext(source, sourceContext, { timeout: 1000 });
-  const prototypeSource = sourceContext.__KASAN_PROTOTYPE_RULE_SOURCE__;
+  const prototypeSource = loadRuleMasterSourceObject();
   if (!prototypeSource || !prototypeSource.data || !Array.isArray(prototypeSource.questionDefinitions)) {
-    throw new Error("prototype-rule-source.js から raw prototype source を取得できませんでした。");
+    throw new Error("rule master source から raw prototype source を取得できませんでした。");
   }
 
   return {
@@ -121,10 +116,7 @@ function ensureQuestionCatalogShape(questionCatalog) {
 }
 
 function main() {
-  runExporter("export_prototype_frontend_source.js");
-  runExporter("export_prototype_rule_catalog.js");
-  runExporter("export_prototype_question_catalog.js");
-  runExporter("export_prototype_branch_rule_catalog.js");
+  runExporter("export_rule_master_bundle.js");
 
   const { data, questionDefinitions } = readPrototypeData();
   const additions = Array.isArray(data.additions) ? data.additions : [];

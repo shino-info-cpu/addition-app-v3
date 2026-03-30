@@ -1,0 +1,2090 @@
+{
+  "data": {
+    "staff": [
+      {
+        "staffId": "501",
+        "staffName": "相談 花子",
+        "email": "hanako@example.jp"
+      },
+      {
+        "staffId": "502",
+        "staffName": "支援 次郎",
+        "email": "jiro@example.jp"
+      },
+      {
+        "staffId": "503",
+        "staffName": "調整 三郎",
+        "email": "saburo@example.jp"
+      }
+    ],
+    "clients": [
+      {
+        "clientId": "1001",
+        "clientName": "山田 太郎",
+        "clientNameKana": "やまだ たろう",
+        "targetType": "児"
+      },
+      {
+        "clientId": "1002",
+        "clientName": "佐藤 花子",
+        "clientNameKana": "さとう はなこ",
+        "targetType": "者"
+      },
+      {
+        "clientId": "1003",
+        "clientName": "高橋 一郎",
+        "clientNameKana": "たかはし いちろう",
+        "targetType": "者"
+      }
+    ],
+    "organizations": [
+      {
+        "organizationId": "10",
+        "organizationName": "しののめ相談支援",
+        "organizationType": "相談支援事業所",
+        "organizationGroup": "福祉サービス等提供機関",
+        "serviceIds": [
+          "201",
+          "202"
+        ]
+      },
+      {
+        "organizationId": "11",
+        "organizationName": "あおぞら支援室",
+        "organizationType": "相談支援事業所",
+        "organizationGroup": "福祉サービス等提供機関",
+        "serviceIds": [
+          "202",
+          "203"
+        ]
+      },
+      {
+        "organizationId": "21",
+        "organizationName": "東雲総合病院",
+        "organizationType": "病院",
+        "organizationGroup": "病院・訪看・薬局グループ",
+        "serviceIds": [
+          "301"
+        ]
+      },
+      {
+        "organizationId": "22",
+        "organizationName": "みらい訪問看護",
+        "organizationType": "訪問看護",
+        "organizationGroup": "病院・訪看・薬局グループ",
+        "serviceIds": [
+          "302"
+        ]
+      }
+    ],
+    "services": [
+      {
+        "serviceId": "201",
+        "serviceName": "計画相談",
+        "serviceCategory": "相談支援",
+        "targetScope": "児者",
+        "groupName": "初回群"
+      },
+      {
+        "serviceId": "202",
+        "serviceName": "障害児相談",
+        "serviceCategory": "福祉",
+        "targetScope": "児",
+        "groupName": "モニタ群"
+      },
+      {
+        "serviceId": "203",
+        "serviceName": "生活介護",
+        "serviceCategory": "障害福祉サービス",
+        "targetScope": "者",
+        "groupName": "地域支援群"
+      },
+      {
+        "serviceId": "301",
+        "serviceName": "医療連携",
+        "serviceCategory": "医療",
+        "targetScope": "児者",
+        "groupName": "病院群"
+      },
+      {
+        "serviceId": "302",
+        "serviceName": "訪看連携",
+        "serviceCategory": "医療",
+        "targetScope": "児者",
+        "groupName": "訪看群"
+      }
+    ],
+    "enrollments": [
+      {
+        "enrollmentId": "e1001-10-201",
+        "clientId": "1001",
+        "organizationId": "10",
+        "serviceId": "201"
+      },
+      {
+        "enrollmentId": "e1001-21-301",
+        "clientId": "1001",
+        "organizationId": "21",
+        "serviceId": "301"
+      },
+      {
+        "enrollmentId": "e1002-11-203",
+        "clientId": "1002",
+        "organizationId": "11",
+        "serviceId": "203"
+      },
+      {
+        "enrollmentId": "e1002-22-302",
+        "clientId": "1002",
+        "organizationId": "22",
+        "serviceId": "302"
+      },
+      {
+        "enrollmentId": "e1003-10-201",
+        "clientId": "1003",
+        "organizationId": "10",
+        "serviceId": "201"
+      }
+    ],
+    "additions": [
+      {
+        "additionCode": "mededu_tsuuin",
+        "additionFamilyCode": "mededu",
+        "additionFamilyName": "医療・保育・教育機関等連携加算",
+        "additionName": "医療・保育・教育機関等連携加算（通院同行）",
+        "historyAdditionCodes": [
+          "mededu",
+          "mededu_tsuuin",
+          "mededu_info",
+          "mededu_interview",
+          "mededu_meeting"
+        ],
+        "ruleStatus": "一部確定",
+        "confirmedRules": [
+          "モニタリング月または計画作成月の病院等への通院同行で候補に残す",
+          "後段では同月3回までと同一病院等は月1回までを確認する"
+        ],
+        "provisionalRules": [
+          "診療所は病院と同じ扱いで判定する",
+          "初回加算との関係はまだ後段へ未反映"
+        ],
+        "priority": 9,
+        "targetTypes": [
+          "共通",
+          "児",
+          "者"
+        ],
+        "monthTypes": [
+          "モニタリング月",
+          "計画作成月"
+        ],
+        "organizationGroups": [
+          "病院・訪看・薬局グループ"
+        ],
+        "organizationTypes": [
+          "病院"
+        ],
+        "serviceDecisionInclude": [
+          "医療関連"
+        ],
+        "placeTypes": [
+          "外出先"
+        ],
+        "actionTypes": [
+          "通院同行"
+        ],
+        "postCheckRules": [
+          {
+            "code": "monthly_limit_per_client",
+            "limit": 3,
+            "additionCodes": [
+              "mededu",
+              "mededu_tsuuin"
+            ],
+            "recordActionTypes": [
+              "通院同行"
+            ],
+            "label": "同月3回まで"
+          },
+          {
+            "code": "monthly_limit_per_client_by_organization",
+            "limit": 1,
+            "additionCodes": [
+              "mededu",
+              "mededu_tsuuin"
+            ],
+            "recordActionTypes": [
+              "通院同行"
+            ],
+            "label": "同一病院等は月1回まで"
+          }
+        ],
+        "postCheck": "通院同行先と同行時の情報共有内容を記録する。同月3回まで、同一病院等は月1回まで。"
+      },
+      {
+        "additionCode": "mededu_info",
+        "additionFamilyCode": "mededu",
+        "additionFamilyName": "医療・保育・教育機関等連携加算",
+        "additionName": "医療・保育・教育機関等連携加算（情報共有）",
+        "historyAdditionCodes": [
+          "mededu",
+          "mededu_tsuuin",
+          "mededu_info",
+          "mededu_interview",
+          "mededu_meeting"
+        ],
+        "ruleStatus": "一部確定",
+        "confirmedRules": [
+          "情報共有で候補に残す",
+          "障害福祉サービスは除外する",
+          "後段では同グループ月1回までを確認する"
+        ],
+        "provisionalRules": [
+          "元資料上は月区分の限定が薄いが、現段階では従来どおりモニタリング月または計画作成月に寄せている",
+          "機関グループの最終境界はまだ仮置き"
+        ],
+        "priority": 10,
+        "targetTypes": [
+          "共通",
+          "児",
+          "者"
+        ],
+        "monthTypes": [
+          "モニタリング月",
+          "計画作成月"
+        ],
+        "organizationGroups": [
+          "病院・訪看・薬局グループ",
+          "福祉サービス等提供機関"
+        ],
+        "serviceDecisionInclude": [
+          "医療関連",
+          "障害福祉以外の福祉サービス"
+        ],
+        "serviceDecisionExclude": [
+          "障害福祉サービス"
+        ],
+        "placeTypes": [
+          "自事業所内",
+          "外出先"
+        ],
+        "actionTypes": [
+          "情報共有"
+        ],
+        "postCheckRules": [
+          {
+            "code": "monthly_limit_per_client_by_organization_group",
+            "limit": 1,
+            "additionCodes": [
+              "mededu",
+              "mededu_info"
+            ],
+            "recordActionTypes": [
+              "情報共有"
+            ],
+            "label": "同グループ月1回まで"
+          }
+        ],
+        "postCheck": "相手先グループごとに月1回まで。情報共有先を記録する。"
+      },
+      {
+        "additionCode": "mededu_interview",
+        "additionFamilyCode": "mededu",
+        "additionFamilyName": "医療・保育・教育機関等連携加算",
+        "additionName": "医療・保育・教育機関等連携加算（面談）",
+        "historyAdditionCodes": [
+          "mededu",
+          "mededu_tsuuin",
+          "mededu_info",
+          "mededu_interview",
+          "mededu_meeting"
+        ],
+        "ruleStatus": "一部確定",
+        "confirmedRules": [
+          "児対象のみ",
+          "モニタリング月または計画作成月で候補に残す",
+          "面談のみ",
+          "必要な情報を受けた場合のみ",
+          "障害福祉サービスは除外する",
+          "同月1回まで",
+          "初回加算算定時は不可",
+          "担当者会議加算との併算定不可を後段で確認する"
+        ],
+        "provisionalRules": [
+          "退院・退所加算との関係の細部はまだ未確定",
+          "対象機関を福祉サービス等提供機関だけに絞っているが、制度境界の細部は未確定"
+        ],
+        "priority": 11,
+        "targetTypes": [
+          "児"
+        ],
+        "monthTypes": [
+          "モニタリング月",
+          "計画作成月"
+        ],
+        "organizationGroups": [
+          "福祉サービス等提供機関"
+        ],
+        "requiredAnswers": {
+          "requiredInfoReceived": "受けた"
+        },
+        "serviceDecisionInclude": [
+          "障害福祉以外の福祉サービス"
+        ],
+        "serviceDecisionExclude": [
+          "障害福祉サービス"
+        ],
+        "placeTypes": [
+          "自事業所内",
+          "外出先"
+        ],
+        "actionTypes": [
+          "面談"
+        ],
+        "postCheckRules": [
+          {
+            "code": "blocked_if_answer_true",
+            "answerKey": "dischargeFacilityStaffOnlyInfo",
+            "blockedValue": "施設職員のみ",
+            "label": "退院・退所する施設の職員のみからの情報なら不可"
+          },
+          {
+            "code": "blocked_if_answer_true",
+            "answerKey": "initialAdditionPlanned",
+            "blockedValue": "初回加算あり",
+            "label": "初回加算算定時は不可"
+          },
+          {
+            "code": "monthly_limit_per_client",
+            "limit": 1,
+            "additionCodes": [
+              "mededu",
+              "mededu_interview",
+              "mededu_meeting"
+            ],
+            "recordActionTypes": [
+              "面談",
+              "会議"
+            ],
+            "label": "同月1回まで"
+          },
+          {
+            "code": "exclusive_with_addition_codes",
+            "additionCodes": [
+              "conference"
+            ],
+            "label": "担当者会議加算との併算定不可"
+          }
+        ],
+        "postCheck": "面談相手と受けた情報を記録する。同月1回までと担当者会議加算との重複を後段で確認する。"
+      },
+      {
+        "additionCode": "mededu_meeting",
+        "additionFamilyCode": "mededu",
+        "additionFamilyName": "医療・保育・教育機関等連携加算",
+        "additionName": "医療・保育・教育機関等連携加算（会議）",
+        "historyAdditionCodes": [
+          "mededu",
+          "mededu_tsuuin",
+          "mededu_info",
+          "mededu_interview",
+          "mededu_meeting"
+        ],
+        "ruleStatus": "一部確定",
+        "confirmedRules": [
+          "児対象のみ",
+          "モニタリング月または計画作成月で候補に残す",
+          "会議のみ",
+          "必要な情報を受けた場合のみ",
+          "障害福祉サービスは除外する",
+          "同月1回まで",
+          "初回加算算定時は不可",
+          "担当者会議加算との併算定不可を後段で確認する"
+        ],
+        "provisionalRules": [
+          "退院・退所加算との関係の細部はまだ未確定",
+          "対象機関を福祉サービス等提供機関だけに絞っているが、制度境界の細部は未確定"
+        ],
+        "priority": 12,
+        "targetTypes": [
+          "児"
+        ],
+        "monthTypes": [
+          "モニタリング月",
+          "計画作成月"
+        ],
+        "organizationGroups": [
+          "福祉サービス等提供機関"
+        ],
+        "requiredAnswers": {
+          "requiredInfoReceived": "受けた"
+        },
+        "serviceDecisionInclude": [
+          "障害福祉以外の福祉サービス"
+        ],
+        "serviceDecisionExclude": [
+          "障害福祉サービス"
+        ],
+        "placeTypes": [
+          "自事業所内",
+          "外出先"
+        ],
+        "actionTypes": [
+          "会議"
+        ],
+        "postCheckRules": [
+          {
+            "code": "blocked_if_answer_true",
+            "answerKey": "dischargeFacilityStaffOnlyInfo",
+            "blockedValue": "施設職員のみ",
+            "label": "退院・退所する施設の職員のみからの情報なら不可"
+          },
+          {
+            "code": "blocked_if_answer_true",
+            "answerKey": "initialAdditionPlanned",
+            "blockedValue": "初回加算あり",
+            "label": "初回加算算定時は不可"
+          },
+          {
+            "code": "monthly_limit_per_client",
+            "limit": 1,
+            "additionCodes": [
+              "mededu",
+              "mededu_interview",
+              "mededu_meeting"
+            ],
+            "recordActionTypes": [
+              "面談",
+              "会議"
+            ],
+            "label": "同月1回まで"
+          },
+          {
+            "code": "exclusive_with_addition_codes",
+            "additionCodes": [
+              "conference"
+            ],
+            "label": "担当者会議加算との併算定不可"
+          }
+        ],
+        "postCheck": "会議参加先と得た情報を記録する。同月1回までと担当者会議加算との重複を後段で確認する。"
+      },
+      {
+        "additionCode": "intensive_visit",
+        "additionFamilyCode": "intensive",
+        "additionFamilyName": "集中支援加算",
+        "additionName": "集中支援加算（訪問）",
+        "historyAdditionCodes": [
+          "intensive",
+          "intensive_visit",
+          "intensive_scene_check",
+          "intensive_meeting_host",
+          "intensive_meeting_join",
+          "intensive_tsuuin",
+          "intensive_info",
+          "intensive_info_medical",
+          "intensive_info_pharmacy"
+        ],
+        "ruleStatus": "一部確定",
+        "confirmedRules": [
+          "それ以外月で候補に残す",
+          "訪問のみ",
+          "同月2回以上の訪問を後段で確認する"
+        ],
+        "provisionalRules": [
+          "機関グループの範囲は仮置き"
+        ],
+        "priority": 20,
+        "targetTypes": [
+          "共通",
+          "児",
+          "者"
+        ],
+        "monthTypes": [
+          "それ以外"
+        ],
+        "organizationGroups": [
+          "福祉サービス等提供機関"
+        ],
+        "serviceDecisionInclude": [
+          "障害福祉サービス",
+          "障害福祉以外の福祉サービス"
+        ],
+        "placeTypes": [
+          "外出先"
+        ],
+        "actionTypes": [
+          "訪問"
+        ],
+        "postCheckRules": [
+          {
+            "code": "monthly_action_count_min",
+            "minimum": 2,
+            "actionTypes": [
+              "訪問"
+            ],
+            "label": "同月2回以上の訪問が必要"
+          }
+        ],
+        "postCheck": "訪問回数要件を後段で確認する。"
+      },
+      {
+        "additionCode": "intensive_scene_check",
+        "additionFamilyCode": "intensive",
+        "additionFamilyName": "集中支援加算",
+        "additionName": "集中支援加算（サービス提供場面確認）",
+        "historyAdditionCodes": [
+          "intensive",
+          "intensive_visit",
+          "intensive_scene_check",
+          "intensive_meeting_host",
+          "intensive_meeting_join",
+          "intensive_tsuuin",
+          "intensive_info",
+          "intensive_info_medical",
+          "intensive_info_pharmacy"
+        ],
+        "ruleStatus": "一部確定",
+        "confirmedRules": [
+          "それ以外月で候補に残す",
+          "サービス提供場面確認のみ"
+        ],
+        "provisionalRules": [
+          "機関グループの範囲は仮置き"
+        ],
+        "priority": 21,
+        "targetTypes": [
+          "共通",
+          "児",
+          "者"
+        ],
+        "monthTypes": [
+          "それ以外"
+        ],
+        "organizationGroups": [
+          "福祉サービス等提供機関"
+        ],
+        "serviceDecisionInclude": [
+          "障害福祉サービス",
+          "障害福祉以外の福祉サービス"
+        ],
+        "placeTypes": [
+          "外出先"
+        ],
+        "actionTypes": [
+          "サービス提供場面確認"
+        ],
+        "postCheckRules": [],
+        "postCheck": "確認した提供場面の内容を記録する。"
+      },
+      {
+        "additionCode": "intensive_meeting_host",
+        "additionFamilyCode": "intensive",
+        "additionFamilyName": "集中支援加算",
+        "additionName": "集中支援加算（会議開催）",
+        "historyAdditionCodes": [
+          "intensive",
+          "intensive_visit",
+          "intensive_scene_check",
+          "intensive_meeting_host",
+          "intensive_meeting_join",
+          "intensive_tsuuin",
+          "intensive_info",
+          "intensive_info_medical",
+          "intensive_info_pharmacy"
+        ],
+        "ruleStatus": "一部確定",
+        "confirmedRules": [
+          "それ以外月で候補に残す",
+          "サービス担当者会議の開催のみ",
+          "旧資料上、追加の回数上限は見当たらない"
+        ],
+        "provisionalRules": [
+          "現行UIでは「サービス担当者会議の開催」を「担当者会議開催」に寄せている"
+        ],
+        "priority": 21.5,
+        "targetTypes": [
+          "共通",
+          "児",
+          "者"
+        ],
+        "monthTypes": [
+          "それ以外"
+        ],
+        "organizationGroups": [
+          "福祉サービス等提供機関"
+        ],
+        "serviceDecisionInclude": [
+          "障害福祉サービス",
+          "障害福祉以外の福祉サービス"
+        ],
+        "placeTypes": [
+          "自事業所内",
+          "外出先"
+        ],
+        "actionTypes": [
+          "担当者会議開催"
+        ],
+        "postCheckRules": [],
+        "postCheck": "開催した会議の参加者と検討内容を記録する。"
+      },
+      {
+        "additionCode": "intensive_meeting_join",
+        "additionFamilyCode": "intensive",
+        "additionFamilyName": "集中支援加算",
+        "additionName": "集中支援加算（会議参加）",
+        "historyAdditionCodes": [
+          "intensive",
+          "intensive_visit",
+          "intensive_scene_check",
+          "intensive_meeting_host",
+          "intensive_meeting_join",
+          "intensive_tsuuin",
+          "intensive_info",
+          "intensive_info_medical",
+          "intensive_info_pharmacy"
+        ],
+        "ruleStatus": "一部確定",
+        "confirmedRules": [
+          "それ以外月で候補に残す",
+          "会議参加のみ",
+          "旧資料上、追加の回数上限は見当たらない"
+        ],
+        "provisionalRules": [
+          "現行UIでは「会議参加」を「会議」に寄せている"
+        ],
+        "priority": 22,
+        "targetTypes": [
+          "共通",
+          "児",
+          "者"
+        ],
+        "monthTypes": [
+          "それ以外"
+        ],
+        "organizationGroups": [
+          "福祉サービス等提供機関"
+        ],
+        "serviceDecisionInclude": [
+          "障害福祉サービス",
+          "障害福祉以外の福祉サービス"
+        ],
+        "placeTypes": [
+          "自事業所内",
+          "外出先"
+        ],
+        "actionTypes": [
+          "会議"
+        ],
+        "postCheckRules": [],
+        "postCheck": "参加した会議の相手先と確認内容を記録する。"
+      },
+      {
+        "additionCode": "intensive_tsuuin",
+        "additionFamilyCode": "intensive",
+        "additionFamilyName": "集中支援加算",
+        "additionName": "集中支援加算（通院同行）",
+        "historyAdditionCodes": [
+          "intensive",
+          "intensive_visit",
+          "intensive_scene_check",
+          "intensive_meeting_host",
+          "intensive_meeting_join",
+          "intensive_tsuuin",
+          "intensive_info",
+          "intensive_info_medical",
+          "intensive_info_pharmacy"
+        ],
+        "ruleStatus": "一部確定",
+        "confirmedRules": [
+          "それ以外月の病院等への通院同行のみ候補に残す",
+          "後段では同月3回までと同一病院等は月1回までを確認する"
+        ],
+        "provisionalRules": [],
+        "priority": 23,
+        "targetTypes": [
+          "共通",
+          "児",
+          "者"
+        ],
+        "monthTypes": [
+          "それ以外"
+        ],
+        "organizationGroups": [
+          "病院・訪看・薬局グループ"
+        ],
+        "organizationTypes": [
+          "病院"
+        ],
+        "serviceDecisionInclude": [
+          "医療関連"
+        ],
+        "placeTypes": [
+          "外出先"
+        ],
+        "actionTypes": [
+          "通院同行"
+        ],
+        "postCheckRules": [
+          {
+            "code": "monthly_limit_per_client",
+            "limit": 3,
+            "additionCodes": [
+              "intensive",
+              "intensive_tsuuin"
+            ],
+            "recordActionTypes": [
+              "通院同行"
+            ],
+            "label": "同月3回まで"
+          },
+          {
+            "code": "monthly_limit_per_client_by_organization",
+            "limit": 1,
+            "additionCodes": [
+              "intensive",
+              "intensive_tsuuin"
+            ],
+            "recordActionTypes": [
+              "通院同行"
+            ],
+            "label": "同一病院等は月1回まで"
+          }
+        ],
+        "postCheck": "通院同行先と同行時の確認内容を記録する。同月3回まで、同一病院等は月1回まで。"
+      },
+      {
+        "additionCode": "intensive_info",
+        "additionFamilyCode": "intensive",
+        "additionFamilyName": "集中支援加算",
+        "additionName": "集中支援加算（情報共有）",
+        "historyAdditionCodes": [
+          "intensive",
+          "intensive_visit",
+          "intensive_scene_check",
+          "intensive_meeting_host",
+          "intensive_meeting_join",
+          "intensive_tsuuin",
+          "intensive_info",
+          "intensive_info_medical",
+          "intensive_info_pharmacy"
+        ],
+        "ruleStatus": "一部確定",
+        "confirmedRules": [
+          "それ以外月で候補に残す",
+          "福祉サービス等提供機関への情報共有のみ",
+          "後段では同グループ月1回までを確認する"
+        ],
+        "provisionalRules": [
+          "病院・訪看・薬局は内部的に別枝へ分けている"
+        ],
+        "priority": 24,
+        "targetTypes": [
+          "共通",
+          "児",
+          "者"
+        ],
+        "monthTypes": [
+          "それ以外"
+        ],
+        "organizationGroups": [
+          "福祉サービス等提供機関"
+        ],
+        "serviceDecisionInclude": [
+          "障害福祉サービス",
+          "障害福祉以外の福祉サービス"
+        ],
+        "placeTypes": [
+          "自事業所内",
+          "外出先"
+        ],
+        "actionTypes": [
+          "情報共有"
+        ],
+        "postCheckRules": [
+          {
+            "code": "monthly_limit_per_client_by_organization_group",
+            "limit": 1,
+            "additionCodes": [
+              "intensive",
+              "intensive_info",
+              "intensive_info_medical",
+              "intensive_info_pharmacy"
+            ],
+            "recordActionTypes": [
+              "情報共有"
+            ],
+            "label": "同グループ月1回まで"
+          }
+        ],
+        "postCheck": "共有した情報と相手先を記録する。同グループ月1回まで。"
+      },
+      {
+        "additionCode": "intensive_info_medical",
+        "additionFamilyCode": "intensive",
+        "additionFamilyName": "集中支援加算",
+        "additionName": "集中支援加算（情報共有）",
+        "historyAdditionCodes": [
+          "intensive",
+          "intensive_visit",
+          "intensive_scene_check",
+          "intensive_meeting_host",
+          "intensive_meeting_join",
+          "intensive_tsuuin",
+          "intensive_info",
+          "intensive_info_medical",
+          "intensive_info_pharmacy"
+        ],
+        "ruleStatus": "一部確定",
+        "confirmedRules": [
+          "それ以外月で候補に残す",
+          "病院または訪問看護への情報共有のみ",
+          "入院に当たっての情報共有は除外する",
+          "後段では同グループ月1回までを確認する"
+        ],
+        "provisionalRules": [
+          "薬局は別枝へ分けて、入院確認の質問対象から外している"
+        ],
+        "priority": 24.1,
+        "targetTypes": [
+          "共通",
+          "児",
+          "者"
+        ],
+        "monthTypes": [
+          "それ以外"
+        ],
+        "organizationGroups": [
+          "病院・訪看・薬局グループ"
+        ],
+        "organizationTypes": [
+          "病院",
+          "訪問看護"
+        ],
+        "requiredAnswers": {
+          "hospitalAdmissionContext": "入院に当たっていない"
+        },
+        "serviceDecisionInclude": [
+          "医療関連"
+        ],
+        "placeTypes": [
+          "自事業所内",
+          "外出先"
+        ],
+        "actionTypes": [
+          "情報共有"
+        ],
+        "postCheckRules": [
+          {
+            "code": "monthly_limit_per_client_by_organization_group",
+            "limit": 1,
+            "additionCodes": [
+              "intensive",
+              "intensive_info",
+              "intensive_info_medical",
+              "intensive_info_pharmacy"
+            ],
+            "recordActionTypes": [
+              "情報共有"
+            ],
+            "label": "同グループ月1回まで"
+          }
+        ],
+        "postCheck": "共有した情報と相手先を記録する。同グループ月1回まで。"
+      },
+      {
+        "additionCode": "intensive_info_pharmacy",
+        "additionFamilyCode": "intensive",
+        "additionFamilyName": "集中支援加算",
+        "additionName": "集中支援加算（情報共有）",
+        "historyAdditionCodes": [
+          "intensive",
+          "intensive_visit",
+          "intensive_scene_check",
+          "intensive_meeting_host",
+          "intensive_meeting_join",
+          "intensive_tsuuin",
+          "intensive_info",
+          "intensive_info_medical",
+          "intensive_info_pharmacy"
+        ],
+        "ruleStatus": "一部確定",
+        "confirmedRules": [
+          "それ以外月で候補に残す",
+          "薬局への情報共有のみ",
+          "後段では同グループ月1回までを確認する"
+        ],
+        "provisionalRules": [
+          "薬局は病院/訪看枝と分けて、入院確認の質問を出さない"
+        ],
+        "priority": 24.2,
+        "targetTypes": [
+          "共通",
+          "児",
+          "者"
+        ],
+        "monthTypes": [
+          "それ以外"
+        ],
+        "organizationGroups": [
+          "病院・訪看・薬局グループ"
+        ],
+        "organizationTypes": [
+          "薬局"
+        ],
+        "serviceDecisionInclude": [
+          "医療関連"
+        ],
+        "placeTypes": [
+          "自事業所内",
+          "外出先"
+        ],
+        "actionTypes": [
+          "情報共有"
+        ],
+        "postCheckRules": [
+          {
+            "code": "monthly_limit_per_client_by_organization_group",
+            "limit": 1,
+            "additionCodes": [
+              "intensive",
+              "intensive_info",
+              "intensive_info_medical",
+              "intensive_info_pharmacy"
+            ],
+            "recordActionTypes": [
+              "情報共有"
+            ],
+            "label": "同グループ月1回まで"
+          }
+        ],
+        "postCheck": "共有した情報と相手先を記録する。同グループ月1回まで。"
+      },
+      {
+        "additionCode": "monitoring",
+        "additionName": "モニタリング加算",
+        "ruleStatus": "一部確定",
+        "confirmedRules": [
+          "提供現場の訪問確認で候補に残す",
+          "モニタリング月に限定しない",
+          "同月1回まで"
+        ],
+        "provisionalRules": [
+          "現行UIでは「提供現場訪問」を「サービス提供場面確認」に寄せている",
+          "対象機関と対象サービスの制度境界はまだ仮置き"
+        ],
+        "priority": 25,
+        "targetTypes": [
+          "共通",
+          "児",
+          "者"
+        ],
+        "monthTypes": [
+          "モニタリング月",
+          "計画作成月",
+          "それ以外"
+        ],
+        "organizationGroups": [
+          "福祉サービス等提供機関"
+        ],
+        "serviceDecisionInclude": [
+          "障害福祉サービス",
+          "障害福祉以外の福祉サービス"
+        ],
+        "placeTypes": [
+          "外出先"
+        ],
+        "actionTypes": [
+          "サービス提供場面確認"
+        ],
+        "postCheckRules": [
+          {
+            "code": "monthly_limit_per_client",
+            "limit": 1,
+            "additionCodes": [
+              "monitoring"
+            ],
+            "label": "同月1回まで"
+          }
+        ],
+        "postCheck": "提供現場の訪問確認内容と確認結果を記録する。月1回まで。"
+      },
+      {
+        "additionCode": "conference",
+        "additionName": "担当者会議加算",
+        "ruleStatus": "確定条件あり",
+        "confirmedRules": [
+          "モニタリング月のみ",
+          "福祉サービス等提供機関のみ",
+          "担当者会議開催のみ",
+          "同月1回まで",
+          "医保教（面談・会議）との併算定不可を後段で確認する"
+        ],
+        "provisionalRules": [],
+        "priority": 30,
+        "targetTypes": [
+          "共通",
+          "児",
+          "者"
+        ],
+        "monthTypes": [
+          "モニタリング月"
+        ],
+        "organizationGroups": [
+          "福祉サービス等提供機関"
+        ],
+        "serviceDecisionInclude": [
+          "医療関連",
+          "障害福祉サービス",
+          "障害福祉以外の福祉サービス"
+        ],
+        "placeTypes": [
+          "自事業所内",
+          "外出先"
+        ],
+        "actionTypes": [
+          "担当者会議開催"
+        ],
+        "postCheckRules": [
+          {
+            "code": "monthly_limit_per_client",
+            "limit": 1,
+            "additionCodes": [
+              "conference"
+            ],
+            "label": "同月1回まで"
+          },
+          {
+            "code": "exclusive_with_addition_codes",
+            "additionCodes": [
+              "mededu",
+              "mededu_interview",
+              "mededu_meeting"
+            ],
+            "recordActionTypes": [
+              "面談",
+              "会議"
+            ],
+            "label": "医保教（面談・会議）との併算定不可"
+          }
+        ],
+        "postCheck": "モニタリングに当たって開催した担当者会議の参加者と開催内容を記録する。同月1回まで。医保教（面談・会議）との重複は後段で確認する。"
+      },
+      {
+        "additionCode": "discharge",
+        "additionName": "退院・退所加算",
+        "ruleStatus": "一部確定",
+        "confirmedRules": [
+          "モニタリング月以外で候補に残す",
+          "退院・退所対象施設の職員との対面面談のみ",
+          "場所は限定しない",
+          "必要な情報を受けた場合のみ",
+          "サービス等の利用開始月の調整のみ",
+          "同一の入所・入院期間中は3回まで",
+          "初回加算算定時は不可"
+        ],
+        "provisionalRules": [
+          "現行UIでは旧ラベルの「退院前面談」も面談として受ける",
+          "入所施設、更生施設、児童施設、刑事施設等は名称推定に強い語だけを使っている"
+        ],
+        "priority": 40,
+        "targetTypes": [
+          "共通",
+          "児",
+          "者"
+        ],
+        "monthTypes": [
+          "計画作成月",
+          "それ以外"
+        ],
+        "organizationGroups": [
+          "病院・訪看・薬局グループ",
+          "福祉サービス等提供機関"
+        ],
+        "organizationTypes": [
+          "病院",
+          "入所施設",
+          "更生施設",
+          "児童施設",
+          "刑事施設"
+        ],
+        "serviceDecisionInclude": [
+          "医療関連",
+          "障害福祉サービス",
+          "障害福祉以外の福祉サービス"
+        ],
+        "placeTypes": [
+          "自事業所内",
+          "外出先"
+        ],
+        "actionTypes": [
+          "面談",
+          "退院前面談"
+        ],
+        "requiredAnswers": {
+          "serviceUseStartMonth": "開始月である",
+          "requiredInfoReceived": "受けた"
+        },
+        "postCheckRules": [
+          {
+            "code": "blocked_if_answer_true",
+            "answerKey": "dischargeInpatientPeriodCount",
+            "blockedValue": "4回目以上・不明",
+            "label": "同一の入所・入院期間中は3回まで"
+          },
+          {
+            "code": "blocked_if_answer_true",
+            "answerKey": "initialAdditionPlanned",
+            "blockedValue": "初回加算あり",
+            "label": "初回加算算定時は不可"
+          }
+        ],
+        "postCheck": "当該施設職員との面談内容と受けた情報を記録する。"
+      },
+      {
+        "additionCode": "hospital_info_i",
+        "additionName": "入院時情報連携加算 I",
+        "ruleStatus": "一部確定",
+        "confirmedRules": [
+          "入院に当たって病院へ訪問して必要情報を提供した場合に候補に残す",
+          "サービス判定区分では限定しない",
+          "同月1回まで",
+          "IIとの併算定不可"
+        ],
+        "provisionalRules": [
+          "現行UIでは「訪問情報提供」を「外出先 + 情報共有」に寄せている",
+          "診療所は病院と同じ扱いで判定する"
+        ],
+        "priority": 35,
+        "targetTypes": [
+          "共通",
+          "児",
+          "者"
+        ],
+        "monthTypes": [
+          "モニタリング月",
+          "計画作成月",
+          "それ以外"
+        ],
+        "organizationGroups": [
+          "病院・訪看・薬局グループ"
+        ],
+        "organizationTypes": [
+          "病院"
+        ],
+        "serviceDecisionInclude": [
+          "医療関連",
+          "障害福祉サービス",
+          "障害福祉以外の福祉サービス"
+        ],
+        "placeTypes": [
+          "外出先"
+        ],
+        "actionTypes": [
+          "情報共有"
+        ],
+        "requiredAnswers": {
+          "hospitalAdmissionContext": "入院に当たっている"
+        },
+        "postCheckRules": [
+          {
+            "code": "monthly_limit_per_client",
+            "limit": 1,
+            "additionCodes": [
+              "hospital_info_i"
+            ],
+            "label": "同月1回まで"
+          },
+          {
+            "code": "exclusive_with_addition_codes",
+            "additionCodes": [
+              "hospital_info_ii"
+            ],
+            "label": "IIとの併算定不可"
+          }
+        ],
+        "postCheck": "病院訪問による情報提供内容を記録する。"
+      },
+      {
+        "additionCode": "hospital_info_ii",
+        "additionName": "入院時情報連携加算 II",
+        "ruleStatus": "一部確定",
+        "confirmedRules": [
+          "入院に当たって病院へ訪問以外の方法で必要情報を提供した場合に候補に残す",
+          "サービス判定区分では限定しない",
+          "同月1回まで",
+          "Iとの併算定不可"
+        ],
+        "provisionalRules": [
+          "現行UIでは「訪問以外情報提供」を「自事業所内 + 情報共有」に寄せている",
+          "診療所は病院と同じ扱いで判定する"
+        ],
+        "priority": 36,
+        "targetTypes": [
+          "共通",
+          "児",
+          "者"
+        ],
+        "monthTypes": [
+          "モニタリング月",
+          "計画作成月",
+          "それ以外"
+        ],
+        "organizationGroups": [
+          "病院・訪看・薬局グループ"
+        ],
+        "organizationTypes": [
+          "病院"
+        ],
+        "serviceDecisionInclude": [
+          "医療関連",
+          "障害福祉サービス",
+          "障害福祉以外の福祉サービス"
+        ],
+        "placeTypes": [
+          "自事業所内"
+        ],
+        "actionTypes": [
+          "情報共有"
+        ],
+        "requiredAnswers": {
+          "hospitalAdmissionContext": "入院に当たっている"
+        },
+        "postCheckRules": [
+          {
+            "code": "monthly_limit_per_client",
+            "limit": 1,
+            "additionCodes": [
+              "hospital_info_ii"
+            ],
+            "label": "同月1回まで"
+          },
+          {
+            "code": "exclusive_with_addition_codes",
+            "additionCodes": [
+              "hospital_info_i"
+            ],
+            "label": "Iとの併算定不可"
+          }
+        ],
+        "postCheck": "訪問以外で提供した情報内容と提供方法を記録する。"
+      },
+      {
+        "additionCode": "edu_info",
+        "additionFamilyCode": "edu_support",
+        "additionFamilyName": "保・教支援",
+        "additionName": "保・教支援（情報共有）",
+        "historyAdditionCodes": [
+          "edu_support",
+          "edu_info",
+          "edu_visit",
+          "edu_meeting"
+        ],
+        "ruleStatus": "一部確定",
+        "confirmedRules": [
+          "児対象のみ",
+          "障害福祉以外の福祉サービスの利用文脈で候補に残す",
+          "学校・保育・児童施設への情報共有で候補に残す",
+          "企業・就業生活支援センター等は新規雇用文脈のときだけ残す"
+        ],
+        "provisionalRules": [
+          "集団生活施設など、学校・保育以外の対象境界はまだ仮置き"
+        ],
+        "priority": 50,
+        "targetTypes": [
+          "児"
+        ],
+        "monthTypes": [
+          "モニタリング月",
+          "計画作成月",
+          "それ以外"
+        ],
+        "organizationGroups": [
+          "福祉サービス等提供機関"
+        ],
+        "organizationTypes": [
+          "学校",
+          "保育",
+          "児童施設",
+          "企業",
+          "障害者就業・生活支援センター"
+        ],
+        "conditionalRequiredAnswers": [
+          {
+            "whenOrganizationTypes": [
+              "企業",
+              "障害者就業・生活支援センター"
+            ],
+            "requiredAnswers": {
+              "employmentStart": "新規雇用あり"
+            }
+          }
+        ],
+        "serviceDecisionInclude": [
+          "障害福祉以外の福祉サービス"
+        ],
+        "placeTypes": [
+          "自事業所内",
+          "外出先"
+        ],
+        "actionTypes": [
+          "情報共有"
+        ],
+        "postCheckRules": [],
+        "postCheck": "情報共有先と支援内容の検討協力内容を記録する。"
+      },
+      {
+        "additionCode": "edu_visit",
+        "additionFamilyCode": "edu_support",
+        "additionFamilyName": "保・教支援",
+        "additionName": "保・教支援（訪問面接）",
+        "historyAdditionCodes": [
+          "edu_support",
+          "edu_info",
+          "edu_visit",
+          "edu_meeting"
+        ],
+        "ruleStatus": "一部確定",
+        "confirmedRules": [
+          "児対象のみ",
+          "それ以外月のみ",
+          "障害福祉以外の福祉サービスの利用文脈で候補に残す",
+          "学校・保育・児童施設への訪問面接で候補に残す",
+          "企業・就業生活支援センター等は新規雇用文脈のときだけ残す"
+        ],
+        "provisionalRules": [
+          "現行UIでは「訪問面接」を「外出先 + 面談」に寄せている",
+          "集団生活施設など、学校・保育以外の対象境界はまだ仮置き",
+          "旧の総称記録は訪問面接の回数へ自動換算していない"
+        ],
+        "priority": 51,
+        "targetTypes": [
+          "児"
+        ],
+        "monthTypes": [
+          "それ以外"
+        ],
+        "organizationGroups": [
+          "福祉サービス等提供機関"
+        ],
+        "organizationTypes": [
+          "学校",
+          "保育",
+          "児童施設",
+          "企業",
+          "障害者就業・生活支援センター"
+        ],
+        "conditionalRequiredAnswers": [
+          {
+            "whenOrganizationTypes": [
+              "企業",
+              "障害者就業・生活支援センター"
+            ],
+            "requiredAnswers": {
+              "employmentStart": "新規雇用あり"
+            }
+          }
+        ],
+        "serviceDecisionInclude": [
+          "障害福祉以外の福祉サービス"
+        ],
+        "placeTypes": [
+          "外出先"
+        ],
+        "actionTypes": [
+          "面談"
+        ],
+        "postCheckRules": [
+          {
+            "code": "monthly_addition_count_min",
+            "minimum": 2,
+            "additionCodes": [
+              "edu_visit"
+            ],
+            "label": "同月2回以上の訪問面接が必要"
+          }
+        ],
+        "postCheck": "訪問面接した相手先と確認した内容を記録する。月内の訪問面接回数は後段で確認する。"
+      },
+      {
+        "additionCode": "edu_meeting",
+        "additionFamilyCode": "edu_support",
+        "additionFamilyName": "保・教支援",
+        "additionName": "保・教支援（会議参加）",
+        "historyAdditionCodes": [
+          "edu_support",
+          "edu_info",
+          "edu_visit",
+          "edu_meeting"
+        ],
+        "ruleStatus": "一部確定",
+        "confirmedRules": [
+          "児対象のみ",
+          "それ以外月のみ",
+          "障害福祉以外の福祉サービスの利用文脈で候補に残す",
+          "学校・保育・児童施設との会議参加で候補に残す",
+          "企業・就業生活支援センター等は新規雇用文脈のときだけ残す"
+        ],
+        "provisionalRules": [
+          "現行UIでは「会議参加」を「会議」に寄せている",
+          "集団生活施設など、学校・保育以外の対象境界はまだ仮置き"
+        ],
+        "priority": 52,
+        "targetTypes": [
+          "児"
+        ],
+        "monthTypes": [
+          "それ以外"
+        ],
+        "organizationGroups": [
+          "福祉サービス等提供機関"
+        ],
+        "organizationTypes": [
+          "学校",
+          "保育",
+          "児童施設",
+          "企業",
+          "障害者就業・生活支援センター"
+        ],
+        "conditionalRequiredAnswers": [
+          {
+            "whenOrganizationTypes": [
+              "企業",
+              "障害者就業・生活支援センター"
+            ],
+            "requiredAnswers": {
+              "employmentStart": "新規雇用あり"
+            }
+          }
+        ],
+        "serviceDecisionInclude": [
+          "障害福祉以外の福祉サービス"
+        ],
+        "placeTypes": [
+          "自事業所内",
+          "外出先"
+        ],
+        "actionTypes": [
+          "会議"
+        ],
+        "postCheckRules": [],
+        "postCheck": "参加した会議の相手先と共有した内容を記録する。"
+      },
+      {
+        "additionCode": "home_info",
+        "additionFamilyCode": "home_collab",
+        "additionFamilyName": "居宅連携",
+        "additionName": "居宅連携（情報共有）",
+        "historyAdditionCodes": [
+          "home_collab",
+          "home_info",
+          "home_visit",
+          "home_meeting"
+        ],
+        "ruleStatus": "一部確定",
+        "confirmedRules": [
+          "者対象のみ",
+          "ケアマネ事業所への情報共有で候補に残す",
+          "ケアマネ利用開始時のみ",
+          "後段では同月2回までを確認する"
+        ],
+        "provisionalRules": [],
+        "priority": 60,
+        "targetTypes": [
+          "者"
+        ],
+        "monthTypes": [
+          "モニタリング月",
+          "計画作成月",
+          "それ以外"
+        ],
+        "organizationGroups": [
+          "福祉サービス等提供機関"
+        ],
+        "organizationTypes": [
+          "ケアマネ事業所"
+        ],
+        "placeTypes": [
+          "自事業所内",
+          "外出先"
+        ],
+        "actionTypes": [
+          "情報共有"
+        ],
+        "requiredAnswers": {
+          "careManagerStart": "利用開始あり"
+        },
+        "postCheckRules": [
+          {
+            "code": "monthly_limit_per_client",
+            "limit": 2,
+            "additionCodes": [
+              "home_collab",
+              "home_info"
+            ],
+            "recordActionTypes": [
+              "情報共有"
+            ],
+            "label": "同月2回まで"
+          }
+        ],
+        "postCheck": "ケアマネへ提供した情報と協力内容を記録する。月2回まで。"
+      },
+      {
+        "additionCode": "home_visit",
+        "additionFamilyCode": "home_collab",
+        "additionFamilyName": "居宅連携",
+        "additionName": "居宅連携（訪問面接）",
+        "historyAdditionCodes": [
+          "home_collab",
+          "home_info",
+          "home_visit",
+          "home_meeting"
+        ],
+        "ruleStatus": "一部確定",
+        "confirmedRules": [
+          "者対象のみ",
+          "それ以外月のみ",
+          "ケアマネ事業所への訪問面接で候補に残す",
+          "ケアマネ利用開始時のみ",
+          "後段では同月2回以上の訪問面接を確認する"
+        ],
+        "provisionalRules": [
+          "現行UIでは「訪問面接」を「外出先 + 面談」に寄せている",
+          "旧の総称記録は訪問面接の回数へ自動換算していない"
+        ],
+        "priority": 61,
+        "targetTypes": [
+          "者"
+        ],
+        "monthTypes": [
+          "それ以外"
+        ],
+        "organizationGroups": [
+          "福祉サービス等提供機関"
+        ],
+        "organizationTypes": [
+          "ケアマネ事業所"
+        ],
+        "placeTypes": [
+          "外出先"
+        ],
+        "actionTypes": [
+          "面談"
+        ],
+        "requiredAnswers": {
+          "careManagerStart": "利用開始あり"
+        },
+        "postCheckRules": [
+          {
+            "code": "monthly_addition_count_min",
+            "minimum": 2,
+            "additionCodes": [
+              "home_visit"
+            ],
+            "label": "同月2回以上の訪問面接が必要"
+          }
+        ],
+        "postCheck": "訪問面接したケアマネと確認した内容を記録する。月内の訪問面接回数は後段で確認する。"
+      },
+      {
+        "additionCode": "home_meeting",
+        "additionFamilyCode": "home_collab",
+        "additionFamilyName": "居宅連携",
+        "additionName": "居宅連携（会議参加）",
+        "historyAdditionCodes": [
+          "home_collab",
+          "home_info",
+          "home_visit",
+          "home_meeting"
+        ],
+        "ruleStatus": "一部確定",
+        "confirmedRules": [
+          "者対象のみ",
+          "それ以外月のみ",
+          "ケアマネ事業所との会議参加で候補に残す",
+          "ケアマネ利用開始時のみ"
+        ],
+        "provisionalRules": [
+          "現行UIでは「会議参加」を「会議」に寄せている"
+        ],
+        "priority": 62,
+        "targetTypes": [
+          "者"
+        ],
+        "monthTypes": [
+          "それ以外"
+        ],
+        "organizationGroups": [
+          "福祉サービス等提供機関"
+        ],
+        "organizationTypes": [
+          "ケアマネ事業所"
+        ],
+        "placeTypes": [
+          "自事業所内",
+          "外出先"
+        ],
+        "actionTypes": [
+          "会議"
+        ],
+        "requiredAnswers": {
+          "careManagerStart": "利用開始あり"
+        },
+        "postCheckRules": [],
+        "postCheck": "参加した会議の相手先と共有した内容を記録する。"
+      },
+      {
+        "additionCode": "home_work_info",
+        "additionFamilyCode": "home_work_collab",
+        "additionFamilyName": "居宅連携（就労）",
+        "additionName": "居宅連携（就労）（情報共有）",
+        "historyAdditionCodes": [
+          "home_work_collab",
+          "home_work_info",
+          "home_work_visit",
+          "home_work_meeting"
+        ],
+        "ruleStatus": "一部確定",
+        "confirmedRules": [
+          "者対象のみ",
+          "企業または障害者就業・生活支援センター等への情報共有で候補に残す",
+          "新規雇用開始時のみ",
+          "後段では同月2回までを確認する"
+        ],
+        "provisionalRules": [],
+        "priority": 70,
+        "targetTypes": [
+          "者"
+        ],
+        "monthTypes": [
+          "モニタリング月",
+          "計画作成月",
+          "それ以外"
+        ],
+        "organizationGroups": [
+          "福祉サービス等提供機関"
+        ],
+        "organizationTypes": [
+          "企業",
+          "障害者就業・生活支援センター"
+        ],
+        "placeTypes": [
+          "自事業所内",
+          "外出先"
+        ],
+        "actionTypes": [
+          "情報共有"
+        ],
+        "requiredAnswers": {
+          "employmentStart": "新規雇用あり"
+        },
+        "postCheckRules": [
+          {
+            "code": "monthly_limit_per_client",
+            "limit": 2,
+            "additionCodes": [
+              "home_work_collab",
+              "home_work_info"
+            ],
+            "recordActionTypes": [
+              "情報共有"
+            ],
+            "label": "同月2回まで"
+          }
+        ],
+        "postCheck": "就労先や就業生活支援センター等へ提供した情報を記録する。月2回まで。"
+      },
+      {
+        "additionCode": "home_work_visit",
+        "additionFamilyCode": "home_work_collab",
+        "additionFamilyName": "居宅連携（就労）",
+        "additionName": "居宅連携（就労）（訪問面接）",
+        "historyAdditionCodes": [
+          "home_work_collab",
+          "home_work_info",
+          "home_work_visit",
+          "home_work_meeting"
+        ],
+        "ruleStatus": "一部確定",
+        "confirmedRules": [
+          "者対象のみ",
+          "それ以外月のみ",
+          "企業または障害者就業・生活支援センター等への訪問面接で候補に残す",
+          "新規雇用開始時のみ",
+          "後段では同月2回以上の訪問面接を確認する"
+        ],
+        "provisionalRules": [
+          "現行UIでは「訪問面接」を「外出先 + 面談」に寄せている",
+          "旧の総称記録は訪問面接の回数へ自動換算していない"
+        ],
+        "priority": 71,
+        "targetTypes": [
+          "者"
+        ],
+        "monthTypes": [
+          "それ以外"
+        ],
+        "organizationGroups": [
+          "福祉サービス等提供機関"
+        ],
+        "organizationTypes": [
+          "企業",
+          "障害者就業・生活支援センター"
+        ],
+        "placeTypes": [
+          "外出先"
+        ],
+        "actionTypes": [
+          "面談"
+        ],
+        "requiredAnswers": {
+          "employmentStart": "新規雇用あり"
+        },
+        "postCheckRules": [
+          {
+            "code": "monthly_addition_count_min",
+            "minimum": 2,
+            "additionCodes": [
+              "home_work_visit"
+            ],
+            "label": "同月2回以上の訪問面接が必要"
+          }
+        ],
+        "postCheck": "訪問面接した就労先等と確認した内容を記録する。月内の訪問面接回数は後段で確認する。"
+      },
+      {
+        "additionCode": "home_work_meeting",
+        "additionFamilyCode": "home_work_collab",
+        "additionFamilyName": "居宅連携（就労）",
+        "additionName": "居宅連携（就労）（会議参加）",
+        "historyAdditionCodes": [
+          "home_work_collab",
+          "home_work_info",
+          "home_work_visit",
+          "home_work_meeting"
+        ],
+        "ruleStatus": "一部確定",
+        "confirmedRules": [
+          "者対象のみ",
+          "それ以外月のみ",
+          "企業または障害者就業・生活支援センター等との会議参加で候補に残す",
+          "新規雇用開始時のみ"
+        ],
+        "provisionalRules": [
+          "現行UIでは「会議参加」を「会議」に寄せている"
+        ],
+        "priority": 72,
+        "targetTypes": [
+          "者"
+        ],
+        "monthTypes": [
+          "それ以外"
+        ],
+        "organizationGroups": [
+          "福祉サービス等提供機関"
+        ],
+        "organizationTypes": [
+          "企業",
+          "障害者就業・生活支援センター"
+        ],
+        "placeTypes": [
+          "自事業所内",
+          "外出先"
+        ],
+        "actionTypes": [
+          "会議"
+        ],
+        "requiredAnswers": {
+          "employmentStart": "新規雇用あり"
+        },
+        "postCheckRules": [],
+        "postCheck": "参加した会議の相手先と共有した内容を記録する。"
+      }
+    ],
+    "reportRecords": [
+      {
+        "recordId": "r1",
+        "targetMonth": "2026-03",
+        "performedAt": "2026-03-14 09:05",
+        "clientId": "1001",
+        "organizationId": "21",
+        "serviceId": "301",
+        "staffId": "501",
+        "additionCode": "mededu",
+        "actionType": "情報共有",
+        "finalStatus": "自動確定",
+        "postCheckStatus": "ok",
+        "postCheckSummary": "同グループ月1回まで（病院・訪看・薬局グループ）。今月既存0件で範囲内です。",
+        "evaluatedAt": "2026-03-14 09:20",
+        "rationale": "病院グループ / 計画作成月 / 自事業所内 / 情報共有",
+        "savedNote": "病院と支援方針を共有し、今後の通院支援計画を確認した。"
+      },
+      {
+        "recordId": "r2",
+        "targetMonth": "2026-03",
+        "performedAt": "2026-03-14 09:50",
+        "clientId": "1002",
+        "organizationId": "11",
+        "serviceId": "203",
+        "staffId": "502",
+        "additionCode": "intensive",
+        "actionType": "訪問",
+        "finalStatus": "要確認",
+        "postCheckStatus": "review",
+        "postCheckSummary": "同月2回以上の訪問が必要。今回を含めて1回です。",
+        "evaluatedAt": "2026-03-14 10:05",
+        "rationale": "福祉サービス等提供機関 / それ以外 / 外出先 / 訪問",
+        "savedNote": "生活介護の現場を訪問し、利用状況と支援上の課題を確認した。"
+      },
+      {
+        "recordId": "r3",
+        "targetMonth": "2026-03",
+        "performedAt": "2026-03-14 11:10",
+        "clientId": "1003",
+        "organizationId": "10",
+        "serviceId": "201",
+        "staffId": "501",
+        "additionCode": "conference",
+        "actionType": "担当者会議開催",
+        "finalStatus": "自動確定",
+        "postCheckStatus": "ok",
+        "postCheckSummary": "同月1回まで。今月既存0件で範囲内です。 / 医保教（面談・会議）との併算定不可。今月の併算定不可記録は見つかっていません。",
+        "evaluatedAt": "2026-03-14 11:42",
+        "rationale": "福祉サービス等提供機関 / モニタリング月 / 自事業所内 / 担当者会議開催",
+        "savedNote": "モニタリングに当たり担当者会議を開催し、関係機関で支援方針を共有した。"
+      },
+      {
+        "recordId": "r4",
+        "targetMonth": "2026-02",
+        "performedAt": "2026-02-28 15:30",
+        "clientId": "1001",
+        "organizationId": "21",
+        "serviceId": "301",
+        "staffId": "501",
+        "additionCode": "discharge",
+        "actionType": "面談",
+        "finalStatus": "自動確定",
+        "postCheckStatus": "ok",
+        "postCheckSummary": "当該施設職員との面談内容と受けた情報を記録する。",
+        "evaluatedAt": "2026-02-28 16:18",
+        "rationale": "病院 / それ以外 / 外出先 / 面談",
+        "savedNote": "当該施設の職員と面談し、退院後支援に必要な情報を受けて調整した。"
+      },
+      {
+        "recordId": "r5",
+        "targetMonth": "2026-03",
+        "performedAt": "2026-03-13 13:25",
+        "clientId": "1001",
+        "organizationId": "11",
+        "serviceId": "202",
+        "staffId": "503",
+        "additionCode": "mededu_interview",
+        "actionType": "面談",
+        "finalStatus": "自動確定",
+        "postCheckStatus": "ok",
+        "postCheckSummary": "同月1回まで。今月既存0件で範囲内です。",
+        "evaluatedAt": "2026-03-13 14:00",
+        "rationale": "福祉サービス等提供機関 / モニタリング月 / 外出先 / 面談",
+        "savedNote": "福祉サービス等提供機関の担当者と面談し、モニタリングに必要な情報を受けた。"
+      },
+      {
+        "recordId": "r6",
+        "targetMonth": "2026-01",
+        "performedAt": "2026-01-21 10:15",
+        "clientId": "1003",
+        "organizationId": "21",
+        "serviceId": "301",
+        "staffId": "501",
+        "additionCode": "hospital_info_i",
+        "actionType": "情報共有",
+        "finalStatus": "自動確定",
+        "postCheckStatus": "ok",
+        "postCheckSummary": "同月1回まで。今月既存0件で範囲内です。 / IIとの併算定不可。今月の併算定不可記録は見つかっていません。",
+        "evaluatedAt": "2026-01-21 10:40",
+        "rationale": "病院グループ / 外出先 / 情報共有",
+        "savedNote": "入院に当たり病院を訪問し、生活状況と支援上の留意点を情報提供した。"
+      }
+    ]
+  },
+  "questionDefinitions": [
+    {
+      "key": "monthType",
+      "order": 10,
+      "label": "対応した時期はどれですか",
+      "helper": "利用者の対象区分と機関・サービス条件は、選択済みの文脈から自動で候補に反映します。",
+      "options": [
+        {
+          "value": "モニタリング月",
+          "note": "モニタリング実施月に該当する場合"
+        },
+        {
+          "value": "計画作成月",
+          "note": "計画作成や更新の対象月に該当する場合"
+        },
+        {
+          "value": "それ以外",
+          "note": "通常月の支援や集中支援など"
+        }
+      ]
+    },
+    {
+      "key": "placeType",
+      "order": 20,
+      "label": "対応した場所はどこですか",
+      "helper": "ここでは制度用語より先に、実際にどこで対応したかだけを聞きます。",
+      "options": [
+        {
+          "value": "自事業所内",
+          "note": "電話、自事業所内の会議、面談など"
+        },
+        {
+          "value": "外出先",
+          "note": "訪問、同行、外部会議、現地確認など"
+        }
+      ]
+    },
+    {
+      "key": "actionType",
+      "order": 30,
+      "label": "その場で何をしましたか",
+      "helper": "相談員が迷いやすい用語は、あとで管理者説明を載せられる前提です。"
+    },
+    {
+      "key": "hospitalAdmissionContext",
+      "order": 40,
+      "label": "今回の情報提供は入院に当たってのものですか",
+      "helper": "入院時情報連携 I / II では、通常の病院連携と分けるために、入院に当たっての情報提供かどうかを先に確認します。",
+      "options": [
+        {
+          "value": "入院に当たっている",
+          "note": "今回の情報提供は入院に当たって病院へ行った、または病院へ連絡したもの"
+        },
+        {
+          "value": "入院に当たっていない",
+          "note": "今回の情報提供は入院対応ではなく、通常の連携や別件の情報共有"
+        }
+      ]
+    },
+    {
+      "key": "requiredInfoReceived",
+      "order": 44,
+      "label": "判定に必要な情報を相手から受けましたか",
+      "helper": "医保教の面談・会議や退院・退所では、面談や調整だけでなく、必要な情報の提供を受けたかを確認します。",
+      "options": [
+        {
+          "value": "受けた",
+          "note": "加算判定に必要な情報の提供を受けた"
+        },
+        {
+          "value": "受けていない",
+          "note": "面談や調整はしたが、必要な情報の提供は受けていない"
+        }
+      ]
+    },
+    {
+      "key": "dischargeFacilityStaffOnlyInfo",
+      "order": 45,
+      "label": "得た情報は退院・退所する施設の職員からだけですか",
+      "helper": "医保教の面談・会議では、退院・退所する施設の職員からの情報だけで終わる場合は不可です。",
+      "options": [
+        {
+          "value": "施設職員以外も含む",
+          "note": "退院・退所する施設の職員以外からの情報や調整も含まれている"
+        },
+        {
+          "value": "施設職員のみ",
+          "note": "退院・退所する施設の職員からの情報だけで対応した"
+        }
+      ]
+    },
+    {
+      "key": "dischargeInpatientPeriodCount",
+      "order": 47,
+      "label": "今回の調整は、同じ入所・入院期間中で何回目ですか",
+      "helper": "退院・退所加算は、同じ入所・入院期間中で3回までです。分からない場合も要確認に回します。",
+      "options": [
+        {
+          "value": "1回目",
+          "note": "この入所・入院期間で最初の調整"
+        },
+        {
+          "value": "2回目",
+          "note": "この入所・入院期間ですでに1回記録がある"
+        },
+        {
+          "value": "3回目",
+          "note": "この入所・入院期間ですでに2回記録がある"
+        },
+        {
+          "value": "4回目以上・不明",
+          "note": "4回目以上、または回数を確定できない"
+        }
+      ]
+    },
+    {
+      "key": "initialAdditionPlanned",
+      "order": 50,
+      "label": "この月に初回加算も算定しますか",
+      "helper": "面談・会議系や退院・退所系では、初回加算との重複可否を最後に確認します。",
+      "options": [
+        {
+          "value": "初回加算なし",
+          "note": "この月は初回加算を算定しない"
+        },
+        {
+          "value": "初回加算あり",
+          "note": "この月に初回加算も算定する予定がある"
+        }
+      ]
+    },
+    {
+      "key": "careManagerStart",
+      "order": 40,
+      "label": "今回の支援はケアマネ利用開始に伴うものですか",
+      "helper": "居宅連携系では、ケアマネ利用開始の文脈かどうかを候補の前提として確認します。",
+      "options": [
+        {
+          "value": "利用開始あり",
+          "note": "今回の支援はケアマネ利用開始に伴う"
+        },
+        {
+          "value": "利用開始なし",
+          "note": "ケアマネ利用開始とは別の文脈"
+        }
+      ]
+    },
+    {
+      "key": "employmentStart",
+      "order": 40,
+      "label": "今回の支援は通常の事業所への新規雇用に伴うものですか",
+      "helper": "居宅連携（就労）系では、新規雇用開始の文脈かどうかを候補の前提として確認します。",
+      "options": [
+        {
+          "value": "新規雇用あり",
+          "note": "通常の事業所への新規雇用に伴う支援"
+        },
+        {
+          "value": "新規雇用なし",
+          "note": "新規雇用開始とは別の文脈"
+        }
+      ]
+    },
+    {
+      "key": "serviceUseStartMonth",
+      "order": 46,
+      "label": "今回の調整はサービス等の利用開始月のものですか",
+      "helper": "退院・退所加算では、候補が絞れた段階で、サービス等の利用開始月に行った調整かどうかを最後に確認します。",
+      "options": [
+        {
+          "value": "開始月である",
+          "note": "今回の調整はサービス等の利用開始月に行った"
+        },
+        {
+          "value": "開始月ではない",
+          "note": "利用開始月とは別の月の調整"
+        }
+      ]
+    }
+  ]
+}
