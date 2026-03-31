@@ -44,7 +44,7 @@ function app_config(): array
     $configFile = APP_ROOT . '/config/app.php';
 
     if (!is_file($configFile)) {
-        throw new RuntimeException('config/app.php がありません。app.example.php をコピーして設定してください。');
+        throw new RuntimeException('config/app.php がありません。config/app.example.php をコピーして設定してください。');
     }
 
     $config = require $configFile;

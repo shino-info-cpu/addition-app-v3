@@ -7,6 +7,7 @@
 
 - `config/app.example.php`
   配置時の設定雛形です。実際には `config/app.php` を作って使います。
+  `config/app.php` は repo に含めず、ローカルや本番側でだけ置く前提です。
 - `public/api/*.php`
   直接公開される API エンドポイントです。
 - `src/Infrastructure`
@@ -55,6 +56,7 @@
 - `report-records.php` は、`evaluation_candidate` があれば `candidate_count` と `candidate_names_summary` も返します
 - `evaluation-cases.php` は、`prompt_text` と `ai_draft_text` が payload にあれば `saved_note` へ一緒に保存します
 - Composer なしでも動く形にしてあるので、共有レンタルサーバーに載せやすいはずです
+- repo 内で配る設定雛形は `config/app.example.php` だけです。`src/config` は使いません
 - さくら側が PHP 7.4 の場合を想定し、バックエンドは PHP 7.4 互換の記法に寄せています
 - ログインは将来的に Google Workspace を使う前提です
 - そのため、業務上の相談員とは別に `operator_account` と `audit_event` を持つ設計にしています

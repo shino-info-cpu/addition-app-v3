@@ -692,6 +692,17 @@ select {
   background: rgba(255, 255, 255, 0.82);
 }
 
+.stacked-field {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.stacked-field > span {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
 .inline-help {
   margin: 14px 0 0;
   color: var(--muted);
@@ -823,6 +834,17 @@ tbody tr:hover {
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.74);
   border: 1px solid rgba(13, 92, 99, 0.08);
+}
+
+.relation-item-button {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+}
+
+.relation-item-button.is-current {
+  border-color: rgba(13, 92, 99, 0.42);
+  background: rgba(216, 238, 236, 0.6);
 }
 
 .relation-item-head {

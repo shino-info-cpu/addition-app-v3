@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>加算アプリ v3 試作</title>
-  <link rel="stylesheet" href="./styles.css?v=20260328k">
+  <link rel="stylesheet" href="./styles.css?v=20260331d">
 </head>
 <body>
   <div class="app-shell">
@@ -473,24 +473,66 @@
           <div class="panel-header">
             <div>
               <p class="eyebrow">サービスマスタ</p>
-              <h2>サービス名と対象を横並びで確認する</h2>
+              <h2>サービス一覧とAI下書き設定をまとめて見る</h2>
             </div>
             <div class="status-pill" id="services-count">0件</div>
           </div>
-          <div class="card simple-master-card">
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>サービス名</th>
-                    <th>区分</th>
-                    <th>対象範囲</th>
-                    <th>グループ</th>
-                  </tr>
-                </thead>
-                <tbody id="services-table-body"></tbody>
-              </table>
-            </div>
+          <div class="master-layout">
+            <section class="card simple-master-card master-table-card">
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>サービス名</th>
+                      <th>区分</th>
+                      <th>対象範囲</th>
+                      <th>グループ</th>
+                    </tr>
+                  </thead>
+                  <tbody id="services-table-body"></tbody>
+                </table>
+              </div>
+            </section>
+
+            <aside class="stack master-side-stack">
+              <section class="card">
+                <div class="card-head">
+                  <div>
+                    <p class="eyebrow">AI下書き設定</p>
+                    <h3 id="addition-prompt-selected-addition">加算を選択してください</h3>
+                  </div>
+                  <span class="meta-text" id="addition-prompt-selected-code">-</span>
+                </div>
+                <div class="form-grid">
+                  <label>
+                    <span>加算</span>
+                    <select id="addition-prompt-addition"></select>
+                  </label>
+                </div>
+                <label class="stacked-field">
+                  <span>AI指示文</span>
+                  <textarea id="addition-prompt-template" class="note-editor" rows="8" placeholder="未設定なら共通の指示文を使います。"></textarea>
+                </label>
+                <p class="inline-help" id="addition-prompt-help">この加算だけ、AI下書きの書きぶりを変えたいときに使います。空欄なら共通文です。</p>
+                <div class="card-foot">
+                  <span class="inline-status" id="addition-prompt-status">読込待ち</span>
+                  <div class="note-toolbar-actions">
+                    <button type="button" class="secondary-button compact-button" id="addition-prompt-reset">元に戻す</button>
+                    <button type="button" class="primary-button" id="addition-prompt-save">AI指示文を保存</button>
+                  </div>
+                </div>
+              </section>
+
+              <section class="card">
+                <div class="card-head">
+                  <div>
+                    <p class="eyebrow">現在の設定状況</p>
+                    <h3>加算一覧</h3>
+                  </div>
+                </div>
+                <div class="relation-list" id="addition-prompt-list"></div>
+              </section>
+            </aside>
           </div>
         </section>
       </main>
@@ -503,10 +545,10 @@
   <script src="./rule-runtime-adapter.js?v=20260331c"></script>
   <script src="./master-data-bridge.js?v=20260329i"></script>
   <script src="./judgement-engine-bridge.js?v=20260330d"></script>
-  <script src="./api-runtime-adapter.js?v=20260331b"></script>
+  <script src="./api-runtime-adapter.js?v=20260331d"></script>
   <script src="./judgement-report-bridge.js?v=20260331c"></script>
   <script src="./judgement-session-bridge.js?v=20260331c"></script>
-  <script src="./app.js?v=20260331b"></script>
+  <script src="./app.js?v=20260331d"></script>
 </body>
 </html>
 

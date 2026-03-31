@@ -115,6 +115,43 @@ final class RuleCatalogRepository
         return array_values($familiesById);
     }
 
+    public function fetchAdditionPromptSettings(): array
+    {
+        return array_map(static function (array $family): array {
+            $promptTemplate = (string) ($family['promptTemplate'] ?? '');
+
+            return [
+                'additionId' => (int) ($family['additionId'] ?? 0),
+                'additionCode' => (string) ($family['additionCode'] ?? ''),
+                'additionName' => (string) ($family['additionName'] ?? ''),
+                'targetScope' => (string) ($family['targetScope'] ?? ''),
+                'promptTemplate' => $promptTemplate,
+                'hasPromptTemplate' => trim($promptTemplate) !== '',
+            ];
+        }, $this->fetchAdditionFamilies());
+    }
+
+    public function updateAdditionPromptTemplate(int $additionId, string $promptTemplate): ?array
+    {
+        $statement = $this->pdo->prepare(<<<SQL
+            UPDATE addition
+            SET prompt_template = :prompt_template
+            WHERE addition_id = :addition_id
+              AND is_active = 1
+        SQL);
+
+        $statement->execute([
+            'prompt_template' => $promptTemplate,
+            'addition_id' => $additionId,
+        ]);
+
+        if ($statement->rowCount() === 0 && $this->fetchAdditionPromptSettingById($additionId) === null) {
+            return null;
+        }
+
+        return $this->fetchAdditionPromptSettingById($additionId);
+    }
+
     private function buildRuntimeQuestion(array $question): array
     {
         $question['key'] = (string) $question['fieldKey'];
@@ -338,6 +375,42 @@ final class RuleCatalogRepository
                 'note' => $row['note'],
             ];
         }, $rows);
+    }
+
+    private function fetchAdditionPromptSettingById(int $additionId): ?array
+    {
+        $statement = $this->pdo->prepare(<<<SQL
+            SELECT
+              addition_id,
+              addition_code,
+              addition_name,
+              target_scope,
+              prompt_template
+            FROM addition
+            WHERE addition_id = :addition_id
+              AND is_active = 1
+            LIMIT 1
+        SQL);
+
+        $statement->execute([
+            'addition_id' => $additionId,
+        ]);
+
+        $row = $statement->fetch();
+        if (!is_array($row)) {
+            return null;
+        }
+
+        $promptTemplate = (string) ($row['prompt_template'] ?? '');
+
+        return [
+            'additionId' => (int) $row['addition_id'],
+            'additionCode' => (string) $row['addition_code'],
+            'additionName' => (string) $row['addition_name'],
+            'targetScope' => (string) ($row['target_scope'] ?? ''),
+            'promptTemplate' => $promptTemplate,
+            'hasPromptTemplate' => trim($promptTemplate) !== '',
+        ];
     }
 
     private function fetchAdditionBranches(): array

@@ -147,6 +147,16 @@ const state = {
     savingClientEnrollment: false,
     deactivatingClientEnrollmentId: "",
   },
+  additionPrompts: {
+    items: [],
+    selectedAdditionId: "",
+    promptTemplate: "",
+    originalPromptTemplate: "",
+    status: "読込待ち",
+    loading: false,
+    saving: false,
+    source: "sample",
+  },
 };
 
 const ruleRuntimeAdapterFactory = globalThis.__KASAN_RULE_RUNTIME_ADAPTER__;
@@ -249,6 +259,7 @@ const apiRuntimeAdapter = apiRuntimeAdapterFactory.createApiRuntimeAdapter({
   flattenApiAdditionCatalogBranches,
   buildSampleOrganizationServices,
   buildSampleClientEnrollments,
+  buildSampleAdditionPromptSettings,
   buildSampleReportRecords,
   getSampleJudgementHistoryRecords,
   canUseApiRelations,
@@ -361,6 +372,15 @@ const dom = {
     organizationServiceList: document.querySelector("#organization-service-list"),
     servicesCount: document.querySelector("#services-count"),
     servicesBody: document.querySelector("#services-table-body"),
+    additionPromptSelected: document.querySelector("#addition-prompt-selected-addition"),
+    additionPromptSelectedCode: document.querySelector("#addition-prompt-selected-code"),
+    additionPromptAddition: document.querySelector("#addition-prompt-addition"),
+    additionPromptTemplate: document.querySelector("#addition-prompt-template"),
+    additionPromptHelp: document.querySelector("#addition-prompt-help"),
+    additionPromptStatus: document.querySelector("#addition-prompt-status"),
+    additionPromptReset: document.querySelector("#addition-prompt-reset"),
+    additionPromptSave: document.querySelector("#addition-prompt-save"),
+    additionPromptList: document.querySelector("#addition-prompt-list"),
   },
 };
 
@@ -415,6 +435,14 @@ async function requestNoteDraft(payload) {
 
 async function loadAdditionCatalogFromApi() {
   return apiRuntimeAdapter.loadAdditionCatalogFromApi();
+}
+
+async function loadAdditionPromptSettingsFromApi(options) {
+  return apiRuntimeAdapter.loadAdditionPromptSettingsFromApi(options);
+}
+
+async function saveAdditionPromptTemplate(additionId, promptTemplate) {
+  return apiRuntimeAdapter.saveAdditionPromptTemplate(additionId, promptTemplate);
 }
 
 async function loadOrganizationServices(organizationId, { force = false } = {}) {
@@ -627,6 +655,28 @@ function bindMasterControls() {
   dom.masters.clientEnrollmentSave.addEventListener("click", () => {
     void saveClientEnrollment();
   });
+
+  dom.masters.additionPromptAddition.addEventListener("change", (event) => {
+    state.additionPrompts.selectedAdditionId = event.target.value;
+    syncAdditionPromptSelection({ resetText: true });
+    state.additionPrompts.status = "未変更";
+    renderMasters();
+  });
+
+  dom.masters.additionPromptTemplate.addEventListener("input", (event) => {
+    state.additionPrompts.promptTemplate = event.target.value;
+    state.additionPrompts.status = isCurrentAdditionPromptDirty() ? "編集中" : "未変更";
+    renderAdditionPromptStatusOnly();
+  });
+
+  dom.masters.additionPromptReset.addEventListener("click", () => {
+    resetAdditionPromptEditor();
+    renderMasters();
+  });
+
+  dom.masters.additionPromptSave.addEventListener("click", () => {
+    void saveSelectedAdditionPromptTemplate();
+  });
 }
 
 async function saveOrganizationService() {
@@ -716,6 +766,85 @@ async function saveClientEnrollment() {
     state.relations.clientEnrollmentStatus = error.message;
   } finally {
     state.relations.savingClientEnrollment = false;
+    renderMasters();
+  }
+}
+
+function getAdditionPromptSettingItems() {
+  if (Array.isArray(state.additionPrompts.items) && state.additionPrompts.items.length > 0) {
+    return state.additionPrompts.items;
+  }
+
+  return buildSampleAdditionPromptSettings();
+}
+
+function getSelectedAdditionPromptSetting() {
+  return getAdditionPromptSettingItems().find((item) => item.additionId === state.additionPrompts.selectedAdditionId) ?? null;
+}
+
+function syncAdditionPromptSelection(options = {}) {
+  const items = getAdditionPromptSettingItems();
+  const resetText = Boolean(options.resetText);
+
+  if (items.length === 0) {
+    state.additionPrompts.selectedAdditionId = "";
+    state.additionPrompts.promptTemplate = "";
+    state.additionPrompts.originalPromptTemplate = "";
+    return;
+  }
+
+  if (!items.some((item) => item.additionId === state.additionPrompts.selectedAdditionId)) {
+    state.additionPrompts.selectedAdditionId = items[0].additionId;
+  }
+
+  const selectedItem = items.find((item) => item.additionId === state.additionPrompts.selectedAdditionId);
+  if (!selectedItem) {
+    return;
+  }
+
+  const normalizedTemplate = String(selectedItem.promptTemplate ?? "");
+  state.additionPrompts.originalPromptTemplate = normalizedTemplate;
+  if (resetText || state.additionPrompts.promptTemplate === "") {
+    state.additionPrompts.promptTemplate = normalizedTemplate;
+  }
+}
+
+function resetAdditionPromptEditor() {
+  state.additionPrompts.promptTemplate = state.additionPrompts.originalPromptTemplate;
+  state.additionPrompts.status = "未変更";
+}
+
+function isCurrentAdditionPromptDirty() {
+  return String(state.additionPrompts.promptTemplate ?? "") !== String(state.additionPrompts.originalPromptTemplate ?? "");
+}
+
+async function saveSelectedAdditionPromptTemplate() {
+  const selectedItem = getSelectedAdditionPromptSetting();
+  if (!selectedItem || !selectedItem.additionId) {
+    state.additionPrompts.status = "加算を選んでください";
+    renderMasters();
+    return;
+  }
+
+  if (!canUseApiAdditionPromptSettings()) {
+    state.additionPrompts.status = "API接続後に保存できます";
+    renderMasters();
+    return;
+  }
+
+  state.additionPrompts.saving = true;
+  state.additionPrompts.status = "保存中";
+  renderMasters();
+
+  try {
+    await saveAdditionPromptTemplate(Number(selectedItem.additionId), state.additionPrompts.promptTemplate);
+    await loadAdditionCatalogFromApi();
+    await loadAdditionPromptSettingsFromApi({ force: true, preserveSelection: selectedItem.additionId });
+    state.additionPrompts.status = "保存しました";
+  } catch (error) {
+    state.additionPrompts.status = error.message;
+  } finally {
+    state.additionPrompts.saving = false;
     renderMasters();
   }
 }
@@ -1559,6 +1688,7 @@ function renderMasters() {
   renderClientEnrollmentPanel();
   renderOrganizationServicePanel();
   renderServiceTable();
+  renderAdditionPromptPanel();
 }
 
 function renderClientTable() {
@@ -1768,6 +1898,83 @@ function renderServiceTable() {
         <td>${escapeHtml(service.groupName)}</td>
       </tr>
     `).join("");
+}
+
+function renderAdditionPromptStatusOnly() {
+  if (!dom.masters.additionPromptStatus) {
+    return;
+  }
+  dom.masters.additionPromptStatus.textContent = state.additionPrompts.status;
+}
+
+function renderAdditionPromptPanel() {
+  const items = getAdditionPromptSettingItems();
+  syncAdditionPromptSelection();
+
+  const selectedItem = getSelectedAdditionPromptSetting();
+  const canEdit = canUseApiAdditionPromptSettings() && !state.additionPrompts.loading && !state.additionPrompts.saving && Boolean(selectedItem);
+
+  renderSelectOptions(
+    dom.masters.additionPromptAddition,
+    items,
+    state.additionPrompts.selectedAdditionId,
+    (item) => ({
+      value: item.additionId,
+      label: item.additionName,
+    }),
+    "加算がありません"
+  );
+
+  dom.masters.additionPromptSelected.textContent = selectedItem ? selectedItem.additionName : "加算を選択してください";
+  dom.masters.additionPromptSelectedCode.textContent = selectedItem
+    ? `${selectedItem.additionCode}${selectedItem.hasPromptTemplate ? " / 設定あり" : " / 共通文"}`
+    : "-";
+  dom.masters.additionPromptTemplate.value = state.additionPrompts.promptTemplate;
+  dom.masters.additionPromptTemplate.disabled = !canEdit;
+  dom.masters.additionPromptReset.disabled = !selectedItem || state.additionPrompts.saving;
+  dom.masters.additionPromptSave.disabled = !canEdit || !isCurrentAdditionPromptDirty();
+
+  if (state.additionPrompts.loading) {
+    dom.masters.additionPromptHelp.textContent = "AI指示文設定を読み込み中です。";
+  } else if (!selectedItem) {
+    dom.masters.additionPromptHelp.textContent = "加算がまだありません。";
+  } else if (!canUseApiAdditionPromptSettings()) {
+    dom.masters.additionPromptHelp.textContent = "API接続後に保存できます。空欄なら共通の指示文を使います。";
+  } else {
+    dom.masters.additionPromptHelp.textContent = "この加算だけ、AI下書きの書きぶりを変えたいときに使います。空欄なら共通文です。";
+  }
+
+  const listItems = items.filter((item) => matchesQuickSearch([
+    item.additionName,
+    item.additionCode,
+    item.hasPromptTemplate ? "設定あり" : "共通文",
+  ], state.activeSection === "services"));
+
+  dom.masters.additionPromptList.innerHTML = listItems.length === 0
+    ? `<div class="empty-state">該当する加算がありません。</div>`
+    : listItems.map((item) => `
+      <button
+        type="button"
+        class="relation-item relation-item-button${item.additionId === state.additionPrompts.selectedAdditionId ? " is-current" : ""}"
+        data-addition-prompt-id="${escapeHtml(item.additionId)}"
+      >
+        <div class="relation-item-head">
+          <strong>${escapeHtml(item.additionName)}</strong>
+        </div>
+        <span>${escapeHtml(item.hasPromptTemplate ? "設定あり" : "共通文を使用")} / ${escapeHtml(item.additionCode)}</span>
+      </button>
+    `).join("");
+
+  for (const button of dom.masters.additionPromptList.querySelectorAll("[data-addition-prompt-id]")) {
+    button.addEventListener("click", () => {
+      state.additionPrompts.selectedAdditionId = button.dataset.additionPromptId || "";
+      syncAdditionPromptSelection({ resetText: true });
+      state.additionPrompts.status = "未変更";
+      renderMasters();
+    });
+  }
+
+  renderAdditionPromptStatusOnly();
 }
 
 function renderQuickSearchStatus() {
@@ -2205,6 +2412,13 @@ function canUseApiAdditionCatalog() {
   );
 }
 
+function canUseApiAdditionPromptSettings() {
+  return Boolean(
+    state.dataSource.apiBaseUrl
+    && state.dataSource.configReady
+  );
+}
+
 function getMasterClients() {
   return masterDataBridge.getMasterClients();
 }
@@ -2215,6 +2429,42 @@ function getMasterOrganizations() {
 
 function getMasterServices() {
   return masterDataBridge.getMasterServices();
+}
+
+function buildSampleAdditionPromptSettings() {
+  const itemsByKey = new Map();
+
+  for (const candidate of getActiveCandidateDefinitions()) {
+    const additionId = normalizeNumericId(candidate.additionId ?? "");
+    const familyCode = String(candidate.additionFamilyCode ?? candidate.additionCode ?? "").trim();
+    const familyName = String(candidate.additionFamilyName ?? candidate.additionName ?? "").trim();
+    if (!familyCode || !familyName) {
+      continue;
+    }
+
+    const itemKey = additionId !== null ? `id:${additionId}` : `code:${familyCode}`;
+    if (itemsByKey.has(itemKey)) {
+      continue;
+    }
+
+    const promptTemplate = String(candidate.promptTemplate ?? "").trim();
+    itemsByKey.set(itemKey, {
+      additionId: additionId !== null ? String(additionId) : "",
+      additionCode: familyCode,
+      additionName: familyName,
+      promptTemplate,
+      hasPromptTemplate: promptTemplate !== "",
+    });
+  }
+
+  return Array.from(itemsByKey.values()).sort((left, right) => {
+    const leftId = normalizeNumericId(left.additionId ?? "") ?? Number.MAX_SAFE_INTEGER;
+    const rightId = normalizeNumericId(right.additionId ?? "") ?? Number.MAX_SAFE_INTEGER;
+    if (leftId !== rightId) {
+      return leftId - rightId;
+    }
+    return String(left.additionName).localeCompare(String(right.additionName), "ja");
+  });
 }
 
 function getJudgementClients() {

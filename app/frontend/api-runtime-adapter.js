@@ -15,6 +15,7 @@
     const flattenApiAdditionCatalogBranches = options.flattenApiAdditionCatalogBranches;
     const buildSampleOrganizationServices = options.buildSampleOrganizationServices;
     const buildSampleClientEnrollments = options.buildSampleClientEnrollments;
+    const buildSampleAdditionPromptSettings = options.buildSampleAdditionPromptSettings;
     const buildSampleReportRecords = options.buildSampleReportRecords;
     const getSampleJudgementHistoryRecords = options.getSampleJudgementHistoryRecords;
     const canUseApiRelations = options.canUseApiRelations;
@@ -116,6 +117,7 @@
       await loadMastersFromApi();
       await loadQuestionCatalogFromApi();
       await loadAdditionCatalogFromApi();
+      await loadAdditionPromptSettingsFromApi();
       ensureRelationSelections();
       await Promise.all([
         loadOrganizationServices(state.relations.selectedOrganizationId),
@@ -218,10 +220,74 @@
       }
     }
 
+    async function loadAdditionPromptSettingsFromApi(options = {}) {
+      const force = Boolean(options.force);
+      const preserveSelection = String(options.preserveSelection ?? "").trim();
+
+      if (!state.dataSource.apiBaseUrl || !state.dataSource.configReady) {
+        state.additionPrompts.items = buildSampleAdditionPromptSettings();
+        state.additionPrompts.loading = false;
+        state.additionPrompts.source = "sample";
+        state.additionPrompts.status = state.additionPrompts.items.length > 0
+          ? "API接続後に保存できます"
+          : "加算がありません";
+        renderMasters();
+        return;
+      }
+
+      if (!force && Array.isArray(state.additionPrompts.items) && state.additionPrompts.items.length > 0 && state.additionPrompts.source === "api") {
+        renderMasters();
+        return;
+      }
+
+      state.additionPrompts.loading = true;
+      renderMasters();
+
+      try {
+        const response = await fetchApiJson(buildApiUrl("addition-prompt-settings.php"));
+        const items = Array.isArray(response.items) ? response.items.map((item) => {
+          const promptTemplate = String(item?.promptTemplate ?? "");
+          return {
+            additionId: String(item?.additionId ?? ""),
+            additionCode: String(item?.additionCode ?? ""),
+            additionName: String(item?.additionName ?? ""),
+            promptTemplate,
+            hasPromptTemplate: Boolean(item?.hasPromptTemplate) || promptTemplate.trim() !== "",
+          };
+        }) : [];
+
+        state.additionPrompts.items = items;
+        state.additionPrompts.source = "api";
+        if (preserveSelection) {
+          state.additionPrompts.selectedAdditionId = preserveSelection;
+        }
+        state.additionPrompts.status = items.length > 0
+          ? (state.additionPrompts.saving ? state.additionPrompts.status : "未変更")
+          : "加算がありません";
+      } catch (error) {
+        state.additionPrompts.items = buildSampleAdditionPromptSettings();
+        state.additionPrompts.source = "sample";
+        state.additionPrompts.status = error.message;
+      } finally {
+        state.additionPrompts.loading = false;
+        renderMasters();
+      }
+    }
+
     async function requestNoteDraft(payload) {
       return fetchApiJson(buildApiUrl("note-draft.php"), {
         method: "POST",
         body: JSON.stringify(payload ?? {}),
+      });
+    }
+
+    async function saveAdditionPromptTemplate(additionId, promptTemplate) {
+      return fetchApiJson(buildApiUrl("addition-prompt-settings.php"), {
+        method: "POST",
+        body: JSON.stringify({
+          addition_id: additionId,
+          prompt_template: promptTemplate ?? "",
+        }),
       });
     }
 
@@ -492,7 +558,9 @@
       loadMastersFromApi,
       loadQuestionCatalogFromApi,
       loadAdditionCatalogFromApi,
+      loadAdditionPromptSettingsFromApi,
       requestNoteDraft,
+      saveAdditionPromptTemplate,
       loadOrganizationServices,
       loadClientEnrollments,
       loadJudgementContextFromApi,

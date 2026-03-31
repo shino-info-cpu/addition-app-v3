@@ -19,7 +19,7 @@ return [
         'enabled' => false,
         'api_key' => 'sk-...',
         'model' => 'gpt-5.4',
-        'reasoning_effort' => 'minimal',
+        'reasoning_effort' => 'low',
         'max_output_tokens' => 600,
         'timeout_seconds' => 30,
     ],
