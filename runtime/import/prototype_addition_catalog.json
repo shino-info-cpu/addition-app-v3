@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-30T13:23:33.670Z",
+  "generatedAt": "2026-03-31T13:44:49.782Z",
   "source": "runtime/rule-master/rule-master-source.js",
   "families": [
     {
@@ -7,6 +7,7 @@
       "additionName": "医療・保育・教育機関等連携加算",
       "shortName": "医療・保育・教育機関等連携加算",
       "targetScope": "児者",
+      "promptTemplate": null,
       "note": "Generated from app/frontend/app.js prototype branch definitions.",
       "branches": [
         {
@@ -48,6 +49,7 @@
       "additionName": "集中支援加算",
       "shortName": "集中支援加算",
       "targetScope": "児者",
+      "promptTemplate": null,
       "note": "Generated from app/frontend/app.js prototype branch definitions.",
       "branches": [
         {
@@ -121,6 +123,7 @@
       "additionName": "モニタリング加算",
       "shortName": "モニタリング加算",
       "targetScope": "児者",
+      "promptTemplate": null,
       "note": "Generated from app/frontend/app.js prototype branch definitions.",
       "branches": [
         {
@@ -138,6 +141,7 @@
       "additionName": "担当者会議加算",
       "shortName": "担当者会議加算",
       "targetScope": "児者",
+      "promptTemplate": null,
       "note": "Generated from app/frontend/app.js prototype branch definitions.",
       "branches": [
         {
@@ -155,6 +159,7 @@
       "additionName": "退院・退所加算",
       "shortName": "退院・退所加算",
       "targetScope": "児者",
+      "promptTemplate": null,
       "note": "Generated from app/frontend/app.js prototype branch definitions.",
       "branches": [
         {
@@ -172,6 +177,7 @@
       "additionName": "入院時情報連携加算 I",
       "shortName": "入院時情報連携加算 I",
       "targetScope": "児者",
+      "promptTemplate": null,
       "note": "Generated from app/frontend/app.js prototype branch definitions.",
       "branches": [
         {
@@ -189,6 +195,7 @@
       "additionName": "入院時情報連携加算 II",
       "shortName": "入院時情報連携加算 II",
       "targetScope": "児者",
+      "promptTemplate": null,
       "note": "Generated from app/frontend/app.js prototype branch definitions.",
       "branches": [
         {
@@ -206,6 +213,7 @@
       "additionName": "保・教支援",
       "shortName": "保・教支援",
       "targetScope": "児",
+      "promptTemplate": null,
       "note": "Generated from app/frontend/app.js prototype branch definitions.",
       "branches": [
         {
@@ -239,6 +247,7 @@
       "additionName": "居宅連携",
       "shortName": "居宅連携",
       "targetScope": "者",
+      "promptTemplate": null,
       "note": "Generated from app/frontend/app.js prototype branch definitions.",
       "branches": [
         {
@@ -272,6 +281,7 @@
       "additionName": "居宅連携（就労）",
       "shortName": "居宅連携（就労）",
       "targetScope": "者",
+      "promptTemplate": null,
       "note": "Generated from app/frontend/app.js prototype branch definitions.",
       "branches": [
         {

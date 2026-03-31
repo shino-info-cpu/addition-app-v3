@@ -11,6 +11,7 @@ const frontendMasterDataBridgeAssetPath = path.resolve(__dirname, "../app/fronte
 const frontendJudgementEngineBridgeAssetPath = path.resolve(__dirname, "../app/frontend/judgement-engine-bridge.js");
 const frontendApiRuntimeAdapterAssetPath = path.resolve(__dirname, "../app/frontend/api-runtime-adapter.js");
 const frontendJudgementReportBridgeAssetPath = path.resolve(__dirname, "../app/frontend/judgement-report-bridge.js");
+const frontendJudgementSessionBridgeAssetPath = path.resolve(__dirname, "../app/frontend/judgement-session-bridge.js");
 const additionCatalogPath = path.resolve(__dirname, "../runtime/import/prototype_addition_catalog.json");
 const branchRuleCatalogPath = path.resolve(__dirname, "../runtime/import/prototype_branch_rule_catalog.json");
 const frontendSampleDataAsset = fs.readFileSync(frontendSampleDataAssetPath, "utf8");
@@ -21,6 +22,7 @@ const frontendMasterDataBridgeAsset = fs.readFileSync(frontendMasterDataBridgeAs
 const frontendJudgementEngineBridgeAsset = fs.readFileSync(frontendJudgementEngineBridgeAssetPath, "utf8");
 const frontendApiRuntimeAdapterAsset = fs.readFileSync(frontendApiRuntimeAdapterAssetPath, "utf8");
 const frontendJudgementReportBridgeAsset = fs.readFileSync(frontendJudgementReportBridgeAssetPath, "utf8");
+const frontendJudgementSessionBridgeAsset = fs.readFileSync(frontendJudgementSessionBridgeAssetPath, "utf8");
 const source = fs.readFileSync(appJsPath, "utf8");
 const additionCatalog = JSON.parse(fs.readFileSync(additionCatalogPath, "utf8"));
 const branchRuleCatalog = JSON.parse(fs.readFileSync(branchRuleCatalogPath, "utf8"));
@@ -77,6 +79,7 @@ vm.runInContext(frontendMasterDataBridgeAsset, context);
 vm.runInContext(frontendJudgementEngineBridgeAsset, context);
 vm.runInContext(frontendApiRuntimeAdapterAsset, context);
 vm.runInContext(frontendJudgementReportBridgeAsset, context);
+vm.runInContext(frontendJudgementSessionBridgeAsset, context);
 vm.runInContext(source, context);
 
 const runtimeAdditions = context.__KASAN_PROTOTYPE_RULE_CATALOG__.additions;
@@ -119,6 +122,7 @@ const scenarios = [
       allHaveConditionGroups: true,
       familyCode: "mededu",
       familyName: "医療・保育・教育機関等連携加算",
+      promptTemplate: "",
     },
     run: `
       const definitions = getActiveCandidateDefinitions();
@@ -128,6 +132,7 @@ const scenarios = [
         allHaveConditionGroups: definitions.every((candidate) => Array.isArray(candidate.conditionGroups) && candidate.conditionGroups.length > 0),
         familyCode: mededuInfo ? mededuInfo.additionFamilyCode : "",
         familyName: mededuInfo ? mededuInfo.additionFamilyName : "",
+        promptTemplate: mededuInfo ? String(mededuInfo.promptTemplate ?? "") : "",
       };
     `,
   },

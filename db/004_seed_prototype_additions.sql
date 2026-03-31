@@ -2,7 +2,7 @@
 -- Seeds prototype addition families and branches into addition / addition_branch.
 START TRANSACTION;
 
-INSERT INTO addition (addition_code, addition_name, short_name, target_scope, note, is_active) VALUES ('mededu', '医療・保育・教育機関等連携加算', '医療・保育・教育機関等連携加算', '児者', 'Generated from app/frontend/app.js prototype branch definitions.', 1) ON DUPLICATE KEY UPDATE addition_name = VALUES(addition_name), short_name = VALUES(short_name), target_scope = VALUES(target_scope), note = VALUES(note), is_active = VALUES(is_active);
+INSERT INTO addition (addition_code, addition_name, short_name, target_scope, prompt_template, note, is_active) VALUES ('mededu', '医療・保育・教育機関等連携加算', '医療・保育・教育機関等連携加算', '児者', NULL, 'Generated from app/frontend/app.js prototype branch definitions.', 1) ON DUPLICATE KEY UPDATE addition_name = VALUES(addition_name), short_name = VALUES(short_name), target_scope = VALUES(target_scope), prompt_template = VALUES(prompt_template), note = VALUES(note), is_active = VALUES(is_active);
 INSERT INTO addition_branch (addition_id, branch_code, branch_name, branch_type, priority, auto_confirm_priority, description, is_active) SELECT a.addition_id, 'mededu_tsuuin', '医療・保育・教育機関等連携加算（通院同行）', '通院同行', 90, 90, '確定条件:
 - モニタリング月または計画作成月の病院等への通院同行で候補に残す
 - 後段では同月3回までと同一病院等は月1回までを確認する
@@ -45,7 +45,7 @@ INSERT INTO addition_branch (addition_id, branch_code, branch_name, branch_type,
 - 退院・退所加算との関係の細部はまだ未確定
 - 対象機関を福祉サービス等提供機関だけに絞っているが、制度境界の細部は未確定', 1 FROM addition AS a WHERE a.addition_code = 'mededu' ON DUPLICATE KEY UPDATE addition_id = VALUES(addition_id), branch_name = VALUES(branch_name), branch_type = VALUES(branch_type), priority = VALUES(priority), auto_confirm_priority = VALUES(auto_confirm_priority), description = VALUES(description), is_active = VALUES(is_active);
 
-INSERT INTO addition (addition_code, addition_name, short_name, target_scope, note, is_active) VALUES ('intensive', '集中支援加算', '集中支援加算', '児者', 'Generated from app/frontend/app.js prototype branch definitions.', 1) ON DUPLICATE KEY UPDATE addition_name = VALUES(addition_name), short_name = VALUES(short_name), target_scope = VALUES(target_scope), note = VALUES(note), is_active = VALUES(is_active);
+INSERT INTO addition (addition_code, addition_name, short_name, target_scope, prompt_template, note, is_active) VALUES ('intensive', '集中支援加算', '集中支援加算', '児者', NULL, 'Generated from app/frontend/app.js prototype branch definitions.', 1) ON DUPLICATE KEY UPDATE addition_name = VALUES(addition_name), short_name = VALUES(short_name), target_scope = VALUES(target_scope), prompt_template = VALUES(prompt_template), note = VALUES(note), is_active = VALUES(is_active);
 INSERT INTO addition_branch (addition_id, branch_code, branch_name, branch_type, priority, auto_confirm_priority, description, is_active) SELECT a.addition_id, 'intensive_visit', '集中支援加算（訪問）', '訪問', 200, 200, '確定条件:
 - それ以外月で候補に残す
 - 訪問のみ
@@ -99,7 +99,7 @@ INSERT INTO addition_branch (addition_id, branch_code, branch_name, branch_type,
 仮置き:
 - 薬局は病院/訪看枝と分けて、入院確認の質問を出さない', 1 FROM addition AS a WHERE a.addition_code = 'intensive' ON DUPLICATE KEY UPDATE addition_id = VALUES(addition_id), branch_name = VALUES(branch_name), branch_type = VALUES(branch_type), priority = VALUES(priority), auto_confirm_priority = VALUES(auto_confirm_priority), description = VALUES(description), is_active = VALUES(is_active);
 
-INSERT INTO addition (addition_code, addition_name, short_name, target_scope, note, is_active) VALUES ('monitoring', 'モニタリング加算', 'モニタリング加算', '児者', 'Generated from app/frontend/app.js prototype branch definitions.', 1) ON DUPLICATE KEY UPDATE addition_name = VALUES(addition_name), short_name = VALUES(short_name), target_scope = VALUES(target_scope), note = VALUES(note), is_active = VALUES(is_active);
+INSERT INTO addition (addition_code, addition_name, short_name, target_scope, prompt_template, note, is_active) VALUES ('monitoring', 'モニタリング加算', 'モニタリング加算', '児者', NULL, 'Generated from app/frontend/app.js prototype branch definitions.', 1) ON DUPLICATE KEY UPDATE addition_name = VALUES(addition_name), short_name = VALUES(short_name), target_scope = VALUES(target_scope), prompt_template = VALUES(prompt_template), note = VALUES(note), is_active = VALUES(is_active);
 INSERT INTO addition_branch (addition_id, branch_code, branch_name, branch_type, priority, auto_confirm_priority, description, is_active) SELECT a.addition_id, 'monitoring', 'モニタリング加算', 'サービス提供場面確認', 250, 250, '確定条件:
 - 提供現場の訪問確認で候補に残す
 - モニタリング月に限定しない
@@ -109,7 +109,7 @@ INSERT INTO addition_branch (addition_id, branch_code, branch_name, branch_type,
 - 現行UIでは「提供現場訪問」を「サービス提供場面確認」に寄せている
 - 対象機関と対象サービスの制度境界はまだ仮置き', 1 FROM addition AS a WHERE a.addition_code = 'monitoring' ON DUPLICATE KEY UPDATE addition_id = VALUES(addition_id), branch_name = VALUES(branch_name), branch_type = VALUES(branch_type), priority = VALUES(priority), auto_confirm_priority = VALUES(auto_confirm_priority), description = VALUES(description), is_active = VALUES(is_active);
 
-INSERT INTO addition (addition_code, addition_name, short_name, target_scope, note, is_active) VALUES ('conference', '担当者会議加算', '担当者会議加算', '児者', 'Generated from app/frontend/app.js prototype branch definitions.', 1) ON DUPLICATE KEY UPDATE addition_name = VALUES(addition_name), short_name = VALUES(short_name), target_scope = VALUES(target_scope), note = VALUES(note), is_active = VALUES(is_active);
+INSERT INTO addition (addition_code, addition_name, short_name, target_scope, prompt_template, note, is_active) VALUES ('conference', '担当者会議加算', '担当者会議加算', '児者', NULL, 'Generated from app/frontend/app.js prototype branch definitions.', 1) ON DUPLICATE KEY UPDATE addition_name = VALUES(addition_name), short_name = VALUES(short_name), target_scope = VALUES(target_scope), prompt_template = VALUES(prompt_template), note = VALUES(note), is_active = VALUES(is_active);
 INSERT INTO addition_branch (addition_id, branch_code, branch_name, branch_type, priority, auto_confirm_priority, description, is_active) SELECT a.addition_id, 'conference', '担当者会議加算', '担当者会議開催', 300, 300, '確定条件:
 - モニタリング月のみ
 - 福祉サービス等提供機関のみ
@@ -117,7 +117,7 @@ INSERT INTO addition_branch (addition_id, branch_code, branch_name, branch_type,
 - 同月1回まで
 - 医保教（面談・会議）との併算定不可を後段で確認する', 1 FROM addition AS a WHERE a.addition_code = 'conference' ON DUPLICATE KEY UPDATE addition_id = VALUES(addition_id), branch_name = VALUES(branch_name), branch_type = VALUES(branch_type), priority = VALUES(priority), auto_confirm_priority = VALUES(auto_confirm_priority), description = VALUES(description), is_active = VALUES(is_active);
 
-INSERT INTO addition (addition_code, addition_name, short_name, target_scope, note, is_active) VALUES ('discharge', '退院・退所加算', '退院・退所加算', '児者', 'Generated from app/frontend/app.js prototype branch definitions.', 1) ON DUPLICATE KEY UPDATE addition_name = VALUES(addition_name), short_name = VALUES(short_name), target_scope = VALUES(target_scope), note = VALUES(note), is_active = VALUES(is_active);
+INSERT INTO addition (addition_code, addition_name, short_name, target_scope, prompt_template, note, is_active) VALUES ('discharge', '退院・退所加算', '退院・退所加算', '児者', NULL, 'Generated from app/frontend/app.js prototype branch definitions.', 1) ON DUPLICATE KEY UPDATE addition_name = VALUES(addition_name), short_name = VALUES(short_name), target_scope = VALUES(target_scope), prompt_template = VALUES(prompt_template), note = VALUES(note), is_active = VALUES(is_active);
 INSERT INTO addition_branch (addition_id, branch_code, branch_name, branch_type, priority, auto_confirm_priority, description, is_active) SELECT a.addition_id, 'discharge', '退院・退所加算', '面談 / 退院前面談', 400, 400, '確定条件:
 - モニタリング月以外で候補に残す
 - 退院・退所対象施設の職員との対面面談のみ
@@ -131,7 +131,7 @@ INSERT INTO addition_branch (addition_id, branch_code, branch_name, branch_type,
 - 現行UIでは旧ラベルの「退院前面談」も面談として受ける
 - 入所施設、更生施設、児童施設、刑事施設等は名称推定に強い語だけを使っている', 1 FROM addition AS a WHERE a.addition_code = 'discharge' ON DUPLICATE KEY UPDATE addition_id = VALUES(addition_id), branch_name = VALUES(branch_name), branch_type = VALUES(branch_type), priority = VALUES(priority), auto_confirm_priority = VALUES(auto_confirm_priority), description = VALUES(description), is_active = VALUES(is_active);
 
-INSERT INTO addition (addition_code, addition_name, short_name, target_scope, note, is_active) VALUES ('hospital_info_i', '入院時情報連携加算 I', '入院時情報連携加算 I', '児者', 'Generated from app/frontend/app.js prototype branch definitions.', 1) ON DUPLICATE KEY UPDATE addition_name = VALUES(addition_name), short_name = VALUES(short_name), target_scope = VALUES(target_scope), note = VALUES(note), is_active = VALUES(is_active);
+INSERT INTO addition (addition_code, addition_name, short_name, target_scope, prompt_template, note, is_active) VALUES ('hospital_info_i', '入院時情報連携加算 I', '入院時情報連携加算 I', '児者', NULL, 'Generated from app/frontend/app.js prototype branch definitions.', 1) ON DUPLICATE KEY UPDATE addition_name = VALUES(addition_name), short_name = VALUES(short_name), target_scope = VALUES(target_scope), prompt_template = VALUES(prompt_template), note = VALUES(note), is_active = VALUES(is_active);
 INSERT INTO addition_branch (addition_id, branch_code, branch_name, branch_type, priority, auto_confirm_priority, description, is_active) SELECT a.addition_id, 'hospital_info_i', '入院時情報連携加算 I', '情報共有', 350, 350, '確定条件:
 - 入院に当たって病院へ訪問して必要情報を提供した場合に候補に残す
 - サービス判定区分では限定しない
@@ -142,7 +142,7 @@ INSERT INTO addition_branch (addition_id, branch_code, branch_name, branch_type,
 - 現行UIでは「訪問情報提供」を「外出先 + 情報共有」に寄せている
 - 診療所は病院と同じ扱いで判定する', 1 FROM addition AS a WHERE a.addition_code = 'hospital_info_i' ON DUPLICATE KEY UPDATE addition_id = VALUES(addition_id), branch_name = VALUES(branch_name), branch_type = VALUES(branch_type), priority = VALUES(priority), auto_confirm_priority = VALUES(auto_confirm_priority), description = VALUES(description), is_active = VALUES(is_active);
 
-INSERT INTO addition (addition_code, addition_name, short_name, target_scope, note, is_active) VALUES ('hospital_info_ii', '入院時情報連携加算 II', '入院時情報連携加算 II', '児者', 'Generated from app/frontend/app.js prototype branch definitions.', 1) ON DUPLICATE KEY UPDATE addition_name = VALUES(addition_name), short_name = VALUES(short_name), target_scope = VALUES(target_scope), note = VALUES(note), is_active = VALUES(is_active);
+INSERT INTO addition (addition_code, addition_name, short_name, target_scope, prompt_template, note, is_active) VALUES ('hospital_info_ii', '入院時情報連携加算 II', '入院時情報連携加算 II', '児者', NULL, 'Generated from app/frontend/app.js prototype branch definitions.', 1) ON DUPLICATE KEY UPDATE addition_name = VALUES(addition_name), short_name = VALUES(short_name), target_scope = VALUES(target_scope), prompt_template = VALUES(prompt_template), note = VALUES(note), is_active = VALUES(is_active);
 INSERT INTO addition_branch (addition_id, branch_code, branch_name, branch_type, priority, auto_confirm_priority, description, is_active) SELECT a.addition_id, 'hospital_info_ii', '入院時情報連携加算 II', '情報共有', 360, 360, '確定条件:
 - 入院に当たって病院へ訪問以外の方法で必要情報を提供した場合に候補に残す
 - サービス判定区分では限定しない
@@ -153,7 +153,7 @@ INSERT INTO addition_branch (addition_id, branch_code, branch_name, branch_type,
 - 現行UIでは「訪問以外情報提供」を「自事業所内 + 情報共有」に寄せている
 - 診療所は病院と同じ扱いで判定する', 1 FROM addition AS a WHERE a.addition_code = 'hospital_info_ii' ON DUPLICATE KEY UPDATE addition_id = VALUES(addition_id), branch_name = VALUES(branch_name), branch_type = VALUES(branch_type), priority = VALUES(priority), auto_confirm_priority = VALUES(auto_confirm_priority), description = VALUES(description), is_active = VALUES(is_active);
 
-INSERT INTO addition (addition_code, addition_name, short_name, target_scope, note, is_active) VALUES ('edu_support', '保・教支援', '保・教支援', '児', 'Generated from app/frontend/app.js prototype branch definitions.', 1) ON DUPLICATE KEY UPDATE addition_name = VALUES(addition_name), short_name = VALUES(short_name), target_scope = VALUES(target_scope), note = VALUES(note), is_active = VALUES(is_active);
+INSERT INTO addition (addition_code, addition_name, short_name, target_scope, prompt_template, note, is_active) VALUES ('edu_support', '保・教支援', '保・教支援', '児', NULL, 'Generated from app/frontend/app.js prototype branch definitions.', 1) ON DUPLICATE KEY UPDATE addition_name = VALUES(addition_name), short_name = VALUES(short_name), target_scope = VALUES(target_scope), prompt_template = VALUES(prompt_template), note = VALUES(note), is_active = VALUES(is_active);
 INSERT INTO addition_branch (addition_id, branch_code, branch_name, branch_type, priority, auto_confirm_priority, description, is_active) SELECT a.addition_id, 'edu_info', '保・教支援（情報共有）', '情報共有', 500, 500, '確定条件:
 - 児対象のみ
 - 障害福祉以外の福祉サービスの利用文脈で候補に残す
@@ -184,7 +184,7 @@ INSERT INTO addition_branch (addition_id, branch_code, branch_name, branch_type,
 - 現行UIでは「会議参加」を「会議」に寄せている
 - 集団生活施設など、学校・保育以外の対象境界はまだ仮置き', 1 FROM addition AS a WHERE a.addition_code = 'edu_support' ON DUPLICATE KEY UPDATE addition_id = VALUES(addition_id), branch_name = VALUES(branch_name), branch_type = VALUES(branch_type), priority = VALUES(priority), auto_confirm_priority = VALUES(auto_confirm_priority), description = VALUES(description), is_active = VALUES(is_active);
 
-INSERT INTO addition (addition_code, addition_name, short_name, target_scope, note, is_active) VALUES ('home_collab', '居宅連携', '居宅連携', '者', 'Generated from app/frontend/app.js prototype branch definitions.', 1) ON DUPLICATE KEY UPDATE addition_name = VALUES(addition_name), short_name = VALUES(short_name), target_scope = VALUES(target_scope), note = VALUES(note), is_active = VALUES(is_active);
+INSERT INTO addition (addition_code, addition_name, short_name, target_scope, prompt_template, note, is_active) VALUES ('home_collab', '居宅連携', '居宅連携', '者', NULL, 'Generated from app/frontend/app.js prototype branch definitions.', 1) ON DUPLICATE KEY UPDATE addition_name = VALUES(addition_name), short_name = VALUES(short_name), target_scope = VALUES(target_scope), prompt_template = VALUES(prompt_template), note = VALUES(note), is_active = VALUES(is_active);
 INSERT INTO addition_branch (addition_id, branch_code, branch_name, branch_type, priority, auto_confirm_priority, description, is_active) SELECT a.addition_id, 'home_info', '居宅連携（情報共有）', '情報共有', 600, 600, '確定条件:
 - 者対象のみ
 - ケアマネ事業所への情報共有で候補に残す
@@ -209,7 +209,7 @@ INSERT INTO addition_branch (addition_id, branch_code, branch_name, branch_type,
 仮置き:
 - 現行UIでは「会議参加」を「会議」に寄せている', 1 FROM addition AS a WHERE a.addition_code = 'home_collab' ON DUPLICATE KEY UPDATE addition_id = VALUES(addition_id), branch_name = VALUES(branch_name), branch_type = VALUES(branch_type), priority = VALUES(priority), auto_confirm_priority = VALUES(auto_confirm_priority), description = VALUES(description), is_active = VALUES(is_active);
 
-INSERT INTO addition (addition_code, addition_name, short_name, target_scope, note, is_active) VALUES ('home_work_collab', '居宅連携（就労）', '居宅連携（就労）', '者', 'Generated from app/frontend/app.js prototype branch definitions.', 1) ON DUPLICATE KEY UPDATE addition_name = VALUES(addition_name), short_name = VALUES(short_name), target_scope = VALUES(target_scope), note = VALUES(note), is_active = VALUES(is_active);
+INSERT INTO addition (addition_code, addition_name, short_name, target_scope, prompt_template, note, is_active) VALUES ('home_work_collab', '居宅連携（就労）', '居宅連携（就労）', '者', NULL, 'Generated from app/frontend/app.js prototype branch definitions.', 1) ON DUPLICATE KEY UPDATE addition_name = VALUES(addition_name), short_name = VALUES(short_name), target_scope = VALUES(target_scope), prompt_template = VALUES(prompt_template), note = VALUES(note), is_active = VALUES(is_active);
 INSERT INTO addition_branch (addition_id, branch_code, branch_name, branch_type, priority, auto_confirm_priority, description, is_active) SELECT a.addition_id, 'home_work_info', '居宅連携（就労）（情報共有）', '情報共有', 700, 700, '確定条件:
 - 者対象のみ
 - 企業または障害者就業・生活支援センター等への情報共有で候補に残す

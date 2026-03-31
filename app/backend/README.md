@@ -48,6 +48,7 @@
 
 - 今は `利用者 / 機関 / サービス / 相談員 / 判定文脈 / 集計 / 判定保存` の API までです
 - `note-draft.php` を使うと、判定結果の `saved_note` に入れる AI 下書きをサーバー側で生成できます
+- `addition.prompt_template` に文面が入っていれば、AI 下書きの共通指示へ加算別指示として上乗せされます
 - 判定ロジック自体はまだフロント試作側にあります
 - ただし保存 API は、seed 済みの `addition` / `addition_branch` があれば `evaluation_result.addition_branch_id` まで記録します
 - 同じ条件がそろっていれば、保存 API は `evaluation_candidate` に候補枝一覧も記録します

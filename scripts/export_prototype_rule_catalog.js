@@ -98,6 +98,7 @@ function buildCatalog(additions) {
 
     const familyName = String(addition.additionFamilyName || addition.additionName || "").trim();
     const targetScope = deriveTargetScope(addition.targetTypes);
+    const promptTemplate = String(addition.promptTemplate ?? addition.additionPromptTemplate ?? "").trim() || null;
 
     if (!families.has(familyCode)) {
       families.set(familyCode, {
@@ -105,6 +106,7 @@ function buildCatalog(additions) {
         additionName: familyName,
         shortName: familyName,
         targetScope,
+        promptTemplate,
         note: "Generated from app/frontend/app.js prototype branch definitions.",
         branches: [],
       });
@@ -113,6 +115,9 @@ function buildCatalog(additions) {
     const family = families.get(familyCode);
     if (!family.targetScope && targetScope) {
       family.targetScope = targetScope;
+    }
+    if (!family.promptTemplate && promptTemplate) {
+      family.promptTemplate = promptTemplate;
     }
 
     family.branches.push({
@@ -141,16 +146,18 @@ function buildSeedSql(catalog) {
 
   catalog.families.forEach((family) => {
     lines.push(
-      `INSERT INTO addition (addition_code, addition_name, short_name, target_scope, note, is_active) VALUES (` +
+      `INSERT INTO addition (addition_code, addition_name, short_name, target_scope, prompt_template, note, is_active) VALUES (` +
       `'${escapeSql(family.additionCode)}', ` +
       `'${escapeSql(family.additionName)}', ` +
       `'${escapeSql(family.shortName)}', ` +
       `${family.targetScope ? `'${escapeSql(family.targetScope)}'` : "NULL"}, ` +
+      `${family.promptTemplate ? `'${escapeSql(family.promptTemplate)}'` : "NULL"}, ` +
       `'${escapeSql(family.note)}', 1)` +
       ` ON DUPLICATE KEY UPDATE ` +
       `addition_name = VALUES(addition_name), ` +
       `short_name = VALUES(short_name), ` +
       `target_scope = VALUES(target_scope), ` +
+      `prompt_template = VALUES(prompt_template), ` +
       `note = VALUES(note), ` +
       `is_active = VALUES(is_active);`
     );

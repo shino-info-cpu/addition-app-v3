@@ -17,6 +17,7 @@
           additionFamilyCode: "",
           additionName: "",
           additionFamilyName: "",
+          promptTemplate: "",
           resultStorageMode: "json",
         };
       }
@@ -27,6 +28,7 @@
       const additionFamilyCode = String(candidate.additionFamilyCode ?? additionCode).trim() || additionCode;
       const additionName = String(candidate.additionName ?? additionCode).trim() || additionCode;
       const additionFamilyName = String(candidate.additionFamilyName ?? additionName).trim() || additionName;
+      const promptTemplate = String(candidate.promptTemplate ?? candidate.additionPromptTemplate ?? "").trim();
 
       return {
         additionId: additionId,
@@ -35,6 +37,7 @@
         additionFamilyCode: additionFamilyCode,
         additionName: additionName,
         additionFamilyName: additionFamilyName,
+        promptTemplate: promptTemplate,
         resultStorageMode: additionBranchId !== null ? "branch" : (additionId !== null ? "family" : "json"),
       };
     }
@@ -50,6 +53,7 @@
           additionName: reference.additionName,
           additionFamilyCode: reference.additionFamilyCode,
           additionFamilyName: reference.additionFamilyName,
+          additionPromptTemplate: reference.promptTemplate,
           candidateStatus: isSameJudgementCandidate(candidate, topCandidate)
             ? ((Array.isArray(candidates) ? candidates.length : 0) === 1 ? "selected" : "leading_candidate")
             : "candidate",
@@ -60,6 +64,7 @@
             addition_family_code: reference.additionFamilyCode,
             addition_name: reference.additionName,
             addition_family_name: reference.additionFamilyName,
+            addition_prompt_template: reference.promptTemplate,
             reason: candidate.reason ?? "",
             rule_status: candidate.ruleStatus ?? "",
             confirmed_rules: Array.isArray(candidate.confirmedRules) ? candidate.confirmedRules : [],

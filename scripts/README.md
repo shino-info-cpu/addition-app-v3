@@ -79,6 +79,10 @@ Scripts should target the v3 schema only.
   - Frontend helper asset for判定エンジン runtime
   - Owns candidate matching, judgement facts, visible question resolution, and candidate reason generation
   - Keeps `app.js` closer to a UI adapter by moving non-UI judgement engine logic out of the main screen logic
+- `app/frontend/judgement-session-bridge.js`
+  - Frontend helper asset for判定 snapshot / 後段チェック runtime
+  - Owns save blocking, post-check evaluation, history-scope review logic, and save-note/rationale generation
+  - Keeps `app.js` closer to a UI adapter by moving non-UI judgement session logic out of the main screen logic
 - `app/frontend/api-runtime-adapter.js`
   - Frontend runtime helper asset (generated manually, not by a script)
   - Owns API fetch, health detection, catalog load, master load, relation load, judgement-context load, and report/history load orchestration
@@ -128,6 +132,7 @@ Scripts should target the v3 schema only.
   - Loads `app/frontend/prototype-sample-data.js`, `prototype-rule-catalog.js`, `rule-runtime-adapter.js`, `judgement-report-bridge.js`, and `app/frontend/app.js` with a light DOM stub
   - Verifies that DB-backed addition catalog mode produces save payloads with `addition_id` / `addition_branch_id` and branch-aware `candidates`
   - Also verifies that sample-save fallback preserves the same top-branch IDs and candidate count
+  - Verifies that edited AI draft metadata (`prompt_text` / `ai_draft_text`) survives into the save payload
 - `check_report_record_bridge.js`
   - Loads `app/frontend/prototype-sample-data.js`, `prototype-rule-catalog.js`, `rule-runtime-adapter.js`, `judgement-report-bridge.js`, and `app/frontend/app.js` with a light DOM stub
   - Verifies that report-record normalization preserves `candidate_count` / `candidate_names_summary`
@@ -137,7 +142,7 @@ Scripts should target the v3 schema only.
   - Verifies that sample/API master normalization and judgement organization/service selection still behave as expected
 - `check_api_runtime_bridge.js`
   - Loads `app/frontend/api-runtime-adapter.js`
-  - Verifies that API URL building, health detection, and catalog load fallback still behave as expected
+  - Verifies that API URL building, health detection, catalog load fallback, and `note-draft.php` POST wiring still behave as expected
 - `check_report_state_bridge.js`
   - Loads `app/frontend/report-state-bridge.js`
   - Verifies stored view loading, active view switching, filter sync, and persistence behavior without the main UI runtime

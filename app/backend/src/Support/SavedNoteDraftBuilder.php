@@ -8,15 +8,26 @@ use RuntimeException;
 
 final class SavedNoteDraftBuilder
 {
-    public function buildDeveloperInstructions(): string
+    /**
+     * @param array<string, mixed> $payload
+     */
+    public function buildDeveloperInstructions(array $payload = []): string
     {
-        return implode("\n", [
+        $lines = [
             'あなたは相談支援の加算判定記録を下書きする補助です。',
             '与えられた事実だけを使い、推測や補完はしないでください。',
             '出力は日本語の平文のみで、箇条書きや見出しは使わないでください。',
             '1〜3文で簡潔にまとめ、判定状態が要確認ならそのことを自然に触れてください。',
             '利用者名・機関名・サービス名・加算名は入力値をそのまま使ってください。',
-        ]);
+        ];
+
+        $additionPromptTemplate = trim((string) ($payload['addition_prompt_template'] ?? ''));
+        if ($additionPromptTemplate !== '') {
+            $lines[] = '次の加算別指示があれば、上の共通指示より優先してください。';
+            $lines[] = $additionPromptTemplate;
+        }
+
+        return implode("\n", $lines);
     }
 
     /**
@@ -118,7 +129,7 @@ final class SavedNoteDraftBuilder
     public function buildPromptText(array $payload): string
     {
         return "[developer]\n"
-            . $this->buildDeveloperInstructions()
+            . $this->buildDeveloperInstructions($payload)
             . "\n\n[user]\n"
             . $this->buildUserPrompt($payload);
     }

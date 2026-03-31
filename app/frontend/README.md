@@ -20,6 +20,7 @@ Master screens for `利用者`, `機関`, and `サービス` are separate featur
 - `styles.css` : mock styles
 - `rule-runtime-adapter.js` : sample/API の catalog runtime 切替と lookup を担う helper
 - `judgement-engine-bridge.js` : 候補評価、設問表示、候補理由生成を担う helper
+- `judgement-session-bridge.js` : 判定 snapshot、後段チェック、保存可否/保存文生成を担う helper
 - `api-runtime-adapter.js` : API fetch、catalog load、master/report/context load orchestration を担う helper
 - `report-state-bridge.js` : 集計の view/filter state、永続化、再検索導線を担う helper
 - `judgement-report-bridge.js` : 判定保存 payload と report detail/identity 正規化を担う helper
@@ -46,6 +47,9 @@ Current data-source behavior:
 - `addition-catalog.php` が利用可能なら、候補カードの `確定条件 / 仮置き / 後段チェック要約` も catalog 側の description / constraints から描く
 - `addition-catalog.php` が利用可能な状態で保存すると、判定 payload は `addition_id` / `addition_branch_id` と候補一覧を branch 基準で含む
 - `report-records.php` が `evaluation_candidate` を返せる状態なら、集計詳細は `candidate_count` / `candidate_names_summary` を branch 基準で表示する
+- `note-draft.php` が利用可能で `health.php` の `checks.openai` が true なら、判定画面の `AI下書き` ボタンから保存文の下書きを取得できる
+- `addition` の `prompt_template` が catalog にあれば、AI 下書きではその加算用の指示文を共通指示に上乗せして使う
+- `AI下書き` で取得した `prompt_text` / `ai_draft_text` は、判定保存時に `saved_note` へ一緒に保存する
 - `question-catalog.php` が利用できない場合は、prototype question 定義へ安全に fallback する
 - `addition-catalog.php` が利用できない場合は、prototype branch 定義へ安全に fallback する
 - `利用者利用状況` が未登録でも、判定画面は `機関` と `サービス` を全マスタから選べる

@@ -9,6 +9,7 @@ $appRoot = is_file(dirname(__DIR__) . '/src/bootstrap.php')
 require_once $appRoot . '/src/bootstrap.php';
 
 use App\Infrastructure\OpenAiResponsesClient;
+use App\Infrastructure\OpenAiRequestException;
 use App\Support\JsonResponse;
 use App\Support\Request;
 use App\Support\SavedNoteDraftBuilder;
@@ -43,10 +44,26 @@ $builder = new SavedNoteDraftBuilder();
 $client = new OpenAiResponsesClient($openAiConfig);
 
 try {
-    $promptText = $builder->buildPromptText($payload);
+    $developerInstructions = $builder->buildDeveloperInstructions($payload);
+    $userPrompt = $builder->buildUserPrompt($payload);
+    $promptText = "[developer]\n"
+        . $developerInstructions
+        . "\n\n[user]\n"
+        . $userPrompt;
+} catch (\RuntimeException $exception) {
+    JsonResponse::send([
+        'ok' => false,
+        'error' => [
+            'type' => 'validation_error',
+            'message' => $exception->getMessage(),
+        ],
+    ], 422);
+}
+
+try {
     $result = $client->createTextDraft(
-        $builder->buildDeveloperInstructions(),
-        $builder->buildUserPrompt($payload)
+        $developerInstructions,
+        $userPrompt
     );
 
     JsonResponse::send([
@@ -58,12 +75,26 @@ try {
             'ai_draft_text' => $result['output_text'],
         ],
     ]);
+} catch (OpenAiRequestException $exception) {
+    $error = [
+        'ok' => false,
+        'error' => [
+            'type' => $exception->getErrorType(),
+            'message' => $exception->getMessage(),
+        ],
+    ];
+
+    if ($exception->getUpstreamStatus() !== null) {
+        $error['error']['upstream_status'] = $exception->getUpstreamStatus();
+    }
+
+    JsonResponse::send($error, $exception->getHttpStatus());
 } catch (\RuntimeException $exception) {
     JsonResponse::send([
         'ok' => false,
         'error' => [
-            'type' => 'validation_error',
+            'type' => 'openai_request_failed',
             'message' => $exception->getMessage(),
         ],
-    ], 422);
+    ], 500);
 }

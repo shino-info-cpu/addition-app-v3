@@ -27,6 +27,7 @@ function createBaseOptions(overrides = {}) {
     dataSource: {
       apiBaseUrl: "",
       configReady: false,
+      openaiReady: false,
       clients: "sample",
       organizations: "sample",
       services: "sample",
@@ -212,6 +213,65 @@ const scenarios = [
     },
     assert(result) {
       return result.source === "sample" && result.note === "加算catalog未投入";
+    },
+  },
+  {
+    name: "requestNoteDraft posts JSON payload to note-draft endpoint",
+    async run() {
+      const calls = [];
+      const context = createContext(async (url, options) => {
+        calls.push({ url, options });
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            ok: true,
+            item: {
+              prompt_text: "prompt",
+              ai_draft_text: "draft",
+            },
+          }),
+        };
+      });
+      const options = createBaseOptions();
+      options.state.dataSource.apiBaseUrl = "./api";
+      options.state.dataSource.configReady = true;
+      const adapter = context.__KASAN_API_RUNTIME_ADAPTER__.createApiRuntimeAdapter(options);
+      const response = await adapter.requestNoteDraft({ client_name: "てすと太郎" });
+      return { response, calls };
+    },
+    assert(result) {
+      return result.response?.item?.ai_draft_text === "draft"
+        && result.calls.length === 1
+        && result.calls[0].url.includes("/api/note-draft.php")
+        && result.calls[0].options?.method === "POST"
+        && typeof result.calls[0].options?.body === "string"
+        && result.calls[0].options.body.includes("てすと太郎");
+    },
+  },
+  {
+    name: "fetchApiJson surfaces API error message on non-ok response",
+    async run() {
+      const context = createContext(async () => ({
+        ok: false,
+        status: 503,
+        json: async () => ({
+          ok: false,
+          error: {
+            message: "AI下書きはまだ設定されていません。",
+          },
+        }),
+      }));
+      const adapter = context.__KASAN_API_RUNTIME_ADAPTER__.createApiRuntimeAdapter(createBaseOptions());
+      try {
+        await adapter.fetchApiJson("./api/note-draft.php");
+        return { message: "no error" };
+      } catch (error) {
+        return { message: error.message };
+      }
+    },
+    assert(result) {
+      return result.message === "AI下書きはまだ設定されていません。";
     },
   },
 ];

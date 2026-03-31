@@ -26,7 +26,11 @@ final class OpenAiResponsesClient
     {
         $apiKey = trim((string) ($this->config['api_key'] ?? ''));
         if ($apiKey === '') {
-            throw new RuntimeException('OpenAI APIキーが未設定です。');
+            throw new OpenAiRequestException(
+                'OpenAI APIキーが未設定です。',
+                'openai_not_configured',
+                503
+            );
         }
 
         $baseUrl = rtrim((string) ($this->config['base_url'] ?? 'https://api.openai.com/v1'), '/');
@@ -68,17 +72,29 @@ final class OpenAiResponsesClient
 
         $body = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         if ($body === false) {
-            throw new RuntimeException('OpenAI リクエストの JSON 化に失敗しました。');
+            throw new OpenAiRequestException(
+                'OpenAI リクエストの JSON 化に失敗しました。',
+                'openai_request_build_failed',
+                500
+            );
         }
 
         if (!function_exists('curl_init')) {
-            throw new RuntimeException('このサーバーでは cURL が利用できません。');
+            throw new OpenAiRequestException(
+                'このサーバーでは cURL が利用できません。',
+                'openai_client_unavailable',
+                500
+            );
         }
 
         /** @var resource|false $curl */
         $curl = curl_init($baseUrl . '/responses');
         if ($curl === false) {
-            throw new RuntimeException('OpenAI 接続初期化に失敗しました。');
+            throw new OpenAiRequestException(
+                'OpenAI 接続初期化に失敗しました。',
+                'openai_client_unavailable',
+                500
+            );
         }
 
         curl_setopt_array($curl, [
@@ -98,23 +114,42 @@ final class OpenAiResponsesClient
         curl_close($curl);
 
         if ($rawResponse === false) {
-            throw new RuntimeException($curlError !== '' ? $curlError : 'OpenAI API への接続に失敗しました。');
+            throw new OpenAiRequestException(
+                $curlError !== '' ? $curlError : 'OpenAI API への接続に失敗しました。',
+                'openai_connection_failed',
+                502
+            );
         }
 
         /** @var array<string, mixed>|null $decoded */
         $decoded = json_decode($rawResponse, true);
         if (!is_array($decoded)) {
-            throw new RuntimeException('OpenAI API 応答の解析に失敗しました。');
+            throw new OpenAiRequestException(
+                'OpenAI API 応答の解析に失敗しました。',
+                'openai_response_invalid',
+                502,
+                $statusCode > 0 ? $statusCode : null
+            );
         }
 
         if ($statusCode >= 400) {
             $message = trim((string) (($decoded['error']['message'] ?? '') ?: 'OpenAI API でエラーが発生しました。'));
-            throw new RuntimeException($message);
+            throw new OpenAiRequestException(
+                $message,
+                'openai_api_error',
+                502,
+                $statusCode
+            );
         }
 
         $outputText = $this->extractOutputText($decoded);
         if ($outputText === '') {
-            throw new RuntimeException('OpenAI API から下書き本文を取得できませんでした。');
+            throw new OpenAiRequestException(
+                'OpenAI API から下書き本文を取得できませんでした。',
+                'openai_response_empty',
+                502,
+                $statusCode > 0 ? $statusCode : null
+            );
         }
 
         return [

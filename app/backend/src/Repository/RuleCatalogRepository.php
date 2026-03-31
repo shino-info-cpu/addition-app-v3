@@ -163,6 +163,7 @@ final class RuleCatalogRepository
         $branch['additionName'] = (string) ($branch['branchName'] ?? $branchCode);
         $branch['additionFamilyCode'] = $familyCode;
         $branch['additionFamilyName'] = $familyName;
+        $branch['promptTemplate'] = (string) ($family['promptTemplate'] ?? '');
         $branch['ruleStatus'] = (string) ($parsed['ruleStatus'] ?? '');
         $branch['confirmedRules'] = $parsed['confirmedRules'];
         $branch['provisionalRules'] = $parsed['provisionalRules'];
@@ -317,6 +318,7 @@ final class RuleCatalogRepository
               addition_name,
               short_name,
               target_scope,
+              prompt_template,
               note
             FROM addition
             WHERE is_active = 1
@@ -332,6 +334,7 @@ final class RuleCatalogRepository
                 'additionName' => (string) $row['addition_name'],
                 'shortName' => $row['short_name'],
                 'targetScope' => $row['target_scope'],
+                'promptTemplate' => $row['prompt_template'],
                 'note' => $row['note'],
             ];
         }, $rows);

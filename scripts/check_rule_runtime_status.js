@@ -11,6 +11,7 @@ const frontendMasterDataBridgeAssetPath = path.resolve(__dirname, "../app/fronte
 const frontendJudgementEngineBridgeAssetPath = path.resolve(__dirname, "../app/frontend/judgement-engine-bridge.js");
 const frontendApiRuntimeAdapterAssetPath = path.resolve(__dirname, "../app/frontend/api-runtime-adapter.js");
 const frontendJudgementReportBridgeAssetPath = path.resolve(__dirname, "../app/frontend/judgement-report-bridge.js");
+const frontendJudgementSessionBridgeAssetPath = path.resolve(__dirname, "../app/frontend/judgement-session-bridge.js");
 const frontendSampleDataAsset = fs.readFileSync(frontendSampleDataAssetPath, "utf8");
 const frontendCatalogAsset = fs.readFileSync(frontendCatalogAssetPath, "utf8");
 const frontendReportStateBridgeAsset = fs.readFileSync(frontendReportStateBridgeAssetPath, "utf8");
@@ -19,6 +20,7 @@ const frontendMasterDataBridgeAsset = fs.readFileSync(frontendMasterDataBridgeAs
 const frontendJudgementEngineBridgeAsset = fs.readFileSync(frontendJudgementEngineBridgeAssetPath, "utf8");
 const frontendApiRuntimeAdapterAsset = fs.readFileSync(frontendApiRuntimeAdapterAssetPath, "utf8");
 const frontendJudgementReportBridgeAsset = fs.readFileSync(frontendJudgementReportBridgeAssetPath, "utf8");
+const frontendJudgementSessionBridgeAsset = fs.readFileSync(frontendJudgementSessionBridgeAssetPath, "utf8");
 const source = fs.readFileSync(appJsPath, "utf8");
 
 function createElement() {
@@ -73,6 +75,7 @@ vm.runInContext(frontendMasterDataBridgeAsset, context);
 vm.runInContext(frontendJudgementEngineBridgeAsset, context);
 vm.runInContext(frontendApiRuntimeAdapterAsset, context);
 vm.runInContext(frontendJudgementReportBridgeAsset, context);
+vm.runInContext(frontendJudgementSessionBridgeAsset, context);
 vm.runInContext(source, context);
 
 const scenarios = [

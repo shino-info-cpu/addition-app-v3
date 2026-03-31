@@ -65,11 +65,17 @@
         headers,
       });
 
-      if (!response.ok) {
-        throw new Error("HTTP " + response.status);
+      let payload = null;
+      try {
+        payload = await response.json();
+      } catch (error) {
+        payload = null;
       }
 
-      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload?.error?.message ?? ("HTTP " + response.status));
+      }
+
       if (payload.ok === false) {
         throw new Error(payload.error?.message ?? "APIエラー");
       }
@@ -99,6 +105,7 @@
 
       state.dataSource.apiBaseUrl = detection.baseUrl;
       state.dataSource.configReady = Boolean(detection.health?.checks?.config);
+      state.dataSource.openaiReady = Boolean(detection.health?.checks?.openai);
       state.dataSource.note = state.dataSource.configReady ? "" : "API設定待ち";
       updateApiDataStatusPill();
 
@@ -209,6 +216,13 @@
         updateApiDataStatusPill();
         renderJudgement();
       }
+    }
+
+    async function requestNoteDraft(payload) {
+      return fetchApiJson(buildApiUrl("note-draft.php"), {
+        method: "POST",
+        body: JSON.stringify(payload ?? {}),
+      });
     }
 
     async function loadOrganizationServices(organizationId, options = {}) {
@@ -478,6 +492,7 @@
       loadMastersFromApi,
       loadQuestionCatalogFromApi,
       loadAdditionCatalogFromApi,
+      requestNoteDraft,
       loadOrganizationServices,
       loadClientEnrollments,
       loadJudgementContextFromApi,

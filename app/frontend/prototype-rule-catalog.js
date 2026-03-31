@@ -1,6 +1,6 @@
 (function (global) {
   var catalog = {
-  "generatedAt": "2026-03-30T13:23:33.972Z",
+  "generatedAt": "2026-03-31T13:44:49.953Z",
   "questions": [
     {
       "key": "monthType",
@@ -388,6 +388,7 @@
       "additionName": "医療・保育・教育機関等連携加算（通院同行）",
       "additionFamilyCode": "mededu",
       "additionFamilyName": "医療・保育・教育機関等連携加算",
+      "promptTemplate": "",
       "ruleStatus": "一部確定",
       "confirmedRules": [
         "モニタリング月または計画作成月の病院等への通院同行で候補に残す",
@@ -493,6 +494,7 @@
       "additionName": "医療・保育・教育機関等連携加算（情報共有）",
       "additionFamilyCode": "mededu",
       "additionFamilyName": "医療・保育・教育機関等連携加算",
+      "promptTemplate": "",
       "ruleStatus": "一部確定",
       "confirmedRules": [
         "情報共有で候補に残す",
@@ -590,6 +592,7 @@
       "additionName": "医療・保育・教育機関等連携加算（面談）",
       "additionFamilyCode": "mededu",
       "additionFamilyName": "医療・保育・教育機関等連携加算",
+      "promptTemplate": "",
       "ruleStatus": "一部確定",
       "confirmedRules": [
         "児対象のみ",
@@ -727,6 +730,7 @@
       "additionName": "医療・保育・教育機関等連携加算（会議）",
       "additionFamilyCode": "mededu",
       "additionFamilyName": "医療・保育・教育機関等連携加算",
+      "promptTemplate": "",
       "ruleStatus": "一部確定",
       "confirmedRules": [
         "児対象のみ",
@@ -864,6 +868,7 @@
       "additionName": "集中支援加算（訪問）",
       "additionFamilyCode": "intensive",
       "additionFamilyName": "集中支援加算",
+      "promptTemplate": "",
       "ruleStatus": "一部確定",
       "confirmedRules": [
         "それ以外月で候補に残す",
@@ -945,6 +950,7 @@
       "additionName": "集中支援加算（サービス提供場面確認）",
       "additionFamilyCode": "intensive",
       "additionFamilyName": "集中支援加算",
+      "promptTemplate": "",
       "ruleStatus": "一部確定",
       "confirmedRules": [
         "それ以外月で候補に残す",
@@ -1016,6 +1022,7 @@
       "additionName": "集中支援加算（会議開催）",
       "additionFamilyCode": "intensive",
       "additionFamilyName": "集中支援加算",
+      "promptTemplate": "",
       "ruleStatus": "一部確定",
       "confirmedRules": [
         "それ以外月で候補に残す",
@@ -1089,6 +1096,7 @@
       "additionName": "集中支援加算（会議参加）",
       "additionFamilyCode": "intensive",
       "additionFamilyName": "集中支援加算",
+      "promptTemplate": "",
       "ruleStatus": "一部確定",
       "confirmedRules": [
         "それ以外月で候補に残す",
@@ -1162,6 +1170,7 @@
       "additionName": "集中支援加算（通院同行）",
       "additionFamilyCode": "intensive",
       "additionFamilyName": "集中支援加算",
+      "promptTemplate": "",
       "ruleStatus": "確定条件あり",
       "confirmedRules": [
         "それ以外月の病院等への通院同行のみ候補に残す",
@@ -1263,6 +1272,7 @@
       "additionName": "集中支援加算（情報共有）",
       "additionFamilyCode": "intensive",
       "additionFamilyName": "集中支援加算",
+      "promptTemplate": "",
       "ruleStatus": "一部確定",
       "confirmedRules": [
         "それ以外月で候補に残す",
@@ -1351,6 +1361,7 @@
       "additionName": "集中支援加算（情報共有）",
       "additionFamilyCode": "intensive",
       "additionFamilyName": "集中支援加算",
+      "promptTemplate": "",
       "ruleStatus": "一部確定",
       "confirmedRules": [
         "それ以外月で候補に残す",
@@ -1456,6 +1467,7 @@
       "additionName": "集中支援加算（情報共有）",
       "additionFamilyCode": "intensive",
       "additionFamilyName": "集中支援加算",
+      "promptTemplate": "",
       "ruleStatus": "一部確定",
       "confirmedRules": [
         "それ以外月で候補に残す",
@@ -1551,6 +1563,7 @@
       "additionName": "モニタリング加算",
       "additionFamilyCode": "monitoring",
       "additionFamilyName": "モニタリング加算",
+      "promptTemplate": "",
       "ruleStatus": "一部確定",
       "confirmedRules": [
         "提供現場の訪問確認で候補に残す",
@@ -1635,6 +1648,7 @@
       "additionName": "担当者会議加算",
       "additionFamilyCode": "conference",
       "additionFamilyName": "担当者会議加算",
+      "promptTemplate": "",
       "ruleStatus": "確定条件あり",
       "confirmedRules": [
         "モニタリング月のみ",
@@ -1731,6 +1745,7 @@
       "additionName": "退院・退所加算",
       "additionFamilyCode": "discharge",
       "additionFamilyName": "退院・退所加算",
+      "promptTemplate": "",
       "ruleStatus": "一部確定",
       "confirmedRules": [
         "モニタリング月以外で候補に残す",
@@ -1854,6 +1869,7 @@
       "additionName": "入院時情報連携加算 I",
       "additionFamilyCode": "hospital_info_i",
       "additionFamilyName": "入院時情報連携加算 I",
+      "promptTemplate": "",
       "ruleStatus": "一部確定",
       "confirmedRules": [
         "入院に当たって病院へ訪問して必要情報を提供した場合に候補に残す",
@@ -1963,6 +1979,7 @@
       "additionName": "入院時情報連携加算 II",
       "additionFamilyCode": "hospital_info_ii",
       "additionFamilyName": "入院時情報連携加算 II",
+      "promptTemplate": "",
       "ruleStatus": "一部確定",
       "confirmedRules": [
         "入院に当たって病院へ訪問以外の方法で必要情報を提供した場合に候補に残す",
@@ -2072,6 +2089,7 @@
       "additionName": "保・教支援（情報共有）",
       "additionFamilyCode": "edu_support",
       "additionFamilyName": "保・教支援",
+      "promptTemplate": "",
       "ruleStatus": "一部確定",
       "confirmedRules": [
         "児対象のみ",
@@ -2238,6 +2256,7 @@
       "additionName": "保・教支援（訪問面接）",
       "additionFamilyCode": "edu_support",
       "additionFamilyName": "保・教支援",
+      "promptTemplate": "",
       "ruleStatus": "一部確定",
       "confirmedRules": [
         "児対象のみ",
@@ -2410,6 +2429,7 @@
       "additionName": "保・教支援（会議参加）",
       "additionFamilyCode": "edu_support",
       "additionFamilyName": "保・教支援",
+      "promptTemplate": "",
       "ruleStatus": "一部確定",
       "confirmedRules": [
         "児対象のみ",
@@ -2574,6 +2594,7 @@
       "additionName": "居宅連携（情報共有）",
       "additionFamilyCode": "home_collab",
       "additionFamilyName": "居宅連携",
+      "promptTemplate": "",
       "ruleStatus": "確定条件あり",
       "confirmedRules": [
         "者対象のみ",
@@ -2676,6 +2697,7 @@
       "additionName": "居宅連携（訪問面接）",
       "additionFamilyCode": "home_collab",
       "additionFamilyName": "居宅連携",
+      "promptTemplate": "",
       "ruleStatus": "一部確定",
       "confirmedRules": [
         "者対象のみ",
@@ -2775,6 +2797,7 @@
       "additionName": "居宅連携（会議参加）",
       "additionFamilyCode": "home_collab",
       "additionFamilyName": "居宅連携",
+      "promptTemplate": "",
       "ruleStatus": "一部確定",
       "confirmedRules": [
         "者対象のみ",
@@ -2864,6 +2887,7 @@
       "additionName": "居宅連携（就労）（情報共有）",
       "additionFamilyCode": "home_work_collab",
       "additionFamilyName": "居宅連携（就労）",
+      "promptTemplate": "",
       "ruleStatus": "確定条件あり",
       "confirmedRules": [
         "者対象のみ",
@@ -2967,6 +2991,7 @@
       "additionName": "居宅連携（就労）（訪問面接）",
       "additionFamilyCode": "home_work_collab",
       "additionFamilyName": "居宅連携（就労）",
+      "promptTemplate": "",
       "ruleStatus": "一部確定",
       "confirmedRules": [
         "者対象のみ",
@@ -3067,6 +3092,7 @@
       "additionName": "居宅連携（就労）（会議参加）",
       "additionFamilyCode": "home_work_collab",
       "additionFamilyName": "居宅連携（就労）",
+      "promptTemplate": "",
       "ruleStatus": "一部確定",
       "confirmedRules": [
         "者対象のみ",

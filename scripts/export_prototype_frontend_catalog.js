@@ -79,6 +79,7 @@ function buildRuntimeAdditions(additionCatalog, branchRuleCatalog) {
       additionName: String(branch.branchName ?? "").trim(),
       additionFamilyCode: familyCode,
       additionFamilyName: familyName,
+      promptTemplate: String(family.promptTemplate ?? "").trim(),
       ruleStatus: String(branch.ruleStatus ?? "").trim() || parsedDescription.ruleStatus,
       confirmedRules:
         Array.isArray(branch.confirmedRules) && branch.confirmedRules.length > 0
